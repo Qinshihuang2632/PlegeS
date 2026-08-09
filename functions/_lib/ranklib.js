@@ -60,9 +60,10 @@ export async function saveMode(env, mode, list) {
     await env.RANKINGS.put(mode, JSON.stringify(list));
 }
 
+/* 合并三个难度的全部条目(扁平数组, 供查重/建议使用) */
 export async function loadAll(env) {
-    const out = {};
-    for (const m of MODES) out[m] = await loadMode(env, m);
+    const out = [];
+    for (const m of MODES) out.push(...(await loadMode(env, m)));
     return out;
 }
 

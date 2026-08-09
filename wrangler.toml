@@ -1,0 +1,13 @@
+# 化了个学 · Cloudflare Pages 部署配置
+# 部署: npx wrangler pages deploy dist --project-name=hua-liao-ge-xue
+# 本地: npx wrangler pages dev dist --kv=RANKINGS --persist-to .wrangler/state
+
+name = "hua-liao-ge-xue"
+compatibility_date = "2026-08-08"
+pages_build_output_dir = "dist"
+
+# 排行榜数据 KV (键 = 难度模式 easy/normal/challenge, 值 = JSON 数组)
+# id 由 `npx wrangler kv namespace create RANKINGS` 生成后回填
+[[kv_namespaces]]
+binding = "RANKINGS"
+id = "PENDING_KV_NAMESPACE_ID"
