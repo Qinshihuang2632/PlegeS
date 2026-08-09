@@ -63,6 +63,8 @@
 | `ebacc40` | 部署配置 + 本地验证 | `wrangler.toml`(compatibility_date 2026-08-08 修复)、`package.json`、`dist/404.html`、`scripts/e2e_local.mjs`(22 项 E2E)、`scripts/check_imports.mjs` |
 | `64cddb1` | 部署配置 + KV 数据迁移 | `wrangler.toml` 写入真实 KV namespace id;KV 远程写入 `easy`/`normal`/`challenge`(`--remote`) |
 | `c532d3b` | 线上测试 | `scripts/verify_prod.mjs`(线上 33 项验证,含数据恢复逻辑) |
+| `df8fff2` | 交付 | `MIGRATION_AUDIT.md` + `platform_log.md` 平台日志 |
+| `c775be9` | v2.0.1 | 弹窗/界面加返回键 + 过关判定修正(详见 4.5) |
 
 保留未动:本地工具 `make_docx.py`、`hualegexue/hlgx_selftest.js`、Flask 源码(`hlgx_app.py` 等)——
 仅作本地参考/工具,不参与线上构建(线上只发布 `dist/` + `functions/`)。
@@ -95,6 +97,19 @@ exists 精确匹配跨模式、suggest X*001 占用→X*002/全占用→*999、D
 - 生产域名:https://hua-liao-ge-xue.pages.dev
 - 中途修复:项目未创建 → `wrangler pages project create hua-liao-ge-xue --production-branch=main`;KV 写入默认落 local → 显式 `--remote`
 
+### 4.5 v2.0.1 验证
+- **GUI(浏览器实测)**:生产域名 `/hlgx/hua` 昵称弹窗含「← 返回大厅」,点击后回到 `/`(首页),无需设置昵称即可退出 ✅
+- **GUI(DOM 确认)**:结算弹窗同样含「← 返回大厅」(`#hlgx-overlay .back-btn`);页面规则文案已更新为
+  「全部卡牌拾取且手牌槽无三消组合时自动通关(最后一步消除也计入)」
+- **行为测试 — `node scripts/checkwin_logic_test.mjs` ✅ 8/8**:从 `dist/js/hlgx_hua.js` 提取真实
+  `canEliminate`/`checkWin` 源码在 node vm 沙箱中验证:
+  - 全部拾取+无三消 → 通关;通关后手牌清空
+  - **全部拾取+存在 3 张同类(三消可能)→ 不通关**,手牌保留等待消除
+  - 棋盘未清空 → 不通关
+  - **消除前不通关;完成最后一次消除后 → 通关**(最后一步消除纳入考察)
+  - 全部拾取+仅剩 2 张同类(无三消)→ 通关
+- 本地 E2E 22/22 回归通过;生产域名确认服务 v2.0.1(版本号、back-btn×2、checkWin 新逻辑、btn-row 样式)
+
 ## 5. 已知差异 / 风险
 
 1. **compatibility_date 固定 2026-08-08**:本地 workerd 二进制最高支持 2026-08-08,线上若提示需更新
@@ -120,3 +135,5 @@ exists 精确匹配跨模式、suggest X*001 占用→X*002/全占用→*999、D
 - [x] 404 行为正确(非 SPA 回退)
 - [x] 每个阶段独立 git 提交(消息格式 `v2.0.0-cloudflare: <阶段>`)
 - [x] 线上 33 项验证通过,测试数据已清理,生产数据已恢复
+- [x] v2.0.1:所有弹窗/界面(除首页)均有返回键,昵称弹窗可不设昵称直接退出(GUI 实测)
+- [x] v2.0.1:过关判定 = 全部卡牌拾取 且 手牌槽无 3 张同类可消(最后一步消除也计入),8 项行为测试通过
