@@ -8,6 +8,13 @@
 import { writeFileSync } from "node:fs";
 
 const BASE = process.argv[2] || "https://hua-liao-ge-xue.pages.dev";
+// 生产管理员密码: 必须通过环境变量传入 (ADMIN_PASSWORD=xxx node scripts/verify_prod.mjs),
+// 绝不硬编码进 git。缺失则拒绝执行, 防止带不完整鉴权误验证。
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD) {
+    console.error("缺少生产管理员密码: 请用 ADMIN_PASSWORD=<密码> node scripts/verify_prod.mjs 运行");
+    process.exit(1);
+}
 let pass = 0, fail = 0;
 const fails = [];
 function check(name, cond, detail = "") {
@@ -19,15 +26,17 @@ async function get(path) {
     const r = await fetch(BASE + path);
     return { status: r.status, headers: r.headers, text: await r.text() };
 }
-async function api(path, method = "GET", body) {
+async function api(path, method = "GET", body, headers = {}) {
     const r = await fetch(BASE + path, body ? {
-        method, headers: { "Content-Type": "application/json" },
+        method, headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify(body),
-    } : { method });
+    } : { method, headers });
     let data = null, txt = await r.text();
     try { data = JSON.parse(txt); } catch { /* 非 JSON */ }
     return { status: r.status, data, txt };
 }
+// DELETE 一律携带管理员密码请求头 (v2.0.2: 清榜需密码)
+const delRank = (path) => api(path, "DELETE", undefined, { "X-Admin-Password": ADMIN_PASSWORD });
 
 console.log(`\n== 页面与静态资源 (${BASE}) ==`);
 {
@@ -76,8 +85,11 @@ console.log("\n== API: exists / suggest ==");
 
 console.log("\n== API: POST 提交(排序 / surpassed / 中文 UTF-8) ==");
 {
-    // 清空 easy 保证可预测
-    const del = await api("/hlgx/api/rank?mode=easy", "DELETE");
+    // v2.0.2 安全契约: 无密码 DELETE 必须被拒绝
+    const delNoPw = await api("/hlgx/api/rank?mode=easy", "DELETE");
+    check("DELETE 无密码 → 401", delNoPw.status === 401, `(实际 ${delNoPw.status})`);
+    // 清空 easy 保证可预测 (需管理员密码)
+    const del = await delRank("/hlgx/api/rank?mode=easy");
     check("DELETE easy → ok", del.data?.ok === true);
     // A: 常规成绩
     const A = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "测试甲", hp: 3, time: 150, tools: 2 });
@@ -123,9 +135,9 @@ console.log("\n== API: 未知路径 404 ==");
 // 恢复生产数据: 清空所有测试痕迹, 恢复原始 easy 榜(帅帅)与空 normal/challenge
 console.log("\n== 恢复生产数据 ==");
 {
-    await api("/hlgx/api/rank?mode=easy", "DELETE");
-    await api("/hlgx/api/rank?mode=normal", "DELETE");
-    await api("/hlgx/api/rank?mode=challenge", "DELETE");
+    await delRank("/hlgx/api/rank?mode=easy");
+    await delRank("/hlgx/api/rank?mode=normal");
+    await delRank("/hlgx/api/rank?mode=challenge");
     const restored = [{"name":"帅帅","hp":3,"time":131,"tools":0,"date":"2026-08-09 12:37"}];
     writeFileSync(new URL("../.wrangler/kv-migrate/easy.json", import.meta.url), JSON.stringify(restored), "utf8");
     const rr = await api("/hlgx/api/rank?mode=easy");

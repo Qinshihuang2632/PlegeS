@@ -27,6 +27,12 @@ async function send(path, method, body) {
     try { data = await res.json(); } catch { /* 非 JSON */ }
     return { status: res.status, data };
 }
+async function send2(path, method, headers) {
+    const res = await fetch(BASE + path, { method, headers });
+    let data = null;
+    try { data = await res.json(); } catch { /* 非 JSON */ }
+    return { status: res.status, data };
+}
 
 /* ---------- 1. 静态页面 + 资源 ---------- */
 let r = await get("/");
@@ -77,9 +83,16 @@ check("exists 不存在 → false", r.status === 200 && r.text.includes('"exists
 r = await get("/hlgx/api/name/suggest?name=" + encodeURIComponent("帅帅"));
 check("suggest 返回 *001 形式", r.status === 200 && /"name":"帅帅\*\d{3}"/.test(r.text), r.text);
 
-/* ---------- 5. API: DELETE ---------- */
+/* ---------- 5. API: DELETE(需管理员密码, 与 .dev.vars 一致) ---------- */
+const ADMIN_PW = "local-hlgx-admin-2026";   // 本地开发密码, 见 .dev.vars(不入 git)
 p = await send("/hlgx/api/rank?mode=easy", "DELETE");
-check("DELETE 返回已清空消息", p.status === 200 && p.data.msg === "已清空 easy 榜单", JSON.stringify(p.data));
+check("DELETE 无密码 → 401 密码错误", p.status === 401 && p.data.msg === "密码错误", "status " + p.status + " " + JSON.stringify(p.data));
+
+p = await send2("/hlgx/api/rank?mode=easy", "DELETE", { "X-Admin-Password": "wrong-pw" });
+check("DELETE 错误密码 → 401 密码错误", p.status === 401 && p.data.msg === "密码错误", "status " + p.status + " " + JSON.stringify(p.data));
+
+p = await send2("/hlgx/api/rank?mode=easy", "DELETE", { "X-Admin-Password": ADMIN_PW });
+check("DELETE 正确密码 → 已清空 easy 榜单", p.status === 200 && p.data.msg === "已清空 easy 榜单", JSON.stringify(p.data));
 
 r = await get("/hlgx/api/rank?mode=easy");
 check("DELETE 后榜单为空", r.status === 200 && r.text.includes('"rank":[]'), r.text);

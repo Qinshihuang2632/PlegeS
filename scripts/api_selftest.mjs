@@ -13,7 +13,9 @@ const suggestApi = await import(BASE + "functions/hlgx/api/name/suggest.js");
 
 /* ---------- 内存 KV mock ---------- */
 const store = new Map();
+const ADMIN_PW = "test-admin-pw";   // 测试用管理员密码
 const env = {
+    ADMIN_PASSWORD: ADMIN_PW,
     RANKINGS: {
         get: async (k) => (store.has(k) ? store.get(k) : null),
         put: async (k, v) => { store.set(k, v); },
@@ -23,7 +25,11 @@ const env = {
 const reset = () => { store.clear(); };
 
 /* ---------- request mock + 调用包装 ---------- */
-const mockReq = (url, body) => ({ url, json: async () => body });
+const mockReq = (url, body, headers = {}) => ({
+    url,
+    headers: { get: (h) => headers[h] ?? null },
+    json: async () => body,
+});
 // Functions 处理器返回标准 Response, 统一解包成 { data, status }
 async function call(fn, ...args) {
     const resp = await fn(...args);
@@ -125,20 +131,37 @@ store.set("easy", JSON.stringify(nine));
 r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name=%E6%BB%A1"), env });
 check("suggest: 全占用 → 回退 *999", r.data.name === "满*999", JSON.stringify(r.data));
 
-/* ---------- 7. DELETE 清榜 ---------- */
+/* ---------- 7. DELETE 清榜(需管理员密码) ---------- */
 reset();
 await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "X", hp: 1, time: 1, tools: 0 }), env });
 await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "challenge", name: "Y", hp: 2, time: 2, tools: 0 }), env });
+
 r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
-check("DELETE easy → 已清空 easy 榜单", deepEq(r.data, { ok: true, msg: "已清空 easy 榜单" }), JSON.stringify(r.data));
+check("DELETE 无密码 → 401 密码错误", r.status === 401 && r.data.msg === "密码错误", JSON.stringify(r.data));
+
+r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy", null, { "x-admin-password": "wrong" }), env });
+check("DELETE 错误密码 → 401 密码错误", r.status === 401 && r.data.msg === "密码错误", JSON.stringify(r.data));
+
+r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy", null, { "x-admin-password": ADMIN_PW }), env });
+check("DELETE 正确密码 easy → 已清空 easy 榜单", deepEq(r.data, { ok: true, msg: "已清空 easy 榜单" }), JSON.stringify(r.data));
 r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
 check("DELETE 后 easy 为空", r.data.rank.length === 0, JSON.stringify(r.data));
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=all"), env });
-check("DELETE all → 已清空全部榜单", deepEq(r.data, { ok: true, msg: "已清空全部榜单" }), JSON.stringify(r.data));
+
+r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=all", null, { "x-admin-password": ADMIN_PW }), env });
+check("DELETE all 正确密码 → 已清空全部榜单", deepEq(r.data, { ok: true, msg: "已清空全部榜单" }), JSON.stringify(r.data));
 r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=challenge"), env });
 check("DELETE all 后 challenge 也为空", r.data.rank.length === 0, JSON.stringify(r.data));
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=abc"), env });
-check("DELETE 非法 mode → 400 参数错误", r.status === 400 && r.data.msg === "参数错误", JSON.stringify(r.data));
+
+r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=abc", null, { "x-admin-password": ADMIN_PW }), env });
+check("DELETE 非法 mode + 正确密码 → 400 参数错误", r.status === 400 && r.data.msg === "参数错误", JSON.stringify(r.data));
+
+// 未配置 ADMIN_PASSWORD → 一律拒绝(宁可不删也不能裸奔)
+reset();
+await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "Z", hp: 1, time: 1, tools: 0 }), env });
+r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy", null, { "x-admin-password": "any" }), env: { ...env, ADMIN_PASSWORD: undefined } });
+check("DELETE 未配置密码 → 401(默认禁用清榜)", r.status === 401 && r.data.msg === "密码错误", JSON.stringify(r.data));
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
+check("DELETE 被拒后 easy 榜单保留", r.data.rank.length === 1, JSON.stringify(r.data));
 
 /* ---------- 汇总 ---------- */
 console.log("========== API 契约自测结果 ==========");

@@ -4,6 +4,8 @@
  *   GET    ?mode=easy|normal|challenge   查询某难度榜单(已排序)
  *   POST   请求体 JSON {mode, name, hp, time, tools}  提交成绩
  *   DELETE ?mode=easy|normal|challenge|all            清空榜单
+ *          需管理员密码: 请求头 X-Admin-Password 须等于环境变量
+ *          ADMIN_PASSWORD(Cloudflare Pages secret, 不入 git)。
  * 契约与 Flask 版 hlgx_rank.py 完全一致。
  */
 import { MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, loadMode, saveMode, json } from "../../_lib/ranklib.js";
@@ -51,10 +53,16 @@ export async function onRequestPost({ request, env }) {
 }
 
 /* DELETE /hlgx/api/rank?mode=easy|normal|challenge|all
+   需请求头 X-Admin-Password 与 env.ADMIN_PASSWORD 一致
    → { "ok": true, "msg": "已清空 xxx 榜单" } */
 export async function onRequestDelete({ request, env }) {
     const url = new URL(request.url);
     const mode = url.searchParams.get("mode") || "";
+    // 未配置密码或密码不匹配 → 一律拒绝(先验密码再验 mode, 防未授权探测)
+    const pw = request.headers.get("x-admin-password") || "";
+    if (!env.ADMIN_PASSWORD || pw !== env.ADMIN_PASSWORD) {
+        return json({ ok: false, msg: "密码错误" }, 401);
+    }
     if (MODES.includes(mode)) {
         await saveMode(env, mode, []);
         return json({ ok: true, msg: `已清空 ${mode} 榜单` });

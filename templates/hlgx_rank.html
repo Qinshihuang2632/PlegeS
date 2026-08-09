@@ -30,9 +30,34 @@
         <p id="rank-empty" class="rank-empty">暂无记录</p>
     </div>
 
+    <!-- 管理员密码弹窗(清空榜单需密码) -->
+    <div id="hlgx-pw-modal" class="modal hidden">
+        <div class="modal-box">
+            <h2>🔒 管理员验证</h2>
+            <p id="hlgx-pw-tip" class="pw-tip"></p>
+            <input type="password" id="hlgx-pw-input" maxlength="64" placeholder="输入管理员密码" autocomplete="off">
+            <div class="btn-row">
+                <button id="hlgx-pw-cancel" class="back-btn">取消</button>
+                <button id="hlgx-pw-confirm" class="primary-btn">确认清空</button>
+            </div>
+        </div>
+    </div>
+
     <script>
     const MODE_LABEL = { easy: "简单", normal: "标准", challenge: "挑战" };
     let curMode = "normal";
+    const pwModal = document.getElementById("hlgx-pw-modal");
+    const pwInput = document.getElementById("hlgx-pw-input");
+    const pwTip = document.getElementById("hlgx-pw-tip");
+    const pwConfirm = document.getElementById("hlgx-pw-confirm");
+    const pwCancel = document.getElementById("hlgx-pw-cancel");
+    function openPwModal() {
+        pwInput.value = "";
+        pwTip.textContent = "";
+        pwModal.classList.remove("hidden");
+        pwInput.focus();
+    }
+    function closePwModal() { pwModal.classList.add("hidden"); }
     function fmt(s) {
         const m = Math.floor(s / 60), ss = s % 60;
         return (m < 10 ? "0" + m : m) + ":" + (ss < 10 ? "0" + ss : ss);
@@ -59,11 +84,26 @@
             load();
         });
     });
-    document.getElementById("rank-clear").addEventListener("click", async () => {
-        if (!confirm("确定清空「" + MODE_LABEL[curMode] + "」榜单?此操作不可恢复")) return;
-        await fetch("/hlgx/api/rank?mode=" + curMode, { method: "DELETE" });
-        load();
+    document.getElementById("rank-clear").addEventListener("click", openPwModal);
+    pwConfirm.addEventListener("click", async () => {
+        const pw = pwInput.value;
+        if (!pw) { pwTip.textContent = "请输入密码"; return; }
+        pwConfirm.disabled = true;
+        try {
+            const res = await fetch("/hlgx/api/rank?mode=" + curMode, {
+                method: "DELETE",
+                headers: { "X-Admin-Password": pw },
+            });
+            const data = await res.json();
+            if (!res.ok || !data.ok) { pwTip.textContent = data.msg || "操作失败"; return; }
+            closePwModal();
+            load();
+        } finally {
+            pwConfirm.disabled = false;
+        }
     });
+    pwCancel.addEventListener("click", closePwModal);
+    pwInput.addEventListener("keydown", (e) => { if (e.key === "Enter") pwConfirm.click(); });
     load();
     </script>
 </body>

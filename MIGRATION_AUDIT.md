@@ -65,6 +65,7 @@
 | `c532d3b` | 线上测试 | `scripts/verify_prod.mjs`(线上 33 项验证,含数据恢复逻辑) |
 | `df8fff2` | 交付 | `MIGRATION_AUDIT.md` + `platform_log.md` 平台日志 |
 | `c775be9` | v2.0.1 | 弹窗/界面加返回键 + 过关判定修正(详见 4.5) |
+| (待提交) | v2.0.2 | 排行榜 DELETE 需管理员密码(`X-Admin-Password` = `env.ADMIN_PASSWORD`,secret 不入 git)+ 点击响应提速(详见 4.6) |
 
 保留未动:本地工具 `make_docx.py`、`hualegexue/hlgx_selftest.js`、Flask 源码(`hlgx_app.py` 等)——
 仅作本地参考/工具,不参与线上构建(线上只发布 `dist/` + `functions/`)。
@@ -110,6 +111,18 @@ exists 精确匹配跨模式、suggest X*001 占用→X*002/全占用→*999、D
   - 全部拾取+仅剩 2 张同类(无三消)→ 通关
 - 本地 E2E 22/22 回归通过;生产域名确认服务 v2.0.1(版本号、back-btn×2、checkWin 新逻辑、btn-row 样式)
 
+### 4.6 v2.0.2 验证
+- **契约测试 — `npm run test:api` ✅**(新增鉴权用例):DELETE 无密码 → 401 / 错误密码 → 401 /
+  正确密码 easy → 200 清空 / 正确密码 all → 200 / 正确密码 + 非法 mode → 400 / 未配置 `ADMIN_PASSWORD` → 一律 401(排行榜保留)
+- **本地 E2E — `npm run test:e2e` ✅**(新增鉴权用例):无密码 401、错误密码 401、正确密码清榜后榜单为空
+- **性能优化(行为不变)**:`.hlgx-tile` transition 移除 `filter`(blocked 滤镜瞬时切换,消除 140 块过渡动画开销)、
+  hover 用 transform 取代 filter;JS 坐标缓存 + 按层分组遮挡判定 + 遮挡状态增量刷新 + 手牌槽增量渲染 +
+  `newGame()` DocumentFragment 批量挂载;`canEliminate`/`checkWin`/`checkLose`/`lose` 判定逻辑逐字未动,
+  `node scripts/checkwin_logic_test.mjs` 8/8 依旧通过
+- **GUI(浏览器实测)**:排行榜「清空当前榜单」弹出密码框,错误密码提示、正确密码清榜成功并刷新
+- **密钥管理**:生产 `ADMIN_PASSWORD` 通过 `wrangler pages secret put` 设置(不入 git);
+  本地 `.dev.vars`(gitignore)供 `wrangler pages dev` 加载;绝不写入 `wrangler.toml [vars]`
+
 ## 5. 已知差异 / 风险
 
 1. **compatibility_date 固定 2026-08-08**:本地 workerd 二进制最高支持 2026-08-08,线上若提示需更新
@@ -137,3 +150,5 @@ exists 精确匹配跨模式、suggest X*001 占用→X*002/全占用→*999、D
 - [x] 线上 33 项验证通过,测试数据已清理,生产数据已恢复
 - [x] v2.0.1:所有弹窗/界面(除首页)均有返回键,昵称弹窗可不设昵称直接退出(GUI 实测)
 - [x] v2.0.1:过关判定 = 全部卡牌拾取 且 手牌槽无 3 张同类可消(最后一步消除也计入),8 项行为测试通过
+- [x] v2.0.2:DELETE 鉴权:未配置/错误密码一律 401,正确密码方可清榜;密码经 secret 存储,不入 git
+- [x] v2.0.2:点击响应提速:滤镜过渡移除 + 坐标缓存 + 遮挡增量刷新 + 手牌槽增量渲染,判定逻辑零改动

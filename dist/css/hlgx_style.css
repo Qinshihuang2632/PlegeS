@@ -128,12 +128,14 @@ body {
     cursor: pointer;
     box-shadow: 0 3px 6px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.25);
     user-select: none;
-    transition: transform .16s ease, opacity .16s ease, filter .16s ease;
+    /* 注意: transition 不含 filter —— blocked 滤镜需瞬时切换,
+       否则每次点方块后全棋盘 filter 过渡动画会拖慢点击响应 */
+    transition: transform .16s ease, opacity .16s ease;
     text-shadow: 0 1px 2px rgba(0,0,0,.35);
 }
 .hlgx-tile .f { font-weight: 800; line-height: 1.1; }
 .hlgx-tile .n { font-size: 9px; opacity: .92; letter-spacing: .3px; }
-.hlgx-tile:hover { transform: scale(1.06); filter: brightness(1.08); }
+.hlgx-tile:hover { transform: scale(1.06); }
 .hlgx-tile.blocked { filter: brightness(.6) saturate(.45); }
 .hlgx-tile.blocked::after {
     content: "";
@@ -356,7 +358,7 @@ body {
     box-sizing: border-box;
 }
 .modal-box h2 { color: #1d4ed8; margin-bottom: 1rem; }
-.modal-box input[type="text"] {
+.modal-box input[type="text"], .modal-box input[type="password"] {
     width: 100%;
     padding: .6rem .8rem;
     border: 1px solid #cbd5e1;
@@ -366,6 +368,8 @@ body {
     box-sizing: border-box;
     text-align: center;
 }
+/* 弹窗内错误/提示文案 */
+.pw-tip { color: #dc2626; font-size: .85rem; min-height: 1.1em; margin: -.2rem 0 .5rem; }
 .skip-label { display: block; color: #64748b; font-size: .9rem; margin-bottom: .8rem; cursor: pointer; }
 .primary-btn {
     background: #1d4ed8;

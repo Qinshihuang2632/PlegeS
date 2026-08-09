@@ -258,23 +258,38 @@ function slotXY(s) {
     const base = ((ROWS - S) * CELL) / 2;
     return { x: base + s.c * CELL, y: base + s.r * CELL };
 }
-function overlaps(a, b) {
-    const pa = slotXY(a), pb = slotXY(b);
-    return pa.x < pb.x + TILE_W && pa.x + TILE_W > pb.x &&
-           pa.y < pb.y + TILE_W && pa.y + TILE_W > pb.y;
+// 纯算术重叠判断: 传缓存坐标 {x,y}, 避免重复分配对象
+function overlapXY(a, b) {
+    return a.x < b.x + TILE_W && a.x + TILE_W > b.x &&
+           a.y < b.y + TILE_W && a.y + TILE_W > b.y;
+}
+// 按层分组索引(重建代价低, 常规操作走 isBlocked 增量路径)
+let tilesByLayer = [];
+function rebuildLayers() {
+    tilesByLayer = [];
+    LAYER_SIZES.forEach(() => tilesByLayer.push([]));
+    tiles.forEach(t => tilesByLayer[t.L].push(t));
 }
 // 像素遮挡解锁: 只要被任何更上层方块盖住就不可点, 盖住它的方块被取走即解锁
+// 加速: 坐标建块时缓存(t.pos), 遮挡只查更上层分组, 跳过已移除块
 function isBlocked(t) {
-    for (const o of tiles) {
-        if (o === t || o.removed || o.L >= t.L) continue;  // 只看更上层(o.L < t.L)
-        if (overlaps(t, o)) return true;
+    const pa = t.pos || slotXY(t);
+    for (let L = 0; L < t.L; L++) {
+        for (const o of tilesByLayer[L]) {
+            if (o.removed) continue;
+            if (overlapXY(pa, o.pos)) return true;
+        }
     }
     return false;
 }
 function refreshBlocked() {
     for (const t of tiles) {
         if (t.removed) continue;
-        t.el.classList.toggle("blocked", isBlocked(t));
+        const blocked = isBlocked(t);
+        if (blocked !== t.blocked) {        // 仅状态变化才碰 DOM, 点击路径零动画开销
+            t.blocked = blocked;
+            t.el.classList.toggle("blocked", blocked);
+        }
     }
 }
 // 位置决定颜色: 同层相邻块(±1格)必然不同色,叠层也不同色; 对任意棋盘宽都成立
@@ -300,7 +315,7 @@ function tileHTML(sub) {
            `<span class="n">${sub.n}</span>`;
 }
 function buildTile(t, slot) {
-    const pos = slotXY(slot);
+    const pos = t.pos;
     const el = document.createElement("div");
     el.className = "hlgx-tile hlgx-color-" + t.color;
     el.title = substanceInfo(t.sub);
@@ -331,19 +346,23 @@ function newGame() {
     const stack = buildStack();   // 140 块: 6类×21 + 1类×14,可被3整除
     shuffleArr(stack);            // 打散到各层
 
+    const frag = document.createDocumentFragment();   // 批量挂载, 开局更顺
     tiles = slots.map((slot, i) => {
         const t = {
             id: i, r: slot.r, c: slot.c, L: slot.L,
+            pos: slotXY(slot),                        // 缓存坐标, isBlocked 不再重复计算
             sub: stack[i], color: slotColorIdx(slot.r, slot.c, slot.L),
-            removed: false
+            removed: false, blocked: false
         };
-        boardEl.appendChild(buildTile(t, slot));
+        frag.appendChild(buildTile(t, slot));
         return t;
     });
+    boardEl.appendChild(frag);
+    rebuildLayers();              // 遮挡分组索引
     // 棋盘尺寸 = 所有方块最大外延
     let maxX = 0, maxY = 0;
     tiles.forEach(t => {
-        const p = slotXY(t);
+        const p = t.pos;
         maxX = Math.max(maxX, p.x + TILE_W);
         maxY = Math.max(maxY, p.y + TILE_W);
     });
@@ -414,7 +433,7 @@ function pickTile(t) {
     t.el.classList.add("removed");
     tray.push(t);
     HLGX_Audio.click();
-    renderTray();
+    appendTrayCell(t);        // 增量入槽, 不再整槽重建
     updateRemain();
     refreshBlocked();
     checkWin();
@@ -422,23 +441,31 @@ function pickTile(t) {
 }
 
 /* ==================== 手牌区:选择与手动消除 ==================== */
-function renderTray() {
+// 单格构建(增量渲染共用): 常规点击只动这一格
+function makeTrayCell(t) {
+    const cell = document.createElement("div");
+    cell.className = "hlgx-tray-cell hlgx-color-" + t.color;
+    cell.title = substanceInfo(t.sub);
+    cell.innerHTML = tileHTML(t.sub);
+    cell.addEventListener("click", () => toggleSelect(t));
+    t.cell = cell;
+    return cell;
+}
+function appendTrayCell(t) {
+    trayEl.appendChild(makeTrayCell(t));
+    updateClearBtn();
+}
+function renderTray() {       // 全量重建(开局/通关等低频场景)
     trayEl.innerHTML = "";
-    tray.forEach(t => {
-        const cell = document.createElement("div");
-        cell.className = "hlgx-tray-cell hlgx-color-" + t.color + (selected.includes(t) ? " sel" : "");
-        cell.title = substanceInfo(t.sub);
-        cell.innerHTML = tileHTML(t.sub);
-        cell.addEventListener("click", () => toggleSelect(t));
-        trayEl.appendChild(cell);
-    });
+    tray.forEach(t => trayEl.appendChild(makeTrayCell(t)));
     updateClearBtn();
 }
 function toggleSelect(t) {
     if (gameOver || win) return;
     const i = selected.indexOf(t);
     if (i >= 0) { selected.splice(i, 1); } else { selected.push(t); }
-    renderTray();
+    t.cell.classList.toggle("sel", i < 0);   // 只切换选中态样式
+    updateClearBtn();
 }
 function updateClearBtn() {
     // 恰好选中 3 张即可点; 同类则消除, 不同类则扣血
@@ -455,16 +482,18 @@ function clearSelected() {
         updateHp();
         HLGX_Audio.lose();
         flash("不是同类!扣除 1 点血量(剩 " + Math.max(0, hp) + ")");
+        selected.forEach(x => x.cell.classList.remove("sel"));   // 只撤选中态
         selected = [];
-        renderTray();
+        updateClearBtn();
         if (hp <= 0) { lose(); }
         return;
     }
     selected.forEach(x => { x.el.remove(); });   // 移除棋盘对应元素
     tray = tray.filter(x => !selected.includes(x));
     HLGX_Audio.clear();
+    selected.forEach(x => x.cell.remove());       // 增量移除手牌格
     selected = [];
-    renderTray();
+    updateClearBtn();
     refreshBlocked();
     checkWin();
     checkLose();
@@ -485,21 +514,23 @@ function undo() {                 // 撤回: 槽内最后一块放回棋盘
     toolUsed.undo++;
     HLGX_Audio.skill();
     const t = tray.pop();
+    t.cell.remove();              // 增量移除手牌格
     selected = selected.filter(x => x !== t);
     const occupied = tiles.some(x => !x.removed && x !== t && x.r === t.r && x.c === t.c && x.L === t.L);
     if (occupied) {
         const free = tiles.filter(x => x.removed && !tray.includes(x) && !selected.includes(x));
-        if (free.length === 0) { tray.push(t); renderTray(); updateTools(); return; }
+        if (free.length === 0) { tray.push(t); appendTrayCell(t); updateTools(); return; }
         const s = free[Math.floor(Math.random() * free.length)];
         t.r = s.r; t.c = s.c; t.L = s.L;
-        const pos = slotXY(s);
-        t.el.style.left = pos.x + "px"; t.el.style.top = pos.y + "px";
+        t.pos = s.pos;            // 同步缓存坐标
+        t.el.style.left = t.pos.x + "px"; t.el.style.top = t.pos.y + "px";
         t.el.style.zIndex = 10 + (LAYER_SIZES.length - 1 - s.L);
         applyTileColor(t, slotColorIdx(s.r, s.c, s.L));
     }
     t.removed = false;
     t.el.classList.remove("removed");
-    renderTray(); updateRemain(); refreshBlocked(); updateTools();
+    rebuildLayers();              // 层级可能变化, 重建分组索引
+    updateClearBtn(); updateRemain(); refreshBlocked(); updateTools();
 }
 function moveOut() {              // 移出: 槽内最靠前3块放回棋盘空位
     if (gameOver || win || tray.length === 0) return;
@@ -509,19 +540,21 @@ function moveOut() {              // 移出: 槽内最靠前3块放回棋盘空�
     const take = tray.splice(0, Math.min(3, tray.length));
     selected = selected.filter(x => !take.includes(x));
     let freeSlots = tiles.filter(x => x.removed && !tray.includes(x) && !take.includes(x) && !selected.includes(x));
-    if (freeSlots.length < take.length) { tray.unshift(...take); renderTray(); updateTools(); return; }
+    if (freeSlots.length < take.length) { tray.unshift(...take); take.forEach(x => appendTrayCell(x)); updateTools(); return; }
     shuffleArr(freeSlots);
     take.forEach((t, i) => {
         const s = freeSlots[i];
         t.r = s.r; t.c = s.c; t.L = s.L;
+        t.pos = s.pos;            // 同步缓存坐标
         t.removed = false;
         t.el.classList.remove("removed");
-        const pos = slotXY(s);
-        t.el.style.left = pos.x + "px"; t.el.style.top = pos.y + "px";
+        t.el.style.left = t.pos.x + "px"; t.el.style.top = t.pos.y + "px";
         t.el.style.zIndex = 10 + (LAYER_SIZES.length - 1 - s.L);
         applyTileColor(t, slotColorIdx(s.r, s.c, s.L));
+        t.cell.remove();          // 增量移除手牌格
     });
-    renderTray(); updateRemain(); refreshBlocked(); updateTools();
+    rebuildLayers();
+    updateClearBtn(); updateRemain(); refreshBlocked(); updateTools();
 }
 function shuffleTiles() {         // 洗牌: 打乱剩余方块的物质身份
     if (gameOver || win) return;

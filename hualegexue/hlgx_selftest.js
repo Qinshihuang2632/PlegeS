@@ -7,9 +7,9 @@
  * 任一项失败则退出码 1, 提示代码需要修复。
  */
 "use strict";
-const fs = require("fs");
-const path = require("path");
-const SELF_DIR = __dirname;   // 自检脚本所在目录(hualegexue)
+import fs from "node:fs";
+import path from "node:path";
+const SELF_DIR = import.meta.dirname;   // 自检脚本所在目录(hualegexue)
 
 /* ---------- 最小 DOM 模拟 ---------- */
 const fakeEl = () => ({
@@ -29,6 +29,7 @@ const fakeEl = () => ({
 global.document = {
     getElementById: (() => { const m = {}; return (id) => (m[id] = m[id] || fakeEl()); })(),
     createElement: () => fakeEl(),
+    createDocumentFragment: () => fakeEl(),   // v2.0.2 newGame() 批量挂载用
     querySelectorAll: () => [],
 };
 
