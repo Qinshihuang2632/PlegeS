@@ -2,40 +2,63 @@
  * 化了个学 · Pages Functions API 契约自测 (api_selftest.mjs)
  * 运行: npm run test:api  (或 node scripts/api_selftest.mjs)
  *
- * 用内存 KV mock 直接调用 functions/ 下的真实处理器, 验证与 Flask 版
- * hlgx_rank.py 的契约完全一致: 排序规则 / surpassed / clamp / 昵称查重
- * 与建议 / 清榜消息。任一项失败退出码 1。
+ * 用内存 KV mock 直接调用 functions/ 下的真实处理器, 验证:
+ *   - 用户 API 契约(排序 / surpassed / clamp / 昵称查重与建议)
+ *   - v2.1.0 加固: 提交限频 429 / 昵称清洗 / 榜单上限 / 用户 API 不再有 DELETE
+ *   - 管理 API: 登录鉴权与锁定 / 会话 / 榜单管理 / 审计日志 / 强制下线 / 审计环形上限
+ * 任一项失败退出码 1。
  */
 const BASE = "file:///D:/program/game one/";
 const rankApi = await import(BASE + "functions/hlgx/api/rank.js");
 const existsApi = await import(BASE + "functions/hlgx/api/name/exists.js");
 const suggestApi = await import(BASE + "functions/hlgx/api/name/suggest.js");
+const adminAuth = await import(BASE + "functions/admin/api/auth.js");
+const adminRank = await import(BASE + "functions/admin/api/rank.js");
+const adminLogs = await import(BASE + "functions/admin/api/logs.js");
+const adminSessions = await import(BASE + "functions/admin/api/sessions.js");
+const auditLib = await import(BASE + "functions/_lib/audit.js");
 
 /* ---------- 内存 KV mock ---------- */
 const store = new Map();
-const ADMIN_PW = "test-admin-pw";   // 测试用管理员密码
+const ADMIN_TOKEN = "test-admin-token-2026";   // 测试用管理员令牌
 const env = {
-    ADMIN_PASSWORD: ADMIN_PW,
+    ADMIN_TOKEN,
     RANKINGS: {
         get: async (k) => (store.has(k) ? store.get(k) : null),
-        put: async (k, v) => { store.set(k, v); },
+        put: async (k, v) => { store.set(k, v); },   // 忽略 expirationTtl(mock)
         delete: async (k) => { store.delete(k); },
+        list: async ({ prefix }) => ({
+            keys: [...store.keys()].filter((k) => k.startsWith(prefix)).map((name) => ({ name })),
+        }),
     },
 };
 const reset = () => { store.clear(); };
 
-/* ---------- request mock + 调用包装 ---------- */
-const mockReq = (url, body, headers = {}) => ({
-    url,
-    headers: { get: (h) => headers[h] ?? null },
-    json: async () => body,
-});
-// Functions 处理器返回标准 Response, 统一解包成 { data, status }
+/* ---------- request mock + 调用包装 ----------
+ * 默认给每个请求独立的 X-Forwarded-For(模拟不同玩家 IP, 不触发提交限频);
+ * 需要同 IP 的用例显式传 headers。 */
+let ipCounter = 0;
+const mockReq = (url, body, headers = {}) => {
+    if (!headers["X-Forwarded-For"] && !headers["x-forwarded-for"] && !headers["cf-connecting-ip"]) {
+        headers["X-Forwarded-For"] = "selftest-ip-" + (++ipCounter);
+    }
+    return {
+        url,
+        // HTTP 头大小写不敏感(与真实服务器行为一致)
+        headers: {
+            get: (h) => {
+                const k = Object.keys(headers).find((key) => key.toLowerCase() === String(h).toLowerCase());
+                return k ? headers[k] : null;
+            },
+        },
+        json: async () => body,
+    };
+};
 async function call(fn, ...args) {
     const resp = await fn(...args);
     let data = null;
     try { data = await resp.json(); } catch { /* 非 JSON 响应 */ }
-    return { data, status: resp.status };
+    return { data, status: resp.status, headers: resp.headers };
 }
 
 /* ---------- 断言工具 ---------- */
@@ -44,6 +67,8 @@ function check(name, pass, detail = "") {
     results.push({ name, pass: !!pass, detail: pass ? "" : detail });
 }
 const deepEq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const post = (body, headers = {}) =>
+    call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", body, headers), env });
 
 /* ---------- 1. GET 查询 ---------- */
 reset();
@@ -58,55 +83,55 @@ check("GET 非法 mode 回退 normal", deepEq(r.data, { mode: "normal", rank: []
 
 /* ---------- 2. POST 校验与 clamp ---------- */
 reset();
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "", hp: 3, time: 10, tools: 0 }), env });
+r = await post({ mode: "easy", name: "", hp: 3, time: 10, tools: 0 });
 check("POST 空昵称 400 缺少昵称", r.status === 400 && r.data.msg === "缺少昵称", JSON.stringify(r.data));
 
 reset();
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "帅帅", hp: 9, time: 10, tools: 100 }), env });
+r = await post({ mode: "easy", name: "帅帅", hp: 9, time: 10, tools: 100 });
 check("POST hp>3→3, tools>9→9 (clamp)", r.data.ok === true && r.data.rank[0].hp === 3 && r.data.rank[0].tools === 9, JSON.stringify(r.data.rank));
 
 reset();
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "帅帅", hp: -5, time: -3, tools: -1 }), env });
+r = await post({ mode: "easy", name: "帅帅", hp: -5, time: -3, tools: -1 });
 check("POST hp/time/tools 负数→0", r.data.rank[0].hp === 0 && r.data.rank[0].time === 0 && r.data.rank[0].tools === 0, JSON.stringify(r.data.rank[0]));
 
 check("POST 条目含 date 且格式 YYYY-MM-DD HH:MM",
       /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(r.data.rank[0].date || ""), r.data.rank[0].date);
 
 reset();
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "不存在的模式", name: "小可", hp: 2, time: 5, tools: 1 }), env });
+r = await post({ mode: "不存在的模式", name: "小可", hp: 2, time: 5, tools: 1 });
 check("POST 非法 mode 存入 normal", r.data.rank[0] && r.data.rank[0].name === "小可", JSON.stringify(r.data));
 
 /* ---------- 3. 排序规则 hp↓ → time↑ → tools↑ ---------- */
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "T200", hp: 3, time: 200, tools: 0 }), env });
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "T100B", hp: 3, time: 100, tools: 3 }), env });
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "H4", hp: 4, time: 50, tools: 5 }), env });
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "T100A", hp: 3, time: 100, tools: 1 }), env });
+await post({ mode: "easy", name: "T200", hp: 3, time: 200, tools: 0 });
+await post({ mode: "easy", name: "T100B", hp: 3, time: 100, tools: 3 });
+await post({ mode: "easy", name: "H4", hp: 4, time: 50, tools: 5 });
+await post({ mode: "easy", name: "T100A", hp: 3, time: 100, tools: 1 });
 r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
 const order = r.data.rank.map((e) => e.name).join(",");
 check("排序 hp↓→time↑→tools↑", order === "H4,T100A,T100B,T200", order);
 
 /* ---------- 4. surpassed 超越人数 (严格优于才计数) ---------- */
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "A", hp: 3, time: 100, tools: 0 }), env });
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "B", hp: 3, time: 200, tools: 0 }), env });
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "C", hp: 2, time: 50, tools: 5 }), env });
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "D", hp: 3, time: 150, tools: 0 }), env });
+await post({ mode: "easy", name: "A", hp: 3, time: 100, tools: 0 });
+await post({ mode: "easy", name: "B", hp: 3, time: 200, tools: 0 });
+await post({ mode: "easy", name: "C", hp: 2, time: 50, tools: 5 });
+r = await post({ mode: "easy", name: "D", hp: 3, time: 150, tools: 0 });
 check("surpassed: D(3,150) 超越 B(3,200)与C(2,50) → 2", r.data.surpassed === 2, "got " + r.data.surpassed);
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "E", hp: 2, time: 50, tools: 5 }), env });
+r = await post({ mode: "easy", name: "E", hp: 2, time: 50, tools: 5 });
 check("surpassed: E 与C完全同分 → 0 (严格更优才计)", r.data.surpassed === 0, "got " + r.data.surpassed);
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "A", hp: 3, time: 100, tools: 0 }), env });
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "F", hp: 3, time: 100, tools: 2 }), env });
+await post({ mode: "easy", name: "A", hp: 3, time: 100, tools: 0 });
+r = await post({ mode: "easy", name: "F", hp: 3, time: 100, tools: 2 });
 check("surpassed: 同hp同time但tools更大 → 不超越A → 0", r.data.surpassed === 0, "got " + r.data.surpassed);
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "A", hp: 3, time: 100, tools: 0 }), env });
-r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "G", hp: 4, time: 0, tools: 0 }), env });
+await post({ mode: "easy", name: "A", hp: 3, time: 100, tools: 0 });
+r = await post({ mode: "easy", name: "G", hp: 4, time: 0, tools: 0 });
 check("surpassed: hp更高 → 超越A → 1", r.data.surpassed === 1, "got " + r.data.surpassed);
 
 /* ---------- 5. 昵称查重 (跨所有模式) ---------- */
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "normal", name: "小明", hp: 1, time: 30, tools: 2 }), env });
+await post({ mode: "normal", name: "小明", hp: 1, time: 30, tools: 2 });
 r = await call(existsApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/exists?name=%E5%B0%8F%E6%98%8E"), env });
 check("exists: 已存在 → true", r.data.exists === true, JSON.stringify(r.data));
 r = await call(existsApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/exists?name=%E5%B0%8F%E7%BA%A2"), env });
@@ -116,7 +141,7 @@ check("exists: 空名 → false", r.data.exists === false, JSON.stringify(r.data
 
 /* ---------- 6. 昵称建议 X*001..X*999 ---------- */
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "小明*001", hp: 1, time: 30, tools: 2 }), env });
+await post({ mode: "easy", name: "小明*001", hp: 1, time: 30, tools: 2 });
 r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name=%E5%B0%8F%E6%98%8E"), env });
 check("suggest: *001被占 → *002", r.data.name === "小明*002", JSON.stringify(r.data));
 r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name=%E5%B0%8F%E6%98%8E"), env });
@@ -131,41 +156,152 @@ store.set("easy", JSON.stringify(nine));
 r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name=%E6%BB%A1"), env });
 check("suggest: 全占用 → 回退 *999", r.data.name === "满*999", JSON.stringify(r.data));
 
-/* ---------- 7. DELETE 清榜(需管理员密码) ---------- */
+/* ---------- 7. v2.1.0 用户 API 加固 ---------- */
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "X", hp: 1, time: 1, tools: 0 }), env });
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "challenge", name: "Y", hp: 2, time: 2, tools: 0 }), env });
+// 7.1 提交限频: 同 IP 60 秒内第 2 次 → 429
+r = await post({ mode: "easy", name: "限频甲", hp: 3, time: 10, tools: 0 }, { "X-Forwarded-For": "rl-ip-1" });
+check("限频: 第1次提交成功", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "限频乙", hp: 3, time: 20, tools: 0 }, { "X-Forwarded-For": "rl-ip-1" });
+check("限频: 同IP 60秒内第2次 → 429", r.status === 429 && r.data.msg === "提交过于频繁,请稍后再试", JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "限频丙", hp: 3, time: 30, tools: 0 }, { "X-Forwarded-For": "rl-ip-2" });
+check("限频: 不同 IP 不受影响", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
-check("DELETE 无密码 → 401 密码错误", r.status === 401 && r.data.msg === "密码错误", JSON.stringify(r.data));
-
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy", null, { "x-admin-password": "wrong" }), env });
-check("DELETE 错误密码 → 401 密码错误", r.status === 401 && r.data.msg === "密码错误", JSON.stringify(r.data));
-
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy", null, { "x-admin-password": ADMIN_PW }), env });
-check("DELETE 正确密码 easy → 已清空 easy 榜单", deepEq(r.data, { ok: true, msg: "已清空 easy 榜单" }), JSON.stringify(r.data));
-r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
-check("DELETE 后 easy 为空", r.data.rank.length === 0, JSON.stringify(r.data));
-
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=all", null, { "x-admin-password": ADMIN_PW }), env });
-check("DELETE all 正确密码 → 已清空全部榜单", deepEq(r.data, { ok: true, msg: "已清空全部榜单" }), JSON.stringify(r.data));
-r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=challenge"), env });
-check("DELETE all 后 challenge 也为空", r.data.rank.length === 0, JSON.stringify(r.data));
-
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=abc", null, { "x-admin-password": ADMIN_PW }), env });
-check("DELETE 非法 mode + 正确密码 → 400 参数错误", r.status === 400 && r.data.msg === "参数错误", JSON.stringify(r.data));
-
-// 未配置 ADMIN_PASSWORD → 一律拒绝(宁可不删也不能裸奔)
+// 7.2 昵称清洗: 控制字符剔除 + 长度截断 12
 reset();
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "Z", hp: 1, time: 1, tools: 0 }), env });
-r = await call(rankApi.onRequestDelete, { request: mockReq("http://x/hlgx/api/rank?mode=easy", null, { "x-admin-password": "any" }), env: { ...env, ADMIN_PASSWORD: undefined } });
-check("DELETE 未配置密码 → 401(默认禁用清榜)", r.status === 401 && r.data.msg === "密码错误", JSON.stringify(r.data));
-r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
-check("DELETE 被拒后 easy 榜单保留", r.data.rank.length === 1, JSON.stringify(r.data));
+r = await post({ mode: "easy", name: " 甲\u0007乙丙丁戊己庚辛壬癸子丑寅  ", hp: 3, time: 10, tools: 0 });
+const cleaned = r.data.rank[0].name;
+check("昵称清洗: 去空格/控制字符/截断12字",
+      [...cleaned].length === 12 && !/[\u0000-\u001f]/.test(cleaned) && cleaned.startsWith("甲乙丙"),
+      JSON.stringify(cleaned));
+
+// 7.3 榜单上限 200 条 → 拒绝
+reset();
+const full = [];
+for (let i = 0; i < 200; i++) full.push({ name: "占位" + i, hp: 0, time: 0, tools: 0, date: "2026-08-09 00:00" });
+store.set("easy", JSON.stringify(full));
+r = await post({ mode: "easy", name: "新人", hp: 3, time: 10, tools: 0 });
+check("榜单满 200 条 → 400 榜单已满", r.status === 400 && r.data.msg === "榜单已满", JSON.stringify(r.data));
+
+// 7.4 用户 API 已移除 DELETE(管理功能收归管理端)
+reset();
+check("用户 API 不再导出 onRequestDelete", typeof rankApi.onRequestDelete === "undefined", "");
+
+/* ---------- 8. 管理登录: 令牌校验 / 锁定 ---------- */
+reset();
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", {}, { "X-Forwarded-For": "mg-ip-1" }), env });
+check("登录 缺令牌 → 400", r.status === 400 && r.data.msg === "缺少令牌", JSON.stringify(r.data));
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: "wrong" }, { "X-Forwarded-For": "mg-ip-2" }), env });
+check("登录 错令牌 → 401 且提示剩余次数", r.status === 401 && r.data.msg.includes("还剩 4 次机会"), JSON.stringify(r.data));
+// 同 IP 连错 5 次 → 锁定
+for (let i = 0; i < 4; i++) {
+    await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: "wrong" }, { "X-Forwarded-For": "lock-ip" }), env });
+}
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: "wrong" }, { "X-Forwarded-For": "lock-ip" }), env });
+check("登录 连错5次 → 锁定提示", r.status === 401 && r.data.msg === "令牌错误,已锁定 15 分钟", JSON.stringify(r.data));
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "lock-ip" }), env });
+check("登录 锁定期内即使令牌正确 → 429", r.status === 429 && r.data.msg.includes("锁定"), JSON.stringify(r.data));
+// 未配置 ADMIN_TOKEN → 500
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: "x" }, { "X-Forwarded-For": "mg-ip-3" }), env: { ...env, ADMIN_TOKEN: undefined } });
+check("登录 未配置令牌 → 500", r.status === 500, JSON.stringify(r.data));
+
+// 正确令牌登录 → 200 + Set-Cookie + 会话落 KV
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "mg-ip-9" }), env });
+const setCookie = r.headers.get("set-cookie") || "";
+const sid = (setCookie.match(/hlgx_admin=([^;]+)/) || [])[1];
+check("登录 正确令牌 → 200 并下发会话 Cookie", r.status === 200 && r.data.ok === true && !!sid, setCookie.slice(0, 80));
+check("Cookie 含 HttpOnly/SameSite=Lax/Path=/", /HttpOnly/i.test(setCookie) && /SameSite=Lax/i.test(setCookie) && /Path=\//.test(setCookie), setCookie);
+
+/* ---------- 9. 管理会话: me / 登出 / 鉴权 ---------- */
+const authReq = (h = {}) => ({ request: mockReq("http://x/admin/api/auth", null, h), env });
+r = await call(adminAuth.onRequestGet, authReq());
+check("me 未登录 → 401", r.status === 401, JSON.stringify(r.data));
+r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=" + sid }));
+check("me 已登录 → 200 含 actor/ip", r.status === 200 && r.data.actor === "admin" && r.data.id === sid, JSON.stringify(r.data));
+r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=deadbeef" }));
+check("me 伪造会话 → 401", r.status === 401, JSON.stringify(r.data));
+r = await call(adminAuth.onRequestDelete, authReq({ cookie: "hlgx_admin=" + sid }));
+check("登出 → 200 并清 Cookie", r.status === 200 && /Max-Age=0/.test(r.headers.get("set-cookie") || ""), "");
+r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=" + sid }));
+check("登出后旧会话失效 → 401", r.status === 401, JSON.stringify(r.data));
+
+/* ---------- 10. 管理榜单操作(含审计) ---------- */
+reset();
+await post({ mode: "easy", name: "记录甲", hp: 3, time: 100, tools: 0 });
+await post({ mode: "easy", name: "记录乙", hp: 2, time: 200, tools: 1 });
+await post({ mode: "challenge", name: "挑战者", hp: 3, time: 50, tools: 0 });
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "mg-ip-10" }), env });
+const sid2 = (r.headers.get("set-cookie") || "").match(/hlgx_admin=([^;]+)/)[1];
+const adminReq = (path, method = "GET", headers = {}) => ({ request: mockReq("http://x" + path, null, { cookie: "hlgx_admin=" + sid2, ...headers }), env });
+
+r = await call(adminRank.onRequestGet, { request: mockReq("http://x/admin/api/rank?mode=easy"), env });
+check("管理榜单 未登录 → 401", r.status === 401, JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=easy"));
+check("管理榜单 已登录 → 含管理索引 key", r.status === 200 && r.data.rank.length === 2 && typeof r.data.rank[0].key === "number", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=easy&q=%E4%B9%99"));
+check("管理榜单 搜索昵称关键字", r.data.rank.length === 1 && r.data.rank[0].name === "记录乙", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=xx"));
+check("管理榜单 非法 mode → 400", r.status === 400, JSON.stringify(r.data));
+
+// 单条删除 + 审计
+r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy&key=0", "DELETE"));
+check("管理榜单 单条删除 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=easy"));
+check("单条删除后剩 1 条", r.data.rank.length === 1, JSON.stringify(r.data));
+r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy&key=99", "DELETE"));
+check("单条删除 索引越界 → 404", r.status === 404, JSON.stringify(r.data));
+
+// 清空单难度 + 清空全部 + 审计
+r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy", "DELETE"));
+check("清空 easy → 200", r.status === 200 && r.data.msg === "已清空 easy 榜单", JSON.stringify(r.data));
+r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=all", "DELETE"));
+check("清空全部 → 200", r.status === 200 && r.data.msg === "已清空全部榜单", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=challenge"));
+check("清空全部后 challenge 为空", r.data.total === 0, JSON.stringify(r.data));
+
+/* ---------- 11. 审计日志: 分页 / 过滤 ---------- */
+r = await call(adminLogs.onRequestGet, { request: mockReq("http://x/admin/api/logs"), env });
+check("审计日志 未登录 → 401", r.status === 401, JSON.stringify(r.data));
+r = await call(adminLogs.onRequestGet, adminReq("/admin/api/logs?limit=100"));
+check("审计日志 已登录 → 含全部操作", r.status === 200 && r.data.total >= 4, "total=" + r.data.total);
+const actions = r.data.entries.map((e) => e.action);
+check("审计动作覆盖 login_success/rank_delete_one/rank_clear_mode/rank_clear_all",
+      ["login_success", "rank_delete_one", "rank_clear_mode", "rank_clear_all"].every((a) => actions.includes(a)),
+      actions.join(","));
+r = await call(adminLogs.onRequestGet, adminReq("/admin/api/logs?action=rank_delete_one"));
+check("审计日志 按 action 过滤", r.data.entries.every((e) => e.action === "rank_delete_one") && r.data.total >= 1, JSON.stringify(r.data));
+r = await call(adminLogs.onRequestGet, adminReq("/admin/api/logs?limit=2&offset=0"));
+check("审计日志 分页 limit=2", r.data.entries.length === 2 && r.data.entries[0].ts >= r.data.entries[1].ts, JSON.stringify(r.data));
+// 最新在前
+r = await call(adminLogs.onRequestGet, adminReq("/admin/api/logs?limit=100"));
+const tsList = r.data.entries.map((e) => e.ts);
+check("审计日志 倒序(最新在前)", tsList.every((t, i) => i === 0 || tsList[i - 1] >= t), tsList.join(","));
+
+/* ---------- 12. 会话管理: 列表 / 强制下线 ---------- */
+r = await call(adminSessions.onRequestGet, { request: mockReq("http://x/admin/api/sessions"), env });
+check("会话列表 未登录 → 401", r.status === 401, JSON.stringify(r.data));
+r = await call(adminSessions.onRequestGet, adminReq("/admin/api/sessions"));
+check("会话列表 已登录 → 至少含当前会话", r.status === 200 && r.data.sessions.length >= 1, JSON.stringify(r.data));
+r = await call(adminSessions.onRequestDelete, adminReq("/admin/api/sessions?id=ghost", "DELETE"));
+check("下线不存在的会话 → 200(幂等)", r.status === 200, JSON.stringify(r.data));
+r = await call(adminSessions.onRequestDelete, adminReq("/admin/api/sessions?id=" + sid2, "DELETE"));
+check("强制下线 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=" + sid2 }));
+check("下线后会话失效 → 401", r.status === 401, JSON.stringify(r.data));
+
+/* ---------- 13. 审计环形上限 500 ---------- */
+reset();
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "mg-ip-13" }), env });
+const sid3 = (r.headers.get("set-cookie") || "").match(/hlgx_admin=([^;]+)/)[1];
+for (let i = 0; i < auditLib.AUDIT_MAX + 20; i++) {
+    await auditLib.appendAudit(env, { action: "login_fail", detail: "压测" + i, ip: "x" });
+}
+r = await call(adminLogs.onRequestGet, { request: mockReq("http://x/admin/api/logs?limit=100", null, { cookie: "hlgx_admin=" + sid3 }), env });
+check("审计环形上限: 压测 520 条后仅保留 500 条", r.data.total === auditLib.AUDIT_MAX, "total=" + r.data.total);
+check("审计环形: 最新一条保留", r.data.entries[0].detail === "压测519", r.data.entries[0].detail);
 
 /* ---------- 汇总 ---------- */
 console.log("========== API 契约自测结果 ==========");
 results.forEach((x) => console.log((x.pass ? "✓ " : "✗ ") + x.name + (x.pass ? "" : "  ← " + x.detail)));
 const failed = results.filter((x) => !x.pass);
 if (failed.length) { console.error(`\n共 ${failed.length} 项失败, 需修复!`); process.exit(1); }
-console.log(`\n全部 ${results.length} 项通过 ✓ 与 Flask 契约一致`);
+console.log(`\n全部 ${results.length} 项通过 ✓ 与 Flask 契约一致(v2.1.0 管理端 + 加固)`);

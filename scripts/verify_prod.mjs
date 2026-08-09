@@ -1,18 +1,20 @@
 /*
- * 生产环境线上验证(阶段 5)
- * 用法: node scripts/verify_prod.mjs [BASE]
+ * 生产环境线上验证 (verify_prod.mjs)
+ * 用法: ADMIN_TOKEN=<生产令牌> node scripts/verify_prod.mjs [BASE]
  * 默认 BASE = https://hua-liao-ge-xue.pages.dev
- * 覆盖: 页面 200 / 资源无 404 / API 契约(排序、surpassed、clamp、建议、DELETE)/ 中文昵称 UTF-8
- * 注意: 会 POST 测试成绩并清空 easy 榜,最后恢复原始数据(帅帅)由本脚本尾部重新写入。
+ * 覆盖: 页面/SPA 路由 200 / 构建资源无 404 / 用户 API 契约 /
+ *       管理 API(登录→me→榜单只读→审计→会话列表→登出, 非破坏性)/ 中文 UTF-8
+ * 注意:
+ *   - 提交限频 60s/IP: 生产下本机 IP 恒定, 脚本最多提交 1 次成绩(所有检查合并在一条记录上)
+ *   - 结尾通过管理端清空测试痕迹并恢复生产数据(帅帅)
+ *   - ADMIN_TOKEN 必须经环境变量传入, 绝不硬编码进 git; 缺失则拒绝执行
  */
 import { writeFileSync } from "node:fs";
 
 const BASE = process.argv[2] || "https://hua-liao-ge-xue.pages.dev";
-// 生产管理员密码: 必须通过环境变量传入 (ADMIN_PASSWORD=xxx node scripts/verify_prod.mjs),
-// 绝不硬编码进 git。缺失则拒绝执行, 防止带不完整鉴权误验证。
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
-if (!ADMIN_PASSWORD) {
-    console.error("缺少生产管理员密码: 请用 ADMIN_PASSWORD=<密码> node scripts/verify_prod.mjs 运行");
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+if (!ADMIN_TOKEN) {
+    console.error("缺少生产管理员令牌: 请用 ADMIN_TOKEN=<令牌> node scripts/verify_prod.mjs 运行");
     process.exit(1);
 }
 let pass = 0, fail = 0;
@@ -35,23 +37,32 @@ async function api(path, method = "GET", body, headers = {}) {
     try { data = JSON.parse(txt); } catch { /* 非 JSON */ }
     return { status: r.status, data, txt };
 }
-// DELETE 一律携带管理员密码请求头 (v2.0.2: 清榜需密码)
-const delRank = (path) => api(path, "DELETE", undefined, { "X-Admin-Password": ADMIN_PASSWORD });
 
-console.log(`\n== 页面与静态资源 (${BASE}) ==`);
+/* ---------- 管理会话(登录一次, 全程复用) ---------- */
+console.log(`\n== 管理登录 (${BASE}) ==`);
+const login = await api("/admin/api/auth", "POST", { token: ADMIN_TOKEN });
+check("POST /admin/api/auth 登录 → 200", login.status === 200 && login.data?.ok === true, `(实际 ${login.status})`);
+const cookie = (login.headers?.get?.("set-cookie") || "").split(";")[0];
+check("登录下发会话 Cookie", cookie.startsWith("hlgx_admin="), cookie.slice(0, 40));
+
+const adminGet = (path) => api(path, "GET", undefined, { cookie });
+const me = await adminGet("/admin/api/auth");
+check("GET /admin/api/auth me → 200", me.status === 200 && me.data?.actor === "admin", `(实际 ${me.status})`);
+
+console.log("\n== 页面与静态资源 ==");
 {
-    for (const p of ["/", "/hlgx/hua", "/hlgx/rank"]) {
+    for (const p of ["/", "/hlgx/hua", "/hlgx/rank", "/admin/login"]) {
         const r = await get(p);
         check(`GET ${p} → 200`, r.status === 200, `(实际 ${r.status})`);
     }
-    for (const p of ["/css/hlgx_style.css", "/js/hlgx_hua.js"]) {
-        const r = await get(p);
-        check(`GET ${p} → 200`, r.status === 200, `(实际 ${r.status})`);
-    }
-    const r = await get("/hlgx/hua.html");
-    check("GET /hlgx/hua.html → 200 (干净 URL 兼容)", r.status === 200, `(实际 ${r.status})`);
+    const root = await get("/");
+    const asset = (root.text.match(/\/assets\/[^"]+\.js/) || [])[0];
+    const r = await get(asset || "/assets/missing");
+    check(`GET ${asset} → 200 (构建资源)`, asset && r.status === 200, `(实际 ${r.status})`);
     const r404 = await get("/hlgx/no-such-page");
     check("不存在页面 → 404", r404.status === 404, `(实际 ${r404.status})`);
+    const rApi404 = await get("/hlgx/api/rankx");
+    check("未知 API 路径 → 404", rApi404.status === 404, `(实际 ${rApi404.status})`);
 }
 
 console.log("\n== API: GET 榜单(含迁移数据) ==");
@@ -64,7 +75,6 @@ console.log("\n== API: GET 榜单(含迁移数据) ==");
     check("date 原样保留 2026-08-09 12:37", shuai?.date === "2026-08-09 12:37", `(实际 ${shuai?.date})`);
     const rn = await api("/hlgx/api/rank");
     check("GET rank 默认 → normal", rn.data?.mode === "normal");
-    check("normal 榜为空", Array.isArray(rn.data?.rank) && rn.data.rank.length === 0);
     const rx = await api("/hlgx/api/rank?mode=xx");
     check("GET rank?mode=xx 非法 → 回落 normal", rx.data?.mode === "normal");
 }
@@ -75,75 +85,48 @@ console.log("\n== API: exists / suggest ==");
     check("exists 帅帅 → true", r1.data?.exists === true);
     const r2 = await api("/hlgx/api/name/exists?name=" + encodeURIComponent("不存在的人"));
     check("exists 不存在的人 → false", r2.data?.exists === false);
-    const r3 = await api("/hlgx/api/name/exists?name=");
-    check("exists 空名 → false", r3.data?.exists === false);
     const s1 = await api("/hlgx/api/name/suggest?name=" + encodeURIComponent("帅帅"));
     check("suggest 帅帅 → 帅帅*001", s1.data?.name === "帅帅*001", `(实际 ${s1.data?.name})`);
-    const s2 = await api("/hlgx/api/name/suggest?name=");
-    check("suggest 空名 → 空", s2.data?.name === "");
 }
 
-console.log("\n== API: POST 提交(排序 / surpassed / 中文 UTF-8) ==");
+console.log("\n== API: POST 提交(限频下仅 1 条, 合并检查) ==");
 {
-    // v2.0.2 安全契约: 无密码 DELETE 必须被拒绝
-    const delNoPw = await api("/hlgx/api/rank?mode=easy", "DELETE");
-    check("DELETE 无密码 → 401", delNoPw.status === 401, `(实际 ${delNoPw.status})`);
-    // 清空 easy 保证可预测 (需管理员密码)
-    const del = await delRank("/hlgx/api/rank?mode=easy");
-    check("DELETE easy → ok", del.data?.ok === true);
-    // A: 常规成绩
-    const A = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "测试甲", hp: 3, time: 150, tools: 2 });
-    check("POST A → 200", A.status === 200, `(实际 ${A.status})`);
-    check("POST A surpassed=0", A.data?.surpassed === 0, `(实际 ${A.data?.surpassed})`);
-    // B: hp 更差、time 更快 → 排名应低于 A (hp 优先)
-    const B = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "测试乙", hp: 2, time: 100, tools: 0 });
-    check("POST B surpassed=0 (hp 更低不算超过)", B.data?.surpassed === 0, `(实际 ${B.data?.surpassed})`);
-    // C: 同 hp=3 但 time 更快 → 超过 A 和 B
-    const C = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "测试丙", hp: 3, time: 120, tools: 5 });
-    check("POST C surpassed=2 (3,120 强于 3,150 与 2,100)", C.data?.surpassed === 2, `(实际 ${C.data?.surpassed})`);
-    // D: 同 hp=3 同 time=120 但 tools 更少 → 超过 A/B/C
-    const D = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "测试丁", hp: 3, time: 120, tools: 1 });
-    check("POST D surpassed=3 (3,120,1 强于 3,120,5)", D.data?.surpassed === 3, `(实际 ${D.data?.surpassed})`);
-    // E: 中文昵称 UTF-8 回读
-    const E = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "氦氖氩氪氙氡", hp: 1, time: 300, tools: 9 });
-    check("POST E 中文昵称 UTF-8", E.data?.rank?.some(e => e.name === "氦氖氩氪氙氡"));
-    // 最终榜单顺序: D(3,120,1) > C(3,120,5) > A(3,150,2) > B(2,100,0) > E(1,300,9)
-    const R = await api("/hlgx/api/rank?mode=easy");
-    const names = (R.data?.rank || []).map(e => e.name);
-    check("排序 hp↓ time↑ tools↑", JSON.stringify(names) === JSON.stringify(["测试丁", "测试丙", "测试甲", "测试乙", "氦氖氩氪氙氡"]), `(实际 ${names.join(",")})`);
-    const d = R.data?.rank?.[0]?.date;
-    check("date 格式 YYYY-MM-DD HH:MM", typeof d === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(d), `(实际 ${d})`);
-    // clamp: hp 越界 → 0-3
-    const F = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "clamp测试", hp: 99, time: -5, tools: -3 });
-    const f = F.data?.rank?.find(e => e.name === "clamp测试");
-    check("clamp hp99→3 time-5→0 tools-3→0", f?.hp === 3 && f?.time === 0 && f?.tools === 0, `(实际 ${JSON.stringify(f)})`);
-    // 空昵称 → 400
-    const G = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "  ", hp: 3, time: 100, tools: 0 });
-    check("POST 空昵称 → 400", G.status === 400, `(实际 ${G.status})`);
-    // 非法 mode 存入 normal
-    const H = await api("/hlgx/api/rank", "POST", { mode: "boom", name: "乱模式", hp: 2, time: 200, tools: 1 });
-    const h = H.data?.rank?.find(e => e.name === "乱模式");
-    check("POST 非法 mode → 存入 normal", H.data?.rank && h, `(实际 ${H.data?.mode})`);
+    const P = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "氦氖氩氪氙氡", hp: 99, time: -5, tools: -3 });
+    check("POST → 200 ok:true", P.status === 200 && P.data?.ok === true, `(实际 ${P.status} ${P.data?.msg || ""})`);
+    const f = (P.data?.rank || []).find(e => e.name === "氦氖氩氪氙氡");
+    check("中文昵称 UTF-8 + clamp(hp99→3, time-5→0, tools-3→0)", f?.hp === 3 && f?.time === 0 && f?.tools === 0, `(实际 ${JSON.stringify(f)})`);
+    check("date 格式 YYYY-MM-DD HH:MM", typeof f?.date === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(f.date), `(实际 ${f?.date})`);
+    const P2 = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "重复提交", hp: 1, time: 1, tools: 0 });
+    check("限频: 同 IP 60 秒内再次提交 → 429", P2.status === 429, `(实际 ${P2.status})`);
 }
 
-console.log("\n== API: 未知路径 404 ==");
+console.log("\n== 管理 API(只读 + 非破坏性) ==");
 {
-    const r = await api("/hlgx/api/rankx");
-    check("GET /hlgx/api/rankx → 404", r.status === 404, `(实际 ${r.status})`);
+    const list = await adminGet("/admin/api/rank?mode=easy");
+    check("管理榜单 easy → 200 含 key", list.status === 200 && Array.isArray(list.data?.rank) && typeof list.data?.rank?.[0]?.key === "number", `(实际 ${list.status})`);
+    const q = await adminGet("/admin/api/rank?mode=easy&q=" + encodeURIComponent("帅帅"));
+    check("管理榜单 搜索帅帅 → 命中", q.status === 200 && q.data?.rank?.some(e => e.name === "帅帅"), "");
+    const logs = await adminGet("/admin/api/logs?limit=20");
+    const acts = (logs.data?.entries || []).map(e => e.action);
+    check("审计日志 → 200 且含 login_success", logs.status === 200 && acts.includes("login_success"), `(实际 ${logs.status})`);
+    const sessions = await adminGet("/admin/api/sessions");
+    check("会话列表 → 200 ≥1", sessions.status === 200 && sessions.data?.sessions?.length >= 1, `(实际 ${sessions.status})`);
+    const unauth = await api("/admin/api/rank?mode=easy");
+    check("未登录访问管理 API → 401", unauth.status === 401, `(实际 ${unauth.status})`);
 }
 
-// 恢复生产数据: 清空所有测试痕迹, 恢复原始 easy 榜(帅帅)与空 normal/challenge
+// 恢复生产数据: 清空测试痕迹, 恢复原始 easy 榜(帅帅)与空 normal/challenge
 console.log("\n== 恢复生产数据 ==");
 {
-    await delRank("/hlgx/api/rank?mode=easy");
-    await delRank("/hlgx/api/rank?mode=normal");
-    await delRank("/hlgx/api/rank?mode=challenge");
-    const restored = [{"name":"帅帅","hp":3,"time":131,"tools":0,"date":"2026-08-09 12:37"}];
+    const clearAll = await api("/admin/api/rank?mode=all", "DELETE", undefined, { cookie });
+    check("管理端清空全部 → ok", clearAll.data?.ok === true, JSON.stringify(clearAll.data));
+    const restored = [{ "name": "帅帅", "hp": 3, "time": 131, "tools": 0, "date": "2026-08-09 12:37" }];
     writeFileSync(new URL("../.wrangler/kv-migrate/easy.json", import.meta.url), JSON.stringify(restored), "utf8");
-    const rr = await api("/hlgx/api/rank?mode=easy");
-    check("easy 榜已清空测试数据", rr.data?.rank?.length === 0);
-    console.log("  (原始数据由脚本末尾的 kv put --remote 恢复)");
+    console.log("  (原始数据由脚本末尾的 kv put --remote 恢复, 见输出下方提示)");
+    const logout = await api("/admin/api/auth", "DELETE", undefined, { cookie });
+    check("登出 → 200", logout.status === 200, `(实际 ${logout.status})`);
 }
 
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 if (fail > 0) { console.log("失败项:\n" + fails.map(f => "  - " + f).join("\n")); process.exit(1); }
+console.log(`\n恢复提示: npx wrangler kv key put easy --path=.wrangler/kv-migrate/easy.json --binding=RANKINGS --remote`);
