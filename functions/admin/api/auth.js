@@ -90,6 +90,7 @@ export async function onRequestGet({ request, env }) {
     return json({
         ok: true,
         actor: "admin",
+        id: sess.id,
         loginAt: sess.loginAt,
         expiresAt: sess.expiresAt,
         ip: sess.ip,
