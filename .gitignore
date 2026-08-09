@@ -20,5 +20,8 @@ node_modules/
 .wrangler/
 .zcode/
 
+# 构建产物(dist 由 Vite 构建生成, 部署前 npm run build)
+/dist/
+
 # 排行榜数据(数据不入库: 线上存 Cloudflare KV, 本地文件仅作迁移源)
 rankings.json
