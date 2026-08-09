@@ -159,7 +159,7 @@ function settleResult(isWin) {
     const remainCards = tiles.filter(x => !x.removed).length;
     const tools = toolUsed.undo + toolUsed.out + toolUsed.shuffle;
     ovTitleEl.textContent = isWin ? "🎉 通关啦!" : "💔 挑战失败";
-    ovTextEl.textContent = isWin ? "棋盘已清空,剩余手牌自动消除!" : "手牌槽已满且无 3 张同类可消,血量耗尽!";
+    ovTextEl.textContent = isWin ? "棋盘已清空且无三消组合,剩余手牌自动消除!" : "手牌槽已满且无 3 张同类可消,血量耗尽!";
     if (inRank && playerName) {
         fetch("/hlgx/api/rank", {
             method: "POST",
@@ -544,10 +544,11 @@ function canEliminate() {
     tray.forEach(x => { counts[x.sub.c] = (counts[x.sub.c] || 0) + 1; });
     return Object.values(counts).some(c => c >= 3);
 }
-// 棋盘清空即通关: 剩余手牌(无论同类/不同类、1或2张)自动消除,无需再点消除
+// 过关 = 全部卡牌被拾取 且 手牌槽无 3 张同类可消(最后一次消除也纳入考察,
+// 拾取完还需完成手牌里的三消, 消除后仍有三消可能则继续消, 直到无三消组合才通关)
 function checkWin() {
     if (gameOver || win) return;
-    if (tiles.every(x => x.removed)) {
+    if (tiles.every(x => x.removed) && !canEliminate()) {
         tray = [];
         selected = [];
         renderTray();

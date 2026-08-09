@@ -379,6 +379,27 @@ body {
 }
 .primary-btn:hover { background: #1e40af; }
 
+/* 弹窗/结算按钮行与返回按钮 */
+.btn-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: .8rem;
+    margin-top: .6rem;
+}
+.back-btn {
+    display: inline-block;
+    color: #64748b;
+    text-decoration: none;
+    font-size: .95rem;
+    font-weight: 600;
+    padding: .65rem 1.2rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+.back-btn:hover { background: #f1f5f9; color: #1d4ed8; }
+
 /* 结算信息 */
 .settle-info {
     background: #f1f5f9;

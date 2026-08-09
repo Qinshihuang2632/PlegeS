@@ -41,7 +41,7 @@
         </div>
         <div id="hlgx-tray"></div>
         <p class="hlgx-rule">同类判定 = 物质类别相同(如所有「盐类」互相可消)。一次只消 3 张同类;<br>
-            选 3 张不同类会扣 1 点血(上限 3);棋盘清空后剩余手牌自动消除即通关。<br>
+            选 3 张不同类会扣 1 点血(上限 3);全部卡牌拾取且手牌槽无三消组合时自动通关(最后一步消除也计入)。<br>
             悬停卡牌看性质简介;卡牌颜色仅区分位置。</p>
     </div>
 
@@ -57,7 +57,10 @@
             <input id="hlgx-name-input" type="text" maxlength="12" placeholder="输入游戏昵称(参与排行榜)">
             <label class="skip-label"><input type="checkbox" id="hlgx-skip-rank"> 不参与排行榜,直接开始</label>
             <div id="hlgx-name-tip" class="hlgx-flash"></div>
-            <button id="hlgx-name-confirm" class="primary-btn">开始游戏</button>
+            <div class="btn-row">
+                <a class="back-btn" href="/">← 返回大厅</a>
+                <button id="hlgx-name-confirm" class="primary-btn">开始游戏</button>
+            </div>
         </div>
     </div>
 
@@ -67,7 +70,10 @@
             <h2 id="hlgx-overlay-title"></h2>
             <p id="hlgx-overlay-text"></p>
             <div id="hlgx-settle-info" class="settle-info"></div>
-            <button id="hlgx-btn-restart" class="primary-btn">再来一局</button>
+            <div class="btn-row">
+                <a class="back-btn" href="/">← 返回大厅</a>
+                <button id="hlgx-btn-restart" class="primary-btn">再来一局</button>
+            </div>
         </div>
     </div>
 
