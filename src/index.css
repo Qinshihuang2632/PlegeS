@@ -100,3 +100,60 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* ==================== 化了个学 · 卡牌与手牌样式 ==================== */
+
+/* 卡牌基底(棋盘与手牌槽共用) */
+.hlgx-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border-radius: 9px;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  box-shadow: 0 3px 6px rgb(0 0 0 / 0.22), inset 0 1px 0 rgb(255 255 255 / 0.25);
+  /* transition 不含 filter —— 遮挡态需瞬时切换, 避免点击后全棋盘过渡动画拖慢响应 */
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.hlgx-tile-f { font-weight: 800; line-height: 1.1; }
+.hlgx-tile-n { font-size: 9px; opacity: 0.92; letter-spacing: 0.3px; }
+
+/* 棋盘卡牌 */
+.hlgx-tile-board { position: absolute; inset: 0; }
+.hlgx-tile-board:hover { transform: scale(1.06); }
+.hlgx-tile-board.hlgx-tile-blocked { filter: brightness(0.6) saturate(0.45); }
+.hlgx-tile-board.hlgx-tile-blocked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+.hlgx-tile-board.hlgx-tile-removed {
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 手牌槽 */
+.hlgx-tray-cell { flex-shrink: 0; }
+.hlgx-tray-cell:hover { transform: scale(1.05); }
+.hlgx-tray-cell.hlgx-tray-sel {
+  transform: scale(1.05);
+  outline: 3px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* 点被压住的卡牌 → 抖动提示 */
+@keyframes hlgx-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+.hlgx-shake { animation: hlgx-shake 0.25s ease; }

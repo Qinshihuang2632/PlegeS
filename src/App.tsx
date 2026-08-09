@@ -1,17 +1,22 @@
 import { Navigate, Route, Routes } from "react-router";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { HubPage } from "./game/HubPage";
 import { HuaPage } from "./game/HuaPage";
 import { RankPage } from "./game/RankPage";
 import { NotFoundPage } from "./game/NotFoundPage";
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<HubPage />} />
-      <Route path="/hlgx/hua" element={<HuaPage />} />
-      <Route path="/hlgx/rank" element={<RankPage />} />
-      <Route path="*" element={<NotFoundPage />} />
-      <Route path="/admin" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
+    return (
+        <TooltipProvider delayDuration={200}>
+            <Routes>
+                <Route path="/" element={<HubPage />} />
+                <Route path="/hlgx/hua" element={<HuaPage />} />
+                <Route path="/hlgx/rank" element={<RankPage />} />
+                <Route path="/admin" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+            <Toaster position="top-center" richColors />
+        </TooltipProvider>
+    );
 }

@@ -1,3 +1,567 @@
+/*
+ * 化了个学 · 消除小游戏页面 (/hlgx/hua)
+ * ======================================
+ * 行为与旧版一致(核心逻辑在 core.ts, 由 Vitest 锁定), 新增:
+ *   - 新手引导(首次进入, 可跳过/不再显示)
+ *   - 道具人性化 tooltip、手牌槽可消除高亮、结算文案解释排名规则
+ *   - 全部弹窗带「✕」关闭; 非首页带「返回大厅」
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { HLGX_Audio } from "./audio";
+import { fmtTime, TOOL_LIMIT, type Mode, type Tile } from "./core";
+import { BoardTile, TrayCell } from "./game-ui";
+import { GameRules } from "./GameRules";
+import { useGame } from "./useGame";
+
+const TUTORIAL_KEY = "hlgx_tutorial_done_v1";
+
+const MODE_TABS: { mode: Mode; label: string }[] = [
+    { mode: "easy", label: "简单" },
+    { mode: "normal", label: "标准" },
+    { mode: "challenge", label: "挑战" },
+];
+
+interface ResultInfo {
+    win: boolean;
+    remain: number;
+    tools: number;
+    time: number;
+    surpassed: number | null;
+    failed: boolean;
+}
+
 export function HuaPage() {
-  return <div>游戏(建设中)</div>;
+    const navigate = useNavigate();
+    const { game, elapsed, stopTimer, startTimer } = useGame();
+
+    /* ---- 通用 UI 状态 ---- */
+    const [muted, setMuted] = useState(false);
+    const [rulesOpen, setRulesOpen] = useState(false);
+    const [shakeId, setShakeId] = useState<number | null>(null);
+    const [scale, setScale] = useState(1);
+    const boardRef = useRef<HTMLDivElement>(null);
+    const trayRef = useRef<HTMLDivElement>(null);
+    const [cellSize, setCellSize] = useState(44);
+
+    /* ---- 昵称/开局 ---- */
+    const [nameOpen, setNameOpen] = useState(false);
+    const [name, setName] = useState("");
+    const [skipRank, setSkipRank] = useState(false);
+    const [nameTip, setNameTip] = useState("");
+    const [warnedDup, setWarnedDup] = useState(false);
+    const [checking, setChecking] = useState(false);
+    const playerNameRef = useRef<string | null>(null);
+    const inRankRef = useRef(false);
+
+    /* ---- 新手引导(首次进入) ---- */
+    const [tutorialOpen, setTutorialOpen] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(0);
+    const [tutorialSkipAlways, setTutorialSkipAlways] = useState(false);
+
+    /* ---- 结算 ---- */
+    const [resultInfo, setResultInfo] = useState<ResultInfo | null>(null);
+    const submittedRef = useRef(false);
+    const audioPlayedRef = useRef(false);
+    const elapsedRef = useRef(0);
+    elapsedRef.current = elapsed;
+
+    const TUTORIAL_STEPS = [
+        {
+            icon: "🎯",
+            title: "怎么玩",
+            body: "点击棋盘上「没有被压住」的卡牌,它会滑入底部手牌槽。槽里凑齐 3 张同类卡牌,点「消除选中」即可消掉。「同类」指物质类别相同,与化学式无关。",
+        },
+        {
+            icon: "🧰",
+            title: "道具救场",
+            body: "卡关时用道具:撤回(最后一张放回棋盘)、移出(最前 3 张放回棋盘)、洗牌(打乱场上卡牌)。每种每局最多 3 次,优先救急用。",
+        },
+        {
+            icon: "❤️",
+            title: "胜负规则",
+            body: "全部卡牌拾取完、且手牌槽没有可消的三消组合 → 通关(最后一步消除也算)。误选 3 张不同类会扣 1 点血;手牌槽满了又凑不出三消 → 失败。",
+        },
+    ];
+
+    /* 首次进入 → 新手引导; 之后直接弹昵称窗 */
+    useEffect(() => {
+        const seen = localStorage.getItem(TUTORIAL_KEY) === "1";
+        if (!seen) setTutorialOpen(true);
+        else setNameOpen(true);
+    }, []);
+
+    const closeTutorial = () => {
+        localStorage.setItem(TUTORIAL_KEY, "1");
+        setTutorialOpen(false);
+        setNameOpen(true);
+    };
+
+    /* 棋盘缩放适配小屏 */
+    useEffect(() => {
+        const el = boardRef.current;
+        if (!el) return;
+        const update = () => setScale(Math.min(1, (el.clientWidth - 8) / game.boardW));
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [game]);
+
+    /* 手牌槽单格尺寸适配小屏(防横向溢出) */
+    useEffect(() => {
+        const el = trayRef.current;
+        if (!el) return;
+        const update = () => {
+            const gaps = 6 * (game.trayMax - 1);
+            setCellSize(Math.max(28, Math.min(44, Math.floor((el.clientWidth - gaps) / game.trayMax))));
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [game.trayMax]);
+
+    /* ---- 开局流程(昵称校验, 与旧版契约一致) ---- */
+    const beginPlay = () => {
+        setNameOpen(false);
+        setNameTip("");
+        setWarnedDup(false);
+        setChecking(false);
+        game.newGame();
+        startTimer();
+    };
+
+    const confirmName = async () => {
+        const n = name.trim();
+        setWarnedDup(false);
+        if (skipRank) {
+            playerNameRef.current = null;
+            inRankRef.current = false;
+            beginPlay();
+            return;
+        }
+        if (!n) { setNameTip("请输入昵称,或勾选「不参与排行榜」"); return; }
+        setChecking(true);
+        try {
+            const r = await fetchJson(`/hlgx/api/name/exists?name=${encodeURIComponent(n)}`);
+            if (r && r.exists) {
+                if (!warnedDup) {
+                    setWarnedDup(true);
+                    setNameTip(`⚠ 昵称已被使用,再次确认将自动加序列号(如 ${n}*001)`);
+                    return;
+                }
+                const sug = await fetchJson(`/hlgx/api/name/suggest?name=${encodeURIComponent(n)}`);
+                playerNameRef.current = sug && sug.name ? sug.name : n + "*001";
+                inRankRef.current = true;
+                beginPlay();
+                return;
+            }
+            playerNameRef.current = n;
+            inRankRef.current = true;
+            beginPlay();
+        } finally {
+            setChecking(false);
+        }
+    };
+
+    /* ---- 棋盘交互 ---- */
+    const onPick = (t: Tile) => {
+        if (game.gameOver || game.win) return;
+        const r = game.pickTile(t);
+        if (r === "ok") HLGX_Audio.click();
+        else if (r === "blocked") {
+            setShakeId(t.id);
+            setTimeout(() => setShakeId((v) => (v === t.id ? null : v)), 300);
+        } else if (r === "trayFull") {
+            toast("手牌槽已满:先选中同类物质点「消除选中」,或用道具腾位置");
+        }
+    };
+
+    const onClear = () => {
+        const r = game.clearSelected();
+        if (r === "wrongSet") {
+            HLGX_Audio.lose();
+            toast(`不是同类!扣除 1 点血量(剩 ${Math.max(0, game.hp)})`, {
+                className: "bg-destructive text-destructive-foreground",
+            });
+        } else if (r === "cleared") HLGX_Audio.clear();
+    };
+
+    const useTool = (tool: "undo" | "out" | "shuffle") => {
+        const r = tool === "undo" ? game.undo() : tool === "out" ? game.moveOut() : game.shuffleTiles();
+        if (r === "limit") toast(`${TOOL_LIMIT} 次已用完,本局不能再用了`);
+        else if (r === "empty") toast("手牌槽是空的,先拾取卡牌吧");
+        else HLGX_Audio.skill();
+    };
+
+    /* ---- 结算: 提交成绩 + 展示 ---- */
+    const submitScore = useCallback(async (time: number) => {
+        const r = game.result;
+        if (!r) return;
+        if (!inRankRef.current || !playerNameRef.current) {
+            setResultInfo({ win: r.win, remain: r.remain, tools: r.tools, time, surpassed: null, failed: false });
+            return;
+        }
+        try {
+            const res = await fetch("/hlgx/api/rank", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mode: game.mode,
+                    name: playerNameRef.current,
+                    hp: Math.max(0, game.hp),
+                    time,
+                    tools: r.tools,
+                }),
+            });
+            const data = await res.json().catch(() => null);
+            setResultInfo({
+                win: r.win, remain: r.remain, tools: r.tools, time,
+                surpassed: data && typeof data.surpassed === "number" ? data.surpassed : null,
+                failed: false,
+            });
+        } catch {
+            setResultInfo({ win: r.win, remain: r.remain, tools: r.tools, time, surpassed: null, failed: true });
+        }
+    }, [game]);
+
+    useEffect(() => {
+        const r = game.result;
+        if (!r) return;
+        if (!audioPlayedRef.current) {
+            audioPlayedRef.current = true;
+            if (r.win) HLGX_Audio.win(); else HLGX_Audio.lose();
+        }
+        if (submittedRef.current) return;
+        submittedRef.current = true;
+        stopTimer();
+        void submitScore(elapsedRef.current);
+    }, [game, game.result, stopTimer, submitScore]);
+
+    /* ---- 再来一局 / 换难度 ---- */
+    const restart = (m?: Mode) => {
+        if (m) game.applyMode(m);
+        game.newGame();
+        startTimer();
+        setResultInfo(null);
+        submittedRef.current = false;
+        audioPlayedRef.current = false;
+        setWarnedDup(false);
+        setNameTip("");
+        setName(playerNameRef.current ? playerNameRef.current.replace(/\*\d{3}$/, "") : name);
+        setNameOpen(true);
+    };
+
+    /* ---- 渲染 ---- */
+    const toolLeft = (k: keyof typeof game.toolUsed) => TOOL_LIMIT - game.toolUsed[k];
+    const trayHasTriple = game.canEliminate();
+
+    return (
+        <div className="mx-auto min-h-dvh w-full max-w-2xl px-3 pb-10 pt-3">
+            {/* 顶栏: 返回大厅 / 标题 / 玩法 / 静音 */}
+            <header className="mb-2 flex items-center gap-2">
+                <Button asChild variant="ghost" size="sm" className="-ml-2">
+                    <Link to="/">← 返回大厅</Link>
+                </Button>
+                <h1 className="flex-1 text-center text-lg font-extrabold">⚗️ 化了个学</h1>
+                <div className="flex items-center gap-1">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRulesOpen(true)} aria-label="玩法介绍">📖</Button>
+                        </TooltipTrigger>
+                        <TooltipContent>玩法介绍</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }} aria-label="静音开关">
+                                {muted ? "🔇" : "🔊"}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{muted ? "已静音" : "音效"}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => restart()} aria-label="重新开始">⟳</Button>
+                        </TooltipTrigger>
+                        <TooltipContent>重新开始(需重新确认昵称)</TooltipContent>
+                    </Tooltip>
+                </div>
+            </header>
+
+            {/* 难度切换 */}
+            <div className="mb-3 flex justify-center gap-1 rounded-full bg-muted p-1">
+                {MODE_TABS.map(({ mode, label }) => (
+                    <button
+                        key={mode}
+                        onClick={() => restart(mode)}
+                        className={cn(
+                            "flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                            game.mode === mode
+                                ? "bg-card text-foreground shadow"
+                                : "text-muted-foreground hover:text-foreground",
+                        )}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+
+            {/* 状态栏: 血量 / 计时 / 剩余 */}
+            <div className="mb-3 flex items-center justify-center gap-4 text-sm">
+                <span className="flex items-center gap-1" aria-label={`血量 ${Math.max(0, game.hp)}`}>
+                    {[0, 1, 2].map((i) => (
+                        <span key={i} aria-hidden>{i < Math.max(0, game.hp) ? "❤️" : "🤍"}</span>
+                    ))}
+                </span>
+                <span className="tabular-nums font-mono">⏱ {fmtTime(elapsed)}</span>
+                <span className="text-muted-foreground">🃏 剩余 {game.remaining}</span>
+            </div>
+
+            {/* 棋盘(小屏自动缩放) */}
+            <div ref={boardRef} className="relative mx-auto w-full" style={{ height: game.boardH * scale }}>
+                <div
+                    className="absolute left-1/2 top-0"
+                    style={{
+                        width: game.boardW,
+                        height: game.boardH,
+                        transform: `translateX(-50%) scale(${scale})`,
+                        transformOrigin: "top center",
+                    }}
+                >
+                    {game.tiles.map((t) => (
+                        <BoardTile
+                            key={t.id}
+                            tile={t}
+                            zIndex={10 + (game.layers.length - 1 - t.L)}
+                            onClick={() => onPick(t)}
+                            shake={shakeId === t.id}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* 手牌槽 */}
+            <div className="mt-4 rounded-2xl border bg-card p-3 shadow-sm">
+                <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                        手牌槽 {game.tray.length}/{game.trayMax}
+                    </span>
+                    {trayHasTriple ? (
+                        <span className="font-semibold text-success">✨ 凑够 3 张同类即可消除</span>
+                    ) : (
+                        <span>点击手牌选中,3 张同类点「消除选中」</span>
+                    )}
+                </div>
+                <div ref={trayRef} className="flex items-start gap-1.5">
+                    {Array.from({ length: game.trayMax }).map((_, i) => {
+                        const t = game.tray[i];
+                        return t ? (
+                            <TrayCell
+                                key={t.id}
+                                tile={t}
+                                size={cellSize}
+                                selected={game.selected.includes(t)}
+                                onClick={() => { if (!game.gameOver && !game.win) game.toggleSelect(t); }}
+                            />
+                        ) : (
+                            <div
+                                key={"e" + i}
+                                className="shrink-0 rounded-lg border border-dashed border-muted-foreground/25"
+                                style={{ width: cellSize, height: cellSize }}
+                            />
+                        );
+                    })}
+                </div>
+                <Button
+                    className="mt-3 w-full"
+                    size="lg"
+                    disabled={game.selected.length !== 3 || game.gameOver || game.win}
+                    onClick={onClear}
+                >
+                    {game.selected.length === 3 ? `消除选中(3)` : "消除选中"}
+                </Button>
+            </div>
+
+            {/* 道具栏(带人性化提示) */}
+            <div className="mt-3 grid grid-cols-3 gap-2">
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="secondary" disabled={toolLeft("undo") <= 0} onClick={() => useTool("undo")}>
+                            ↩ 撤回({toolLeft("undo")})
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>把槽内最后一张卡放回棋盘(原位被占会自动挪到空位)</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="secondary" disabled={toolLeft("out") <= 0} onClick={() => useTool("out")}>
+                            📤 移出({toolLeft("out")})
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>把槽内最前面 3 张卡放回棋盘空位</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="secondary" disabled={toolLeft("shuffle") <= 0} onClick={() => useTool("shuffle")}>
+                            🔀 洗牌({toolLeft("shuffle")})
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>打乱场上剩余卡牌,死局救急</TooltipContent>
+                </Tooltip>
+            </div>
+
+            <footer className="mt-8 text-center text-xs text-muted-foreground">化了个学 · v2.1.0(仅供个人娱乐)</footer>
+
+            {/* ---------- 弹窗 ---------- */}
+
+            {/* 新手引导(首次进入, ✕/跳过/完成 均视为已看) */}
+            <Dialog open={tutorialOpen} onOpenChange={(o) => { if (!o) closeTutorial(); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {TUTORIAL_STEPS[tutorialStep].icon} {TUTORIAL_STEPS[tutorialStep].title}
+                        </DialogTitle>
+                        <DialogDescription>
+                            新手引导 {tutorialStep + 1}/{TUTORIAL_STEPS.length}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <p className="text-sm leading-relaxed text-muted-foreground">{TUTORIAL_STEPS[tutorialStep].body}</p>
+                    <div className="flex justify-center gap-1.5">
+                        {TUTORIAL_STEPS.map((_, i) => (
+                            <span key={i} className={cn("h-1.5 w-4 rounded-full", i === tutorialStep ? "bg-primary" : "bg-muted-foreground/25")} />
+                        ))}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                        <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+                            <Checkbox
+                                checked={tutorialSkipAlways}
+                                onCheckedChange={(v) => setTutorialSkipAlways(v === true)}
+                            />
+                            不再显示
+                        </label>
+                        <div className="flex gap-2">
+                            {tutorialStep > 0 && (
+                                <Button variant="ghost" onClick={() => setTutorialStep(tutorialStep - 1)}>上一步</Button>
+                            )}
+                            {tutorialStep < TUTORIAL_STEPS.length - 1 ? (
+                                <>
+                                    <Button variant="ghost" onClick={closeTutorial}>跳过</Button>
+                                    <Button onClick={() => setTutorialStep(tutorialStep + 1)}>下一步</Button>
+                                </>
+                            ) : (
+                                <Button onClick={closeTutorial}>开始游戏</Button>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* 昵称窗(✕ = 返回大厅; 可跳过不参与排行) */}
+            <Dialog open={nameOpen} onOpenChange={(o) => { if (!o) navigate("/"); }}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>开始游戏</DialogTitle>
+                        <DialogDescription>设置昵称后成绩将计入排行榜</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="hlgx-name">昵称</Label>
+                            <Input
+                                id="hlgx-name"
+                                value={name}
+                                maxLength={12}
+                                placeholder="输入昵称(1-12 字)"
+                                autoFocus
+                                onChange={(e) => { setName(e.target.value); setNameTip(""); }}
+                                onKeyDown={(e) => { if (e.key === "Enter" && !checking) void confirmName(); }}
+                            />
+                        </div>
+                        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+                            <Checkbox checked={skipRank} onCheckedChange={(v) => setSkipRank(v === true)} />
+                            不参与排行榜
+                        </label>
+                        {nameTip && <p className="text-xs text-destructive">{nameTip}</p>}
+                    </div>
+                    <div className="flex justify-between gap-2">
+                        <Button variant="ghost" onClick={() => navigate("/")}>← 返回大厅</Button>
+                        <Button onClick={() => void confirmName()} disabled={checking}>
+                            {checking ? "校验中…" : "确认开始"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* 结算弹窗(✕ = 返回大厅) */}
+            <Dialog open={resultInfo !== null} onOpenChange={(o) => { if (!o) navigate("/"); }}>
+                {resultInfo && (
+                    <DialogContent className="sm:max-w-sm">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl">
+                                {resultInfo.win ? "🎉 通关啦!" : "💔 挑战失败"}
+                            </DialogTitle>
+                            <DialogDescription>
+                                {resultInfo.win
+                                    ? "棋盘已清空且无三消组合,剩余手牌自动消除!"
+                                    : "手牌槽已满且无 3 张同类可消,血量耗尽!"}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="rounded-xl bg-muted p-3 text-center text-sm leading-relaxed">
+                            <p>
+                                剩余卡牌 {resultInfo.remain} 块 · 用时 {fmtTime(resultInfo.time)} · 技能 {resultInfo.tools} 次
+                            </p>
+                            {resultInfo.failed ? (
+                                <p className="mt-1.5 text-xs text-destructive">
+                                    成绩提交失败(网络异常),点下方「重试提交」再试一次
+                                </p>
+                            ) : (
+                                resultInfo.surpassed !== null && (
+                                    <p className="mt-1.5 font-semibold text-primary">🏅 超越 {resultInfo.surpassed} 名玩家</p>
+                                )
+                            )}
+                        </div>
+                        <div className="flex justify-between gap-2">
+                            <Button variant="ghost" onClick={() => navigate("/")}>← 返回大厅</Button>
+                            <div className="flex gap-2">
+                                {resultInfo.failed && (
+                                    <Button variant="secondary" onClick={() => void submitScore(resultInfo.time)}>重试提交</Button>
+                                )}
+                                <Button onClick={() => restart()}>再来一局</Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                )}
+            </Dialog>
+
+            {/* 玩法介绍(随时可回看) */}
+            <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
+                <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>📖 玩法介绍</DialogTitle>
+                        <DialogDescription>三分钟看懂怎么玩,新手不迷路</DialogDescription>
+                    </DialogHeader>
+                    <GameRules />
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}
+
+async function fetchJson(url: string) {
+    try {
+        const res = await fetch(url);
+        return await res.json();
+    } catch {
+        return null;
+    }
 }
