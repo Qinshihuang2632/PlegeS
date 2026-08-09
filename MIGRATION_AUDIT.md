@@ -65,7 +65,13 @@
 | `c532d3b` | 线上测试 | `scripts/verify_prod.mjs`(线上 33 项验证,含数据恢复逻辑) |
 | `df8fff2` | 交付 | `MIGRATION_AUDIT.md` + `platform_log.md` 平台日志 |
 | `c775be9` | v2.0.1 | 弹窗/界面加返回键 + 过关判定修正(详见 4.5) |
-| (待提交) | v2.0.2 | 排行榜 DELETE 需管理员密码(`X-Admin-Password` = `env.ADMIN_PASSWORD`,secret 不入 git)+ 点击响应提速(详见 4.6) |
+| `f5426ea` | v2.0.2 | 排行榜 DELETE 需管理员密码(`X-Admin-Password` = `env.ADMIN_PASSWORD`,secret 不入 git)+ 点击响应提速(详见 4.6) |
+| `3e02dcf` | v2.1.0 | 工程化重构:Vite + React 19 + TS + Tailwind v4 + shadcn/ui + Router 7(详见 4.7) |
+| `0372c2b` | v2.1.0 | 游戏核心逻辑 TS 移植(行为 1:1)+ Vitest 测试迁移(旧 DOM-mock selftest 移除) |
+| `d6a64fa` | v2.1.0 | 游戏三页面 React 重写 + 新手引导/玩法介绍/人性化文案 + 移动端适配 |
+| `859379f` | v2.1.0 | 管理后台后端(会话/审计/限频/管理 API)+ 用户 API 加固(DELETE 移除,收归管理端) |
+| `6943cd4` | v2.1.0 | 管理后台前端(登录/看板/榜单管理/审计日志/会话管理) |
+| `848f283` | v2.1.0 | 测试体系扩展与全量验证(契约 61 项 / E2E 31 项 / GUI 实测) |
 
 保留未动:本地工具 `make_docx.py`、`hualegexue/hlgx_selftest.js`、Flask 源码(`hlgx_app.py` 等)——
 仅作本地参考/工具,不参与线上构建(线上只发布 `dist/` + `functions/`)。
@@ -123,6 +129,24 @@ exists 精确匹配跨模式、suggest X*001 占用→X*002/全占用→*999、D
 - **密钥管理**:生产 `ADMIN_PASSWORD` 通过 `wrangler pages secret put` 设置(不入 git);
   本地 `.dev.vars`(gitignore)供 `wrangler pages dev` 加载;绝不写入 `wrangler.toml [vars]`
 
+### 4.7 v2.1.0 工程化重构 + 管理后台验证
+- **架构**:Vite 多页构建(游戏 SPA `/` + 管理 SPA `/admin`,basename=/admin)→ `dist/`;`dist/` 转为构建产物(入 .gitignore);
+  `hualegexue/` 旧 Flask 版冻结为 v2.0.2 遗留(逻辑断言全部迁移至 `src/game/core.test.ts`)
+- **路由实测**(wrangler pages dev):新版 Pages 引擎拒绝 `_redirects` 的 `/*` 与 404 规则(无限循环检测),
+  改用 `functions/[[path]].js` 兜底 + `public/_routes.json` 白名单(`/hlgx/api/*`、`/hlgx/hua`、`/hlgx/rank`、`/admin/*`);
+  静态资源优先、未知 API 404、SPA 深层链接 200(注意:Pages 会对 `/index.html` 返回 308 规范化,兜底须取 `/` 与 `/admin/`)
+- **契约测试 — `npm run test:api` ✅ 61/61**(内存 KV mock):原有 29 项全部保留,新增提交限频 429、
+  昵称清洗(控制字符/12 字截断)、榜单上限 200、用户 API 无 DELETE、管理登录(缺令牌 400/错令牌 401/连错 5 次锁 429/未配置 500)、
+  会话 Cookie(HttpOnly/Lax/Path)、me 鉴权、榜单管理(列表含 key/搜索/单删/清空/404)、审计(动作覆盖/过滤/分页/倒序/环形 500 上限)、会话(列表/强制下线/下线后失效)
+- **Vitest — `npm test` ✅ 28/28**:物质库/布局分布/初始遮挡/同层配色/过关判定 5 场景(checkwin 迁移)/道具行为/三策略通关率(贪心平衡≥80%、谨慎≥70%)
+- **本地 E2E — `npm run test:e2e` ✅ 31/31**(wrangler pages dev 真实 HTTP):SPA 路由 200、构建资源无 404、
+  用户 API 契约、限频 429、管理全流程(登录→榜单→审计→会话→下线→登出)、404 行为、中文 UTF-8
+- **GUI 实测**:游戏页(新手引导三步/昵称弹窗/拾取入槽/选中/三张异类扣血提示/道具/难度切换/失败结算自动提交成绩/榜单落库/✕ 关闭)、
+  管理后台(登录错误提示与锁定/看板统计/榜单管理搜索与删除/确认弹窗 ✕/审计联动/会话列表/移动端底部导航)
+- **本地 KV 发现**:miniflare 与生产 KV 的 `expirationTtl` 下限为 60s(30s 限频窗口会 500,已改 60s)
+- **密钥**:`ADMIN_PASSWORD` 废弃(用户 API 已无 DELETE,生产 secret 已删除);
+  新增 `ADMIN_TOKEN`(生产 secret / 本地 `.dev.vars`),管理登录令牌比对用 sha256 + 恒定时间比较
+
 ## 5. 已知差异 / 风险
 
 1. **compatibility_date 固定 2026-08-08**:本地 workerd 二进制最高支持 2026-08-08,线上若提示需更新
@@ -152,3 +176,9 @@ exists 精确匹配跨模式、suggest X*001 占用→X*002/全占用→*999、D
 - [x] v2.0.1:过关判定 = 全部卡牌拾取 且 手牌槽无 3 张同类可消(最后一步消除也计入),8 项行为测试通过
 - [x] v2.0.2:DELETE 鉴权:未配置/错误密码一律 401,正确密码方可清榜;密码经 secret 存储,不入 git
 - [x] v2.0.2:点击响应提速:滤镜过渡移除 + 坐标缓存 + 遮挡增量刷新 + 手牌槽增量渲染,判定逻辑零改动
+- [x] v2.1.0:工程化重构完成,`dist/` 为构建产物;游戏核心逻辑 TS 移植且全部旧断言迁移至 Vitest(28 项)
+- [x] v2.1.0:管理后台 /admin 令牌登录(ADMIN_TOKEN secret,恒定时间比较,登录锁定),四模块功能齐全
+- [x] v2.1.0:所有弹窗带 ✕ 关闭;用户界面无任何管理功能(清榜/删除仅存在于管理后台)
+- [x] v2.1.0:管理操作全程审计(环形 500 条);用户 API 加固(限频/昵称清洗/榜单上限/无 DELETE)
+- [x] v2.1.0:契约 61 项 / Vitest 28 项 / 本地 E2E 31 项全部通过;GUI 实测游戏与后台全流程
+- [x] v2.1.0:游戏新手引导/玩法介绍/道具提示人性化;全站移动端适配(棋盘与手牌槽自适应缩放)

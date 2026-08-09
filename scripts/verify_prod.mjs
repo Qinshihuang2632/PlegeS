@@ -35,15 +35,17 @@ async function api(path, method = "GET", body, headers = {}) {
     } : { method, headers });
     let data = null, txt = await r.text();
     try { data = JSON.parse(txt); } catch { /* 非 JSON */ }
-    return { status: r.status, data, txt };
+    return { status: r.status, data, txt, headers: r.headers };
 }
 
 /* ---------- 管理会话(登录一次, 全程复用) ---------- */
 console.log(`\n== 管理登录 (${BASE}) ==`);
 const login = await api("/admin/api/auth", "POST", { token: ADMIN_TOKEN });
 check("POST /admin/api/auth 登录 → 200", login.status === 200 && login.data?.ok === true, `(实际 ${login.status})`);
-const cookie = (login.headers?.get?.("set-cookie") || "").split(";")[0];
-check("登录下发会话 Cookie", cookie.startsWith("hlgx_admin="), cookie.slice(0, 40));
+// 注意: Node fetch 默认屏蔽 Set-Cookie 响应头, 须用 getSetCookie() 读取
+const setCookies = login.headers?.getSetCookie ? login.headers.getSetCookie() : [];
+const cookie = (setCookies[0] || "").split(";")[0];
+check("登录下发会话 Cookie", cookie.startsWith("hlgx_admin="), (setCookies[0] || "").slice(0, 40));
 
 const adminGet = (path) => api(path, "GET", undefined, { cookie });
 const me = await adminGet("/admin/api/auth");
