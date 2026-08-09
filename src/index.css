@@ -124,7 +124,7 @@
 .hlgx-tile-n { font-size: 9px; opacity: 0.92; letter-spacing: 0.3px; }
 
 /* 棋盘卡牌 */
-.hlgx-tile-board { position: absolute; inset: 0; }
+.hlgx-tile-board { position: absolute; inset: 0; pointer-events: auto; }
 .hlgx-tile-board:hover { transform: scale(1.06); }
 .hlgx-tile-board.hlgx-tile-blocked { filter: brightness(0.6) saturate(0.45); }
 .hlgx-tile-board.hlgx-tile-blocked::after {
@@ -138,7 +138,7 @@
 .hlgx-tile-board.hlgx-tile-removed {
   transform: scale(0);
   opacity: 0;
-  pointer-events: none;
+  pointer-events: none;   /* 覆盖上面的 auto: 已移除卡牌完全穿透, 消除幽灵热区 */
 }
 
 /* 手牌槽 */

@@ -42,6 +42,11 @@ npm run build        # tsc 类型检查 + 构建到 dist/
 npm run dev:pages    # 本地全栈(wrangler pages dev, 端口 8799; 需先 build)
 ```
 
+**开发模式元素定位**:`npm run dev` 下每个 JSX 元素都会注入
+`data-code-path="src\game\HuaPage.tsx:131:11"` 属性(文件:行:列,由
+`plugins/vite-code-path.ts` 自动注入)。浏览器 DevTools 中右键任意元素即可看到
+其源码位置,报 bug 时把该属性贴给开发者即可。生产构建零注入。
+
 ## 测试
 
 ```bash

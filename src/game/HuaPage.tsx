@@ -26,6 +26,15 @@ import { useGame } from "./useGame";
 
 const TUTORIAL_KEY = "hlgx_tutorial_done_v1";
 
+/* 昵称记忆: 刷新/重进后预填上次输入, 无需重新打字(localStorage, 隐私模式降级为空) */
+const NAME_STORAGE_KEY = "hlgx_name";
+function readStoredName(): string {
+    try { return localStorage.getItem(NAME_STORAGE_KEY) ?? ""; } catch { return ""; }
+}
+function storeName(raw: string) {
+    try { localStorage.setItem(NAME_STORAGE_KEY, raw); } catch { /* 隐私模式忽略 */ }
+}
+
 const MODE_TABS: { mode: Mode; label: string }[] = [
     { mode: "easy", label: "简单" },
     { mode: "normal", label: "标准" },
@@ -56,7 +65,7 @@ export function HuaPage() {
 
     /* ---- 昵称/开局 ---- */
     const [nameOpen, setNameOpen] = useState(false);
-    const [name, setName] = useState("");
+    const [name, setName] = useState<string>(() => readStoredName());   // 预填上次输入
     const [skipRank, setSkipRank] = useState(false);
     const [nameTip, setNameTip] = useState("");
     const [warnedDup, setWarnedDup] = useState(false);
@@ -164,11 +173,13 @@ export function HuaPage() {
                 const sug = await fetchJson(`/hlgx/api/name/suggest?name=${encodeURIComponent(n)}`);
                 playerNameRef.current = sug && sug.name ? sug.name : n + "*001";
                 inRankRef.current = true;
+                storeName(n);   // 记住用户输入名(不含自动序列号)
                 beginPlay();
                 return;
             }
             playerNameRef.current = n;
             inRankRef.current = true;
+            storeName(n);
             beginPlay();
         } finally {
             setChecking(false);

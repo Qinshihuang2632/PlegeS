@@ -2,6 +2,7 @@ import path from "node:path";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { codePathPlugin } from "./plugins/vite-code-path";
 
 /*
  * 化了个学 · Vite 构建配置
@@ -10,10 +11,16 @@ import tailwindcss from "@tailwindcss/vite";
  *   - index.html          游戏 SPA(大厅 / 游戏 / 榜单)  → dist/index.html
  *   - admin/index.html    管理后台 SPA(basename=/admin) → dist/admin/index.html
  * 输出到 dist/(wrangler pages 的 pages_build_output_dir), 部署前 npm run build。
+ * 开发模式额外注入 code-path 插件(每个 JSX 元素带 data-code-path="文件:行:列")。
  */
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   base: "/",
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // 仅开发模式: 元素级源码定位属性, 生产构建零注入
+    ...(command === "serve" ? [codePathPlugin()] : []),
+  ],
   resolve: {
     alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
@@ -45,4 +52,4 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
   },
-});
+}));
