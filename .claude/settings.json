@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python *)",
+      "Bash(pip *)",
+      "Bash(pip3 *)",
+      "Bash(py *)",
+      "Bash(flask *)",
+      "Bash(git *)",
+      "Bash(pytest *)",
+      "Bash(python -m pytest *)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "Bash(flake8 *)",
+      "Bash(ruff *)",
+      "Bash(cmd:*)",
+      "Bash(powershell:*)"
+    ],
+    "deny": [],
+    "defaultMode": "acceptEdits"
+  }
+}

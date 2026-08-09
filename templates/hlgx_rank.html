@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>化了个学 · 排行榜</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/hlgx_style.css') }}">
+</head>
+<body class="hub-page">
+    <header class="hlgx-header">
+        <a class="back" href="/">← 返回大厅</a>
+        <h1>🏆 排行榜</h1>
+        <p class="subtitle">排序:剩余血量多 → 用时短 → 技能使用次数少(失败记录也会上榜)</p>
+    </header>
+
+    <div class="rank-tabs">
+        <button data-mode="easy">简单</button>
+        <button data-mode="normal" class="active">标准</button>
+        <button data-mode="challenge">挑战</button>
+        <button id="rank-clear" class="rank-clear">清空当前榜单</button>
+    </div>
+
+    <div class="rank-table-wrap">
+        <table class="rank-table">
+            <thead>
+                <tr><th>#</th><th>昵称</th><th>血量</th><th>用时</th><th>技能</th><th>上榜时间</th></tr>
+            </thead>
+            <tbody id="rank-body"></tbody>
+        </table>
+        <p id="rank-empty" class="rank-empty">暂无记录</p>
+    </div>
+
+    <script>
+    const MODE_LABEL = { easy: "简单", normal: "标准", challenge: "挑战" };
+    let curMode = "normal";
+    function fmt(s) {
+        const m = Math.floor(s / 60), ss = s % 60;
+        return (m < 10 ? "0" + m : m) + ":" + (ss < 10 ? "0" + ss : ss);
+    }
+    async function load() {
+        const res = await fetch("/hlgx/api/rank?mode=" + curMode);
+        const data = await res.json();
+        const body = document.getElementById("rank-body");
+        body.innerHTML = "";
+        document.getElementById("rank-empty").style.display = data.rank.length ? "none" : "block";
+        data.rank.forEach((e, i) => {
+            const tr = document.createElement("tr");
+            const rank = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
+            tr.innerHTML = "<td>" + rank + "</td><td>" + e.name + "</td><td>❤" + e.hp
+                + "</td><td>" + fmt(e.time) + "</td><td>" + e.tools + "</td><td>" + e.date + "</td>";
+            body.appendChild(tr);
+        });
+    }
+    document.querySelectorAll(".rank-tabs button[data-mode]").forEach(b => {
+        b.addEventListener("click", () => {
+            document.querySelectorAll(".rank-tabs button[data-mode]").forEach(x => x.classList.remove("active"));
+            b.classList.add("active");
+            curMode = b.dataset.mode;
+            load();
+        });
+    });
+    document.getElementById("rank-clear").addEventListener("click", async () => {
+        if (!confirm("确定清空「" + MODE_LABEL[curMode] + "」榜单?此操作不可恢复")) return;
+        await fetch("/hlgx/api/rank?mode=" + curMode, { method: "DELETE" });
+        load();
+    });
+    load();
+    </script>
+</body>
+</html>
