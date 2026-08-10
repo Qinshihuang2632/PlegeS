@@ -70,11 +70,18 @@ export function HubPage() {
                 </Button>
             </nav>
 
-            {/* 特别鸣谢专栏(v2.1.8 预留, 内容暂空) */}
+            {/* 特别鸣谢专栏(按贡献次数从多到少排列) */}
             <section className="mt-10 text-center" aria-label="特别鸣谢">
                 <h3 className="text-sm font-bold tracking-wide text-foreground">特别鸣谢</h3>
                 <div className="mx-auto mt-2 h-px w-20 bg-border/70" aria-hidden />
-                <div className="h-6" aria-hidden />
+                <p className="mt-3 text-xs text-muted-foreground">感谢以下成员的建议与操作帮助</p>
+                <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                    <li>@在下雨</li>
+                    <li>@Skjusty</li>
+                    <li>@安比</li>
+                    <li>@绝艺如君</li>
+                    <li>@壹棵小玖菜</li>
+                </ul>
             </section>
 
             <footer className="mt-2 text-center text-xs text-muted-foreground">
