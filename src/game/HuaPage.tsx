@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { HLGX_Audio } from "./audio";
+import { hasBadWord } from "./badwords";
 import { fmtTime, TOOL_LIMIT, type Mode, type Tile } from "./core";
 import { BoardTile, TrayCell } from "./game-ui";
 import { GameRules } from "./GameRules";
@@ -161,6 +162,9 @@ export function HuaPage() {
             return;
         }
         if (!n) { setNameTip("请输入昵称,或勾选「不参与排行榜」"); return; }
+        // 字数限制 + 违禁字检测(前端拦截, 后端同样强制拒绝)
+        if ([...n].length > 10) { setNameTip("昵称最多 10 个字"); return; }
+        if (hasBadWord(n)) { setNameTip("昵称包含违禁词,请更换"); return; }
         setChecking(true);
         try {
             const r = await fetchJson(`/hlgx/api/name/exists?name=${encodeURIComponent(n)}`);
@@ -277,6 +281,11 @@ export function HuaPage() {
     /* ---- 渲染 ---- */
     const toolLeft = (k: keyof typeof game.toolUsed) => TOOL_LIMIT - game.toolUsed[k];
     const trayHasTriple = game.canEliminate();
+
+    /* 昵称字数(按码点计, 与后端一致)与违禁字实时检测 */
+    const nameCount = [...name].length;
+    const nameTooLong = nameCount > 10;
+    const nameBad = name.length > 0 && hasBadWord(name);
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-2xl px-3 pb-10 pt-3">
@@ -491,12 +500,24 @@ export function HuaPage() {
                             <Input
                                 id="hlgx-name"
                                 value={name}
-                                maxLength={12}
-                                placeholder="输入昵称(1-12 字)"
+                                placeholder="输入昵称(最多 10 个字)"
                                 autoFocus
                                 onChange={(e) => { setName(e.target.value); setNameTip(""); }}
-                                onKeyDown={(e) => { if (e.key === "Enter" && !checking) void confirmName(); }}
+                                onKeyDown={(e) => { if (e.key === "Enter" && !checking && !nameTooLong && !nameBad) void confirmName(); }}
                             />
+                            {/* 字数计数 + 违禁字即时提示 */}
+                            <div className="flex items-center justify-between text-xs">
+                                <span className={nameBad || nameTooLong ? "font-semibold text-destructive" : "text-muted-foreground"}>
+                                    {nameBad
+                                        ? "⚠ 昵称包含违禁词,请更换"
+                                        : nameTooLong
+                                            ? "⚠ 昵称最多 10 个字"
+                                            : "昵称长度"}
+                                </span>
+                                <span className={cn("tabular-nums", nameTooLong ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                                    {nameCount}/10
+                                </span>
+                            </div>
                         </div>
                         <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
                             <Checkbox checked={skipRank} onCheckedChange={(v) => setSkipRank(v === true)} />
@@ -506,7 +527,7 @@ export function HuaPage() {
                     </div>
                     <div className="flex justify-between gap-2">
                         <Button variant="ghost" onClick={() => navigate("/")}>← 返回大厅</Button>
-                        <Button onClick={() => void confirmName()} disabled={checking}>
+                        <Button onClick={() => void confirmName()} disabled={checking || nameTooLong || nameBad}>
                             {checking ? "校验中…" : "确认开始"}
                         </Button>
                     </div>

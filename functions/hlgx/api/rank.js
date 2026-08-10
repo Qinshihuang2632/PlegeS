@@ -11,6 +11,7 @@
  */
 import { MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, loadMode, saveMode, json } from "../../_lib/ranklib.js";
 import { countIncr, clientIp } from "../../_lib/ratelimit.js";
+import { hasBadWord } from "../../_lib/badwords.js";
 
 const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒, KV TTL 下限为 60)
 const RANK_LIMIT = 200;     // 单难度榜单条目上限
@@ -38,10 +39,13 @@ export async function onRequestPost({ request, env }) {
     const n = await countIncr(env, `rank:rl:${ip}`, SUBMIT_TTL, 1);
     if (n > 1) return json({ ok: false, msg: "提交过于频繁,请稍后再试" }, 429);
 
-    // 昵称清洗: trim + 剔除控制字符 + 长度 1-12(防异常输入)
+    // 昵称清洗: trim + 剔除控制字符(防异常输入)
     let name = String(body.name ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
-    name = name.slice(0, 12);
     if (!name) return json({ ok: false, msg: "缺少昵称" }, 400);
+    // 字数限制: 最多 10 个字(按码点计, 与前端显示一致)
+    if ([...name].length > 10) return json({ ok: false, msg: "昵称不能超过 10 个字" }, 400);
+    // 违禁字检测: 违背公序良俗的字词组合一律拒绝(禁止入榜)
+    if (hasBadWord(name)) return json({ ok: false, msg: "昵称包含违禁词,请更换" }, 400);
     // 防脚本注入试探: < > 是 XSS/提示词注入的典型特征字符, 数据保持干净
     if (/[<>]/.test(name)) return json({ ok: false, msg: "昵称包含非法字符" }, 400);
 

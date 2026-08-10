@@ -84,6 +84,12 @@ check("时间过短(2秒) → 400 成绩无效", p.status === 400 && p.data.msg 
 p = await postRank({ mode: "easy", name: "<script>", hp: 3, time: 30, tools: 0 });
 check("昵称含 < > → 400 非法字符", p.status === 400 && p.data.msg === "昵称包含非法字符", "status " + p.status + " " + JSON.stringify(p.data));
 
+p = await postRank({ mode: "easy", name: "傻逼", hp: 3, time: 30, tools: 0 });
+check("昵称含违禁词 → 400", p.status === 400 && p.data.msg === "昵称包含违禁词,请更换", "status " + p.status + " " + JSON.stringify(p.data));
+
+p = await postRank({ mode: "easy", name: "一二三四五六七八九十十一", hp: 3, time: 30, tools: 0 });
+check("昵称超 10 字 → 400", p.status === 400 && p.data.msg === "昵称不能超过 10 个字", "status " + p.status + " " + JSON.stringify(p.data));
+
 /* ---------- 4. API: exists / suggest ---------- */
 r = await get("/hlgx/api/name/exists?name=" + encodeURIComponent("帅帅"));
 check("exists 已存在 → true", r.status === 200 && r.text.includes('"exists":true'), r.text);

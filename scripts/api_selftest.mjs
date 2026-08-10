@@ -169,13 +169,18 @@ check("限频: 同IP 60秒内第2次 → 429", r.status === 429 && r.data.msg ==
 r = await post({ mode: "easy", name: "限频丙", hp: 3, time: 30, tools: 0 }, { "X-Forwarded-For": "rl-ip-2" });
 check("限频: 不同 IP 不受影响", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 
-// 7.2 昵称清洗: 控制字符剔除 + 长度截断 12
+// 7.2 昵称清洗 + 字数 10 字限制 + 违禁词
 reset();
-r = await post({ mode: "easy", name: " 甲\u0007乙丙丁戊己庚辛壬癸子丑寅  ", hp: 3, time: 10, tools: 0 });
+r = await post({ mode: "easy", name: " 甲\u0007乙丙丁戊己庚  ", hp: 3, time: 10, tools: 0 });
 const cleaned = r.data.rank[0].name;
-check("昵称清洗: 去空格/控制字符/截断12字",
-      [...cleaned].length === 12 && !/[\u0000-\u001f]/.test(cleaned) && cleaned.startsWith("甲乙丙"),
-      JSON.stringify(cleaned));
+check("昵称清洗: 去空格/控制字符(剩余 7 字)",
+      cleaned === "甲乙丙丁戊己庚", JSON.stringify(cleaned));
+r = await post({ mode: "easy", name: "一二三四五六七八九十十一", hp: 3, time: 10, tools: 0 });
+check("昵称超 10 字 → 400 拒绝", r.status === 400 && r.data.msg === "昵称不能超过 10 个字", JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "傻逼", hp: 3, time: 10, tools: 0 });
+check("昵称含违禁词 → 400 拒绝", r.status === 400 && r.data.msg === "昵称包含违禁词,请更换", JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "小明同学", hp: 3, time: 10, tools: 0 });
+check("正常昵称(小明同学)不受影响", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 
 // 7.3 榜单上限 200 条 → 拒绝
 reset();
@@ -192,7 +197,7 @@ check("时间过短(5秒) → 400 成绩无效", r.status === 400 && r.data.msg 
 
 // 7.5 昵称注入字符过滤(< > 为脚本试探特征)
 reset();
-r = await post({ mode: "easy", name: "<script>alert(1)", hp: 3, time: 30, tools: 0 });
+r = await post({ mode: "easy", name: "<script>", hp: 3, time: 30, tools: 0 });
 check("昵称含 < > → 400 非法字符", r.status === 400 && r.data.msg === "昵称包含非法字符", JSON.stringify(r.data));
 
 // 7.6 同一昵称 24h 内最多 3 次提交
