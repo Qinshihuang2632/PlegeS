@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { HLGX_CATS, HLGX_DESC, HLGX_SUBSTANCES, type Category } from "./substances";
 import {
-    HuaGame, TOOL_LIMIT, buildSlots, buildStack, fmtTime, slotColorIdx,
+    HuaGame, TOOL_LIMIT, buildSlots, buildStack, catsOf, fmtTime, slotColorIdx,
     type Tile,
 } from "./core";
 
@@ -41,6 +41,26 @@ describe("物质库", () => {
         const keys = Object.keys(HLGX_DESC);
         expect(keys.filter(k => !names.has(k))).toEqual([]);
         expect(names.size).toBe(HLGX_SUBSTANCES.length);   // 中文名唯一
+    });
+
+    it("简介不暴露物质类别(悬停可见, 防作弊)", () => {
+        const hint = /(酸|碱|盐|氧化物|金属|非金属|有机物|单质|化合物|氢氧化物)/;
+        const leak = HLGX_SUBSTANCES.filter(s => hint.test(HLGX_DESC[s.n] || ""));
+        expect(leak.map(s => s.n + "(" + HLGX_DESC[s.n] + ")")).toEqual([]);
+    });
+
+    it("多类别附加字段(multi)引用合法, 且仅有机酸跨类", () => {
+        const cats = new Set(Object.keys(HLGX_CATS));
+        const multiSubs = HLGX_SUBSTANCES.filter(s => s.multi);
+        expect(multiSubs.length).toBeGreaterThanOrEqual(5);
+        for (const s of multiSubs) {
+            expect(s.multi!.length).toBe(1);
+            expect(cats.has(s.multi![0])).toBe(true);
+            expect(s.multi![0]).not.toBe(s.c);
+            // 有机酸必须同时覆盖 acid 与 organic 两类
+            const set = new Set([s.c, ...s.multi!]);
+            expect(set.has("acid") && set.has("organic"), s.n).toBe(true);
+        }
     });
 });
 
@@ -198,6 +218,83 @@ describe("过关判定(checkWin)", () => {
     });
 });
 
+/* ==================== 4.5 多类别消除(有机酸双身份) ==================== */
+/* 构造带 multi 的 Tile: 醋酸式 {c:"acid",multi:["organic"]} / 苯甲酸式 {c:"organic",multi:["acid"]} */
+const mkSub2 = (cat: Category, multi: Category[] = [], removed = false): Tile =>
+    ({ id: 0, r: 0, c: 0, L: 0, x: 0, y: 0, color: 0, removed, blocked: false,
+       sub: { f: "", n: "", c: cat, ...(multi.length ? { multi } : {}) } }) as Tile;
+
+describe("多类别消除(有机酸)", () => {
+    it("醋酸+盐酸+硝酸 → 共享 acid, 按酸消除", () => {
+        const g = new HuaGame();
+        g.tray = [mkSub2("acid", ["organic"], true), mkSub2("acid", undefined, true), mkSub2("acid", undefined, true)];
+        g.selected = [...g.tray];
+        expect(g.clearSelected()).toBe("cleared");
+        expect(g.tray.length).toBe(0);
+    });
+
+    it("醋酸+甲烷+乙醇 → 共享 organic, 按有机物消除", () => {
+        const g = new HuaGame();
+        g.tray = [mkSub2("acid", ["organic"], true), mkSub2("organic", undefined, true), mkSub2("organic", undefined, true)];
+        g.selected = [...g.tray];
+        expect(g.clearSelected()).toBe("cleared");
+        expect(g.tray.length).toBe(0);
+    });
+
+    it("醋酸+甲烷+盐酸 → 无共同类别 → wrongSet 扣血不消除", () => {
+        const g = new HuaGame();
+        // 交集: {acid,organic} ∩ {organic} ∩ {acid} = ∅
+        g.tray = [mkSub2("acid", ["organic"], true), mkSub2("organic", undefined, true), mkSub2("acid", undefined, true)];
+        g.selected = [...g.tray];
+        const hpBefore = g.hp;
+        expect(g.clearSelected()).toBe("wrongSet");
+        expect(g.hp).toBe(hpBefore - 1);
+        expect(g.tray.length).toBe(3);
+    });
+
+    it("苯甲酸(c=organic,multi=acid): 与无机酸按酸消除, 与甲烷等按有机物消除", () => {
+        const g1 = new HuaGame();
+        g1.tray = [mkSub2("organic", ["acid"], true), mkSub2("acid", undefined, true), mkSub2("acid", undefined, true)];
+        g1.selected = [...g1.tray];
+        expect(g1.clearSelected()).toBe("cleared");
+        expect(g1.tray.length).toBe(0);
+
+        const g2 = new HuaGame();
+        g2.tray = [mkSub2("organic", ["acid"], true), mkSub2("organic", undefined, true), mkSub2("organic", undefined, true)];
+        g2.selected = [...g2.tray];
+        expect(g2.clearSelected()).toBe("cleared");
+        expect(g2.tray.length).toBe(0);
+    });
+
+    it("甘氨酸(c=organic,multi=acid)+盐酸+硫酸 → 按酸消除", () => {
+        const g = new HuaGame();
+        g.tray = [mkSub2("organic", ["acid"], true), mkSub2("acid", undefined, true), mkSub2("acid", undefined, true)];
+        g.selected = [...g.tray];
+        expect(g.clearSelected()).toBe("cleared");
+        expect(g.tray.length).toBe(0);
+    });
+
+    it("canEliminate 双类别计数: 醋酸+盐酸+甲烷 不成三消, 再入盐酸成酸三消", () => {
+        const g = new HuaGame();
+        g.tray = [mkSub2("acid", ["organic"]), mkSub2("acid"), mkSub2("organic")];
+        expect(g.canEliminate()).toBe(false);          // acid=2, organic=2
+        g.tray.push(mkSub2("acid"));
+        expect(g.canEliminate()).toBe(true);           // acid=3
+        g.tray = [mkSub2("acid", ["organic"]), mkSub2("organic"), mkSub2("organic")];
+        expect(g.canEliminate()).toBe(true);           // organic=3
+    });
+
+    it("真实数据: 醋酸/甲酸/草酸/苯甲酸/甘氨酸 均跨 acid+organic", () => {
+        const pick = (n: string) => HLGX_SUBSTANCES.find(s => s.n === n)!;
+        for (const n of ["醋酸", "甲酸", "草酸", "苯甲酸", "甘氨酸"]) {
+            const s = pick(n);
+            const set = new Set([s.c, ...(s.multi || [])]);
+            expect(set.has("acid"), n).toBe(true);
+            expect(set.has("organic"), n).toBe(true);
+        }
+    });
+});
+
 /* ==================== 5. 基础行为单元 ==================== */
 describe("基础行为", () => {
     it("canEliminate: 3张同类→true, 2张同类/3张异类→false", () => {
@@ -271,10 +368,10 @@ function runSim(g: HuaGame, strategy: "greedy" | "balanced" | "cautious") {
     let moves = 0;
     while (!g.gameOver && !g.win && moves < 3000) {
         const cc: Record<string, number> = {};
-        g.tray.forEach(x => { cc[x.sub.c] = (cc[x.sub.c] || 0) + 1; });
+        g.tray.forEach(x => { for (const cat of catsOf(x.sub)) cc[cat] = (cc[cat] || 0) + 1; });
         let target: string | null = null;
         for (const cat in cc) { if (cc[cat] >= 3) { target = cat; break; } }
-        if (target) { g.selected = g.tray.filter(x => x.sub.c === target).slice(0, 3); g.clearSelected(); continue; }
+        if (target) { g.selected = g.tray.filter(x => catsOf(x.sub).includes(target as Category)).slice(0, 3); g.clearSelected(); continue; }
         if (g.tray.length >= g.trayMax) {
             if (g.toolUsed.out < TOOL_LIMIT) { g.moveOut(); continue; }
             if (g.toolUsed.undo < TOOL_LIMIT) { g.undo(); continue; }
@@ -283,7 +380,7 @@ function runSim(g: HuaGame, strategy: "greedy" | "balanced" | "cautious") {
         // 预判救场: 槽位进入危险区且无可立即凑三消的落子 → 提前用道具腾位置
         const dangerLine = strategy === "greedy" ? g.trayMax - 1 : (strategy === "balanced" ? g.trayMax - 2 : g.trayMax - 3);
         if (g.tray.length >= dangerLine) {
-            const canFinish = g.tiles.some(t => !t.removed && !g.isBlocked(t) && (cc[t.sub.c] || 0) === 2);
+            const canFinish = g.tiles.some(t => !t.removed && !g.isBlocked(t) && catsOf(t.sub).some(cat => (cc[cat] || 0) === 2));
             if (!canFinish) {
                 if (g.toolUsed.out < TOOL_LIMIT) { g.moveOut(); continue; }
                 if (g.toolUsed.undo < TOOL_LIMIT) { g.undo(); continue; }
@@ -292,10 +389,10 @@ function runSim(g: HuaGame, strategy: "greedy" | "balanced" | "cautious") {
         const clickable = g.tiles.filter(t => !t.removed && !g.isBlocked(t));
         if (!clickable.length) break;
         const counts: Record<string, number> = {};
-        g.tray.forEach(x => { counts[x.sub.c] = (counts[x.sub.c] || 0) + 1; });
-        let picked = clickable.find(t => (counts[t.sub.c] || 0) === 2);
-        if (!picked) picked = clickable.find(t => (counts[t.sub.c] || 0) === 1);
-        if (!picked) picked = clickable.find(t => (counts[t.sub.c] || 0) > 0);
+        g.tray.forEach(x => { for (const cat of catsOf(x.sub)) counts[cat] = (counts[cat] || 0) + 1; });
+        let picked = clickable.find(t => catsOf(t.sub).some(cat => (counts[cat] || 0) === 2));
+        if (!picked) picked = clickable.find(t => catsOf(t.sub).some(cat => (counts[cat] || 0) === 1));
+        if (!picked) picked = clickable.find(t => catsOf(t.sub).some(cat => (counts[cat] || 0) > 0));
         if (!picked) {
             // 全部可点击的都是槽内未有的新类别: 依策略决定何时才引入
             const limit = strategy === "greedy" ? g.trayMax : (strategy === "balanced" ? 7 : 5);

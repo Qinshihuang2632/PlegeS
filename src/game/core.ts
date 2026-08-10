@@ -13,7 +13,6 @@
  * 任何行为改动都需同步更新测试。
  */
 import { HLGX_CATS, HLGX_SUBSTANCES, type Category, type Substance } from "./substances";
-
 /* ==================== 布局配置 ==================== */
 export const TILE_W = 50;        // 方块边长 px
 export const CELL = 58;          // 网格单元(含间隙)px
@@ -58,6 +57,14 @@ export function shuffleArr<T>(a: T[]): T[] {
 export function fmtTime(s: number): string {
     const m = Math.floor(s / 60), ss = s % 60;
     return (m < 10 ? "0" + m : m) + ":" + (ss < 10 ? "0" + ss : ss);
+}
+
+/* 物质的全部可消除类别(主类别 + 附加类别)
+ * 有机酸(醋酸/苯甲酸/甲酸/草酸/甘氨酸等)同时按「酸」与「有机物」消除:
+ *   - 与无机酸(盐酸/硫酸…)3 张共享 acid → 可消
+ *   - 与甲烷/乙醇等 3 张共享 organic → 也可消 */
+export function catsOf(s: Substance): Category[] {
+    return s.multi ? [s.c, ...s.multi] : [s.c];
 }
 
 /* ==================== 坐标 / 遮挡 / 配色 ==================== */
@@ -269,9 +276,14 @@ export class HuaGame {
 
     clearSelected(): ClearResult {
         if (this.gameOver || this.win || this.selected.length !== 3) return "noop";
-        const cat = this.selected[0].sub.c;
-        if (!this.selected.every(x => x.sub.c === cat)) {
-            // 3 张不同类 → 扣 1 血, 不消除
+        // 3 张牌需存在共同类别(有机酸等双类别物质可与两类分别配对)
+        let common = catsOf(this.selected[0].sub);
+        for (let i = 1; i < this.selected.length && common.length > 0; i++) {
+            const cs = catsOf(this.selected[i].sub);
+            common = common.filter((c) => cs.includes(c));
+        }
+        if (common.length === 0) {
+            // 3 张无共同类别 → 扣 1 血, 不消除
             this.hp--;
             this.selected = [];
             this.emit();
@@ -356,9 +368,13 @@ export class HuaGame {
     }
 
     /* ---- 胜负判定(与旧版逐字一致, 勿改) ---- */
+    /* 是否存在可消除组合: 某类别至少有 3 张(多类别物质按全部类别计数,
+       如醋酸既计入 acid 也计入 organic) */
     canEliminate(): boolean {
         const counts: Record<string, number> = {};
-        this.tray.forEach(x => { counts[x.sub.c] = (counts[x.sub.c] || 0) + 1; });
+        this.tray.forEach(x => {
+            for (const cat of catsOf(x.sub)) counts[cat] = (counts[cat] || 0) + 1;
+        });
         return Object.values(counts).some(c => c >= 3);
     }
 
