@@ -6,17 +6,17 @@
  *       管理 API(登录→me→榜单只读→审计→会话列表→登出, 非破坏性)/ 中文 UTF-8
  * 注意:
  *   - 提交限频 60s/IP: 生产下本机 IP 恒定, 脚本最多提交 1 次成绩(所有检查合并在一条记录上)
- *   - 结尾通过管理端清空测试痕迹并恢复生产数据(帅帅)
+ *   - 非破坏性(v2.1.7): 全程不清榜, 收尾只删除本脚本提交的测试条目(按唯一昵称精确匹配),
+ *     真实玩家数据零改动; 可连续重跑
  *   - ADMIN_TOKEN 必须经环境变量传入, 绝不硬编码进 git; 缺失则拒绝执行
  */
-import { writeFileSync } from "node:fs";
-
 const BASE = process.argv[2] || "https://hua-liao-ge-xue.pages.dev";
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 if (!ADMIN_TOKEN) {
     console.error("缺少生产管理员令牌: 请用 ADMIN_TOKEN=<令牌> node scripts/verify_prod.mjs 运行");
     process.exit(1);
 }
+const TEST_NAME = "氦氖氩氪氙氡";   // 本脚本专用测试昵称(收尾时按此精确删除)
 let pass = 0, fail = 0;
 const fails = [];
 function check(name, cond, detail = "") {
@@ -91,9 +91,9 @@ console.log("\n== API: 同名放开(v2.1.6) ==");
 
 console.log("\n== API: POST 提交(限频下仅 1 条, 合并检查) ==");
 {
-    const P = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "氦氖氩氪氙氡", hp: 99, time: 15, tools: -3, platform: "desktop" });
+    const P = await api("/hlgx/api/rank", "POST", { mode: "easy", name: TEST_NAME, hp: 99, time: 15, tools: -3, platform: "desktop" });
     check("POST → 200 ok:true", P.status === 200 && P.data?.ok === true, `(实际 ${P.status} ${P.data?.msg || ""})`);
-    const f = (P.data?.rank || []).find(e => e.name === "氦氖氩氪氙氡");
+    const f = (P.data?.rank || []).find(e => e.name === TEST_NAME);
     check("中文昵称 UTF-8 + clamp(hp99→3, tools-3→0)", f?.hp === 3 && f?.time === 15 && f?.tools === 0, `(实际 ${JSON.stringify(f)})`);
     check("date 格式 YYYY-MM-DD HH:MM", typeof f?.date === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(f.date), `(实际 ${f?.date})`);
     const P2 = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "重复提交", hp: 1, time: 1, tools: 0 });
@@ -117,18 +117,27 @@ console.log("\n== 管理 API(只读 + 非破坏性) ==");
     check("未登录访问管理 API → 401", unauth.status === 401, `(实际 ${unauth.status})`);
 }
 
-// 恢复生产数据: 清空测试痕迹, 恢复原始 easy 榜(帅帅)与空 normal/challenge
-console.log("\n== 恢复生产数据 ==");
+// 收尾(非破坏性): 只删除本脚本自己提交的测试条目, 绝不触碰真实玩家数据
+// v2.1.7 修复: 旧版「清空全部 → 人工恢复」曾导致玩家记录丢失;
+// 现在脚本全程不调用清榜 API, 删除按唯一测试昵称精确匹配, 并断言真实数据原样保留
+console.log("\n== 收尾: 清理测试痕迹(单条删除, 不清榜) ==");
 {
-    const clearAll = await api("/admin/api/rank?mode=all", "DELETE", undefined, { cookie });
-    check("管理端清空全部 → ok", clearAll.data?.ok === true, JSON.stringify(clearAll.data));
-    const restored = [{ "name": "帅帅", "hp": 3, "time": 131, "tools": 0, "date": "2026-08-09 12:37" }];
-    writeFileSync(new URL("../.wrangler/kv-migrate/easy.json", import.meta.url), JSON.stringify(restored), "utf8");
-    console.log("  (原始数据由脚本末尾的 kv put --remote 恢复, 见输出下方提示)");
+    const list = await adminGet("/admin/api/rank?mode=easy");
+    const mine = (list.data?.rank || []).find(e => e.name === TEST_NAME);
+    if (mine && typeof mine.key === "number") {
+        const del = await api(`/admin/api/rank?mode=easy&key=${mine.key}`, "DELETE", undefined, { cookie });
+        check("删除本脚本测试条目 → ok", del.data?.ok === true, JSON.stringify(del.data));
+    } else {
+        check("测试条目已不存在(无需清理)", true, "");
+    }
+    const after = await api("/hlgx/api/rank?mode=easy");
+    const names = (after.data?.rank || []).map(e => e.name);
+    check("测试痕迹已清除(榜单无 " + TEST_NAME + ")", !names.includes(TEST_NAME), JSON.stringify(after.data?.rank));
+    check("真实数据保留: 帅帅 hp3 time131 仍在榜", after.data?.rank?.some(e => e.name === "帅帅" && e.hp === 3 && e.time === 131 && e.tools === 0), JSON.stringify(after.data?.rank));
     const logout = await api("/admin/api/auth", "DELETE", undefined, { cookie });
     check("登出 → 200", logout.status === 200, `(实际 ${logout.status})`);
 }
 
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 if (fail > 0) { console.log("失败项:\n" + fails.map(f => "  - " + f).join("\n")); process.exit(1); }
-console.log(`\n恢复提示: npx wrangler kv key put easy --path=.wrangler/kv-migrate/easy.json --binding=RANKINGS --remote`);
+console.log("\n✓ 验证通过: 未清空任何榜单, 玩家数据未被改动(测试痕迹已按条目删除)");
