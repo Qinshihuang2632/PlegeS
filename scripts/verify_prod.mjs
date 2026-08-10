@@ -93,10 +93,10 @@ console.log("\n== API: exists / suggest ==");
 
 console.log("\n== API: POST 提交(限频下仅 1 条, 合并检查) ==");
 {
-    const P = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "氦氖氩氪氙氡", hp: 99, time: -5, tools: -3 });
+    const P = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "氦氖氩氪氙氡", hp: 99, time: 15, tools: -3 });
     check("POST → 200 ok:true", P.status === 200 && P.data?.ok === true, `(实际 ${P.status} ${P.data?.msg || ""})`);
     const f = (P.data?.rank || []).find(e => e.name === "氦氖氩氪氙氡");
-    check("中文昵称 UTF-8 + clamp(hp99→3, time-5→0, tools-3→0)", f?.hp === 3 && f?.time === 0 && f?.tools === 0, `(实际 ${JSON.stringify(f)})`);
+    check("中文昵称 UTF-8 + clamp(hp99→3, tools-3→0)", f?.hp === 3 && f?.time === 15 && f?.tools === 0, `(实际 ${JSON.stringify(f)})`);
     check("date 格式 YYYY-MM-DD HH:MM", typeof f?.date === "string" && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(f.date), `(实际 ${f?.date})`);
     const P2 = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "重复提交", hp: 1, time: 1, tools: 0 });
     check("限频: 同 IP 60 秒内再次提交 → 429", P2.status === 429, `(实际 ${P2.status})`);

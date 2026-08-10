@@ -91,14 +91,17 @@ r = await post({ mode: "easy", name: "帅帅", hp: 9, time: 10, tools: 100 });
 check("POST hp>3→3, tools>9→9 (clamp)", r.data.ok === true && r.data.rank[0].hp === 3 && r.data.rank[0].tools === 9, JSON.stringify(r.data.rank));
 
 reset();
-r = await post({ mode: "easy", name: "帅帅", hp: -5, time: -3, tools: -1 });
-check("POST hp/time/tools 负数→0", r.data.rank[0].hp === 0 && r.data.rank[0].time === 0 && r.data.rank[0].tools === 0, JSON.stringify(r.data.rank[0]));
-
+r = await post({ mode: "easy", name: "帅帅", hp: -5, time: 30, tools: -1 });
+check("POST hp负数→0, tools负数→0 (clamp)", r.data.rank[0].hp === 0 && r.data.rank[0].time === 30 && r.data.rank[0].tools === 0, JSON.stringify(r.data.rank[0]));
 check("POST 条目含 date 且格式 YYYY-MM-DD HH:MM",
       /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(r.data.rank[0].date || ""), r.data.rank[0].date);
 
 reset();
-r = await post({ mode: "不存在的模式", name: "小可", hp: 2, time: 5, tools: 1 });
+r = await post({ mode: "easy", name: "帅帅", hp: 3, time: -3, tools: 0 });
+check("POST time 负数 → 400 成绩无效(防刷)", r.status === 400 && r.data.msg === "成绩无效:用时过短", JSON.stringify(r.data));
+
+reset();
+r = await post({ mode: "不存在的模式", name: "小可", hp: 2, time: 30, tools: 1 });
 check("POST 非法 mode 存入 normal", r.data.rank[0] && r.data.rank[0].name === "小可", JSON.stringify(r.data));
 
 /* ---------- 3. 排序规则 hp↓ → time↑ → tools↑ ---------- */
@@ -126,7 +129,7 @@ r = await post({ mode: "easy", name: "F", hp: 3, time: 100, tools: 2 });
 check("surpassed: 同hp同time但tools更大 → 不超越A → 0", r.data.surpassed === 0, "got " + r.data.surpassed);
 reset();
 await post({ mode: "easy", name: "A", hp: 3, time: 100, tools: 0 });
-r = await post({ mode: "easy", name: "G", hp: 4, time: 0, tools: 0 });
+r = await post({ mode: "easy", name: "G", hp: 4, time: 15, tools: 0 });
 check("surpassed: hp更高 → 超越A → 1", r.data.surpassed === 1, "got " + r.data.surpassed);
 
 /* ---------- 5. 昵称查重 (跨所有模式) ---------- */
@@ -182,10 +185,30 @@ store.set("easy", JSON.stringify(full));
 r = await post({ mode: "easy", name: "新人", hp: 3, time: 10, tools: 0 });
 check("榜单满 200 条 → 400 榜单已满", r.status === 400 && r.data.msg === "榜单已满", JSON.stringify(r.data));
 
+// 7.4 成绩合理性: 用时过短 → 拒绝(防 1~2 秒假成绩)
+reset();
+r = await post({ mode: "easy", name: "秒杀", hp: 3, time: 5, tools: 0 });
+check("时间过短(5秒) → 400 成绩无效", r.status === 400 && r.data.msg === "成绩无效:用时过短", JSON.stringify(r.data));
+
+// 7.5 昵称注入字符过滤(< > 为脚本试探特征)
+reset();
+r = await post({ mode: "easy", name: "<script>alert(1)", hp: 3, time: 30, tools: 0 });
+check("昵称含 < > → 400 非法字符", r.status === 400 && r.data.msg === "昵称包含非法字符", JSON.stringify(r.data));
+
+// 7.6 同一昵称 24h 内最多 3 次提交
+reset();
+for (let i = 0; i < 3; i++) {
+    r = await post({ mode: "easy", name: "刷子", hp: 1, time: 30 + i, tools: 0 });
+}
+check("同名第 3 次提交仍成功", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "刷子", hp: 1, time: 40, tools: 0 });
+check("同名第 4 次提交 → 429 次数过多", r.status === 429 && r.data.msg.includes("次数过多"), JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "换名", hp: 1, time: 30, tools: 0 });
+check("换名不受同名限制", r.status === 200, JSON.stringify(r.data));
+
 // 7.4 用户 API 已移除 DELETE(管理功能收归管理端)
 reset();
 check("用户 API 不再导出 onRequestDelete", typeof rankApi.onRequestDelete === "undefined", "");
-
 /* ---------- 8. 管理登录: 令牌校验 / 锁定 ---------- */
 reset();
 r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", {}, { "X-Forwarded-For": "mg-ip-1" }), env });

@@ -73,10 +73,16 @@ check("POST date 格式正确", /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(p.data.ra
 p = await postRank({ mode: "easy", name: "", hp: 1, time: 1, tools: 0 });
 check("POST 空昵称 → 400", p.status === 400 && p.data.msg === "缺少昵称", "status " + p.status + " " + JSON.stringify(p.data));
 
-p = await postRankSameIp({ mode: "easy", name: "同IP一", hp: 1, time: 1, tools: 0 });
+p = await postRankSameIp({ mode: "easy", name: "同IP一", hp: 1, time: 20, tools: 0 });
 check("限频: 同IP第1次提交成功", p.status === 200, "status " + p.status);
-p = await postRankSameIp({ mode: "easy", name: "同IP二", hp: 1, time: 1, tools: 0 });
+p = await postRankSameIp({ mode: "easy", name: "同IP二", hp: 1, time: 21, tools: 0 });
 check("限频: 同IP 60秒内第2次 → 429", p.status === 429 && p.data.msg === "提交过于频繁,请稍后再试", "status " + p.status + " " + JSON.stringify(p.data));
+
+p = await postRank({ mode: "easy", name: "秒杀", hp: 3, time: 2, tools: 0 });
+check("时间过短(2秒) → 400 成绩无效", p.status === 400 && p.data.msg === "成绩无效:用时过短", "status " + p.status + " " + JSON.stringify(p.data));
+
+p = await postRank({ mode: "easy", name: "<script>", hp: 3, time: 30, tools: 0 });
+check("昵称含 < > → 400 非法字符", p.status === 400 && p.data.msg === "昵称包含非法字符", "status " + p.status + " " + JSON.stringify(p.data));
 
 /* ---------- 4. API: exists / suggest ---------- */
 r = await get("/hlgx/api/name/exists?name=" + encodeURIComponent("帅帅"));

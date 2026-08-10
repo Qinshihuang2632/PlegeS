@@ -42,10 +42,20 @@ export async function onRequestPost({ request, env }) {
     let name = String(body.name ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
     name = name.slice(0, 12);
     if (!name) return json({ ok: false, msg: "缺少昵称" }, 400);
+    // 防脚本注入试探: < > 是 XSS/提示词注入的典型特征字符, 数据保持干净
+    if (/[<>]/.test(name)) return json({ ok: false, msg: "昵称包含非法字符" }, 400);
 
     const hp = clampInt(body.hp, 0, 3, 0);
     const secs = Math.max(0, clampInt(body.time, 0, Number.MAX_SAFE_INTEGER, 0));
     const tools = clampInt(body.tools, 0, 9, 0);
+
+    // 成绩合理性: 一局至少几十次点击, 10 秒以内不可能(防脚本刷 1~2 秒假成绩)
+    if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
+
+    // 同一昵称 24 小时内最多提交 3 次(防同名刷屏)
+    const nickKey = `rank:nick:${name}`;
+    const nickCount = await countIncr(env, nickKey, 86400, 3);
+    if (nickCount > 3) return json({ ok: false, msg: "该昵称今日提交次数过多,请更换昵称" }, 429);
 
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
