@@ -3,8 +3,6 @@ const base = "file:///D:/program/game one/";
 const files = [
   "functions/_lib/ranklib.js",
   "functions/hlgx/api/rank.js",
-  "functions/hlgx/api/name/exists.js",
-  "functions/hlgx/api/name/suggest.js",
 ];
 for (const f of files) {
   const m = await import(base + f);

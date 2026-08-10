@@ -3,15 +3,13 @@
  * 运行: npm run test:api  (或 node scripts/api_selftest.mjs)
  *
  * 用内存 KV mock 直接调用 functions/ 下的真实处理器, 验证:
- *   - 用户 API 契约(排序 / surpassed / clamp / 昵称查重与建议)
+ *   - 用户 API 契约(排序 / surpassed / clamp / 同名昵称放开)
  *   - v2.1.0 加固: 提交限频 429 / 昵称清洗 / 榜单上限 / 用户 API 不再有 DELETE
  *   - 管理 API: 登录鉴权与锁定 / 会话 / 榜单管理 / 审计日志 / 强制下线 / 审计环形上限
  * 任一项失败退出码 1。
  */
 const BASE = "file:///D:/program/game one/";
 const rankApi = await import(BASE + "functions/hlgx/api/rank.js");
-const existsApi = await import(BASE + "functions/hlgx/api/name/exists.js");
-const suggestApi = await import(BASE + "functions/hlgx/api/name/suggest.js");
 const adminAuth = await import(BASE + "functions/admin/api/auth.js");
 const adminRank = await import(BASE + "functions/admin/api/rank.js");
 const adminLogs = await import(BASE + "functions/admin/api/logs.js");
@@ -132,32 +130,13 @@ await post({ mode: "easy", name: "A", hp: 3, time: 100, tools: 0 });
 r = await post({ mode: "easy", name: "G", hp: 4, time: 15, tools: 0 });
 check("surpassed: hp更高 → 超越A → 1", r.data.surpassed === 1, "got " + r.data.surpassed);
 
-/* ---------- 5. 昵称查重 (跨所有模式) ---------- */
+/* ---------- 5. 同名昵称放开(v2.1.6): 靠上榜时间区分玩家 ---------- */
 reset();
 await post({ mode: "normal", name: "小明", hp: 1, time: 30, tools: 2 });
-r = await call(existsApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/exists?name=%E5%B0%8F%E6%98%8E"), env });
-check("exists: 已存在 → true", r.data.exists === true, JSON.stringify(r.data));
-r = await call(existsApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/exists?name=%E5%B0%8F%E7%BA%A2"), env });
-check("exists: 不存在 → false", r.data.exists === false, JSON.stringify(r.data));
-r = await call(existsApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/exists?name="), env });
-check("exists: 空名 → false", r.data.exists === false, JSON.stringify(r.data));
-
-/* ---------- 6. 昵称建议 X*001..X*999 ---------- */
-reset();
-await post({ mode: "easy", name: "小明*001", hp: 1, time: 30, tools: 2 });
-r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name=%E5%B0%8F%E6%98%8E"), env });
-check("suggest: *001被占 → *002", r.data.name === "小明*002", JSON.stringify(r.data));
-r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name=%E5%B0%8F%E6%98%8E"), env });
-check("suggest: 连续调用返回同一名", r.data.name === "小明*002", JSON.stringify(r.data));
-r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name="), env });
-check("suggest: 空名 → 空串", r.data.name === "", JSON.stringify(r.data));
-// 占用 *001~*999 全部 → 回退 *999
-reset();
-const nine = [];
-for (let i = 1; i <= 999; i++) nine.push({ name: "满*" + String(i).padStart(3, "0"), hp: 0, time: 0, tools: 0, date: "2026-08-09 00:00" });
-store.set("easy", JSON.stringify(nine));
-r = await call(suggestApi.onRequestGet, { request: mockReq("http://x/hlgx/api/name/suggest?name=%E6%BB%A1"), env });
-check("suggest: 全占用 → 回退 *999", r.data.name === "满*999", JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "小明", hp: 1, time: 31, tools: 2 });
+check("同名第 2 次提交(另一难度)成功", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "小明", hp: 1, time: 32, tools: 2 });
+check("同名第 3 次提交(同难度)仍成功, 榜单保留两条", r.status === 200 && r.data.ok === true && r.data.rank.filter((e) => e.name === "小明").length === 2, JSON.stringify(r.data));
 
 /* ---------- 7. v2.1.0 用户 API 加固 ---------- */
 reset();
@@ -200,16 +179,12 @@ reset();
 r = await post({ mode: "easy", name: "<script>", hp: 3, time: 30, tools: 0 });
 check("昵称含 < > → 400 非法字符", r.status === 400 && r.data.msg === "昵称包含非法字符", JSON.stringify(r.data));
 
-// 7.6 同一昵称 24h 内最多 3 次提交
+// 7.6 同名昵称放开: 同一昵称可多次提交(不再 24h 限 3 次)
 reset();
-for (let i = 0; i < 3; i++) {
+for (let i = 0; i < 4; i++) {
     r = await post({ mode: "easy", name: "刷子", hp: 1, time: 30 + i, tools: 0 });
 }
-check("同名第 3 次提交仍成功", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
-r = await post({ mode: "easy", name: "刷子", hp: 1, time: 40, tools: 0 });
-check("同名第 4 次提交 → 429 次数过多", r.status === 429 && r.data.msg.includes("次数过多"), JSON.stringify(r.data));
-r = await post({ mode: "easy", name: "换名", hp: 1, time: 30, tools: 0 });
-check("换名不受同名限制", r.status === 200, JSON.stringify(r.data));
+check("同名连续 4 次提交全部成功(放开同名)", r.status === 200 && r.data.ok === true && r.data.rank.filter((e) => e.name === "刷子").length === 4, JSON.stringify(r.data));
 
 // 7.4 用户 API 已移除 DELETE(管理功能收归管理端)
 reset();

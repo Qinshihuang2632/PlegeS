@@ -72,8 +72,6 @@ export function HuaPage() {
     const [name, setName] = useState<string>(() => readStoredName());   // 预填上次输入
     const [skipRank, setSkipRank] = useState(false);
     const [nameTip, setNameTip] = useState("");
-    const [warnedDup, setWarnedDup] = useState(false);
-    const [checking, setChecking] = useState(false);
     const playerNameRef = useRef<string | null>(null);
     const inRankRef = useRef(false);
 
@@ -149,15 +147,12 @@ export function HuaPage() {
     const beginPlay = () => {
         setNameOpen(false);
         setNameTip("");
-        setWarnedDup(false);
-        setChecking(false);
         game.newGame();
         startTimer();
     };
 
-    const confirmName = async () => {
+    const confirmName = () => {
         const n = name.trim();
-        setWarnedDup(false);
         if (skipRank) {
             playerNameRef.current = null;
             inRankRef.current = false;
@@ -168,29 +163,11 @@ export function HuaPage() {
         // 字数限制 + 违禁字检测(前端拦截, 后端同样强制拒绝)
         if ([...n].length > 10) { setNameTip("昵称最多 10 个字"); return; }
         if (hasBadWord(n)) { setNameTip("昵称包含违禁词,请更换"); return; }
-        setChecking(true);
-        try {
-            const r = await fetchJson(`/hlgx/api/name/exists?name=${encodeURIComponent(n)}`);
-            if (r && r.exists) {
-                if (!warnedDup) {
-                    setWarnedDup(true);
-                    setNameTip(`⚠ 昵称已被使用,再次确认将自动加序列号(如 ${n}*001)`);
-                    return;
-                }
-                const sug = await fetchJson(`/hlgx/api/name/suggest?name=${encodeURIComponent(n)}`);
-                playerNameRef.current = sug && sug.name ? sug.name : n + "*001";
-                inRankRef.current = true;
-                storeName(n);   // 记住用户输入名(不含自动序列号)
-                beginPlay();
-                return;
-            }
-            playerNameRef.current = n;
-            inRankRef.current = true;
-            storeName(n);
-            beginPlay();
-        } finally {
-            setChecking(false);
-        }
+        // v2.1.6: 同名昵称放开(靠上榜时间区分玩家), 不再查重/自动加序列号
+        playerNameRef.current = n;
+        inRankRef.current = true;
+        storeName(n);
+        beginPlay();
     };
 
     /* ---- 棋盘交互 ---- */
@@ -276,9 +253,8 @@ export function HuaPage() {
         setResultInfo(null);
         submittedRef.current = false;
         audioPlayedRef.current = false;
-        setWarnedDup(false);
         setNameTip("");
-        setName(playerNameRef.current ? playerNameRef.current.replace(/\*\d{3}$/, "") : name);
+        setName(playerNameRef.current ?? name);
         setNameOpen(true);
     };
 
@@ -510,7 +486,7 @@ export function HuaPage() {
                                 placeholder="输入昵称(最多 10 个字)"
                                 autoFocus
                                 onChange={(e) => { setName(e.target.value); setNameTip(""); }}
-                                onKeyDown={(e) => { if (e.key === "Enter" && !checking && !nameTooLong && !nameBad) void confirmName(); }}
+                                onKeyDown={(e) => { if (e.key === "Enter" && !nameTooLong && !nameBad) confirmName(); }}
                             />
                             {/* 字数计数 + 违禁字即时提示 */}
                             <div className="flex items-center justify-between text-xs">
@@ -534,8 +510,8 @@ export function HuaPage() {
                     </div>
                     <div className="flex justify-between gap-2">
                         <Button variant="ghost" onClick={() => navigate("/")}>← 返回大厅</Button>
-                        <Button onClick={() => void confirmName()} disabled={checking || nameTooLong || nameBad}>
-                            {checking ? "校验中…" : "确认开始"}
+                        <Button onClick={confirmName} disabled={nameTooLong || nameBad}>
+                            确认开始
                         </Button>
                     </div>
                 </DialogContent>
@@ -594,13 +570,4 @@ export function HuaPage() {
             </Dialog>
         </div>
     );
-}
-
-async function fetchJson(url: string) {
-    try {
-        const res = await fetch(url);
-        return await res.json();
-    } catch {
-        return null;
-    }
 }

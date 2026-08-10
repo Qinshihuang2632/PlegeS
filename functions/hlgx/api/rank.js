@@ -10,7 +10,8 @@
  *     旧客户端不传 platform 时按 UA 判断, 历史条目(无 platform 字段)归端游
  *   - DELETE 已移除: 管理功能全部收归 /admin/api/*(会话鉴权)
  *   - 防刷: 每 IP 60 秒限 1 次 / 昵称清洗(trim+长度1-10+去控制字符+违禁字)
- *     / 成绩合理性(用时≥10秒) / 单难度上限 200 条 / 同名 24h 限 3 次
+ *     / 成绩合理性(用时≥10秒) / 单难度上限 200 条
+ *   - 同名昵称不设限制(v2.1.6): 依靠上榜时间区分不同玩家, 放开同名申请
  * 排序契约与 Flask 版 hlgx_rank.py 完全一致。
  */
 import { MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, loadMode, saveMode, json } from "../../_lib/ranklib.js";
@@ -76,11 +77,6 @@ export async function onRequestPost({ request, env }) {
 
     // 成绩合理性: 一局至少几十次点击, 10 秒以内不可能(防脚本刷 1~2 秒假成绩)
     if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
-
-    // 同一昵称 24 小时内最多提交 3 次(防同名刷屏)
-    const nickKey = `rank:nick:${name}`;
-    const nickCount = await countIncr(env, nickKey, 86400, 3);
-    if (nickCount > 3) return json({ ok: false, msg: "该昵称今日提交次数过多,请更换昵称" }, 429);
 
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);

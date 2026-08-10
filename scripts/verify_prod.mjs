@@ -81,14 +81,12 @@ console.log("\n== API: GET 榜单(含迁移数据) ==");
     check("GET rank?mode=xx 非法 → 回落 normal", rx.data?.mode === "normal");
 }
 
-console.log("\n== API: exists / suggest ==");
+console.log("\n== API: 同名放开(v2.1.6) ==");
 {
-    const r1 = await api("/hlgx/api/name/exists?name=" + encodeURIComponent("帅帅"));
-    check("exists 帅帅 → true", r1.data?.exists === true);
-    const r2 = await api("/hlgx/api/name/exists?name=" + encodeURIComponent("不存在的人"));
-    check("exists 不存在的人 → false", r2.data?.exists === false);
+    const n1 = await api("/hlgx/api/name/exists?name=" + encodeURIComponent("帅帅"));
+    check("exists 接口已移除 → 404", n1.status === 404, `(实际 ${n1.status})`);
     const s1 = await api("/hlgx/api/name/suggest?name=" + encodeURIComponent("帅帅"));
-    check("suggest 帅帅 → 帅帅*001", s1.data?.name === "帅帅*001", `(实际 ${s1.data?.name})`);
+    check("suggest 接口已移除 → 404", s1.status === 404, `(实际 ${s1.status})`);
 }
 
 console.log("\n== API: POST 提交(限频下仅 1 条, 合并检查) ==");

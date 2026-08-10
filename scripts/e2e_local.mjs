@@ -29,9 +29,10 @@ async function send(path, method, body, headers = {}) {
     try { data = await res.json(); } catch { /* 非 JSON */ }
     return { status: res.status, data, setCookie: res.headers.get("set-cookie") };
 }
-/* 独立 IP 提交(避免触发 60s 提交限频; 本地 KV 持久化, 每次运行用时间戳保证全新 IP) */
+/* 独立 IP 提交(避免触发 60s 提交限频; 本地 KV 持久化, 每次运行用时间戳保证全新 IP)
+   v2.1.6: 同名昵称已放开, 不再需要唯一化避同名限频 */
 const RUN = Date.now();
-const RUN_NAME = "帅帅" + String(RUN % 100000);   // 每轮唯一昵称(避开同名 24h 限频)
+const RUN_NAME = "帅帅" + String(RUN % 100000);
 let ipn = 0;
 const postRank = (body) => send("/hlgx/api/rank", "POST", body, { "X-Forwarded-For": `e2e-${RUN}-${++ipn}` });
 const postRankSameIp = (body) => send("/hlgx/api/rank", "POST", body, { "X-Forwarded-For": `e2e-${RUN}-same` });
@@ -91,15 +92,16 @@ check("昵称含违禁词 → 400", p.status === 400 && p.data.msg === "昵称�
 p = await postRank({ mode: "easy", name: "一二三四五六七八九十十一", hp: 3, time: 30, tools: 0 });
 check("昵称超 10 字 → 400", p.status === 400 && p.data.msg === "昵称不能超过 10 个字", "status " + p.status + " " + JSON.stringify(p.data));
 
-/* ---------- 4. API: exists / suggest ---------- */
+/* ---------- 4. API: 同名昵称放开(不再查重/加序列号) ---------- */
 r = await get("/hlgx/api/name/exists?name=" + encodeURIComponent(RUN_NAME));
-check("exists 已存在 → true", r.status === 200 && r.text.includes('"exists":true'), r.text);
-
-r = await get("/hlgx/api/name/exists?name=" + encodeURIComponent("路人"));
-check("exists 不存在 → false", r.status === 200 && r.text.includes('"exists":false'), r.text);
-
+check("exists 接口已移除 → 404", r.status === 404, r.status + " " + r.text.slice(0, 80));
 r = await get("/hlgx/api/name/suggest?name=" + encodeURIComponent(RUN_NAME));
-check("suggest 返回 *001 形式", r.status === 200 && new RegExp('"name":"' + RUN_NAME + '\\*\\d{3}"').test(r.text), r.text);
+check("suggest 接口已移除 → 404", r.status === 404, r.status + " " + r.text.slice(0, 80));
+
+const DUP_NAME = "同名" + (RUN % 10000);   // 带轮次戳的同名(测同名放开, 且不跨轮累积)
+await postRank({ mode: "easy", name: DUP_NAME, hp: 3, time: 25, tools: 0 });
+r = await postRank({ mode: "easy", name: DUP_NAME, hp: 3, time: 26, tools: 0 });
+check("同名昵称可重复提交, 榜单保留两条", r.status === 200 && r.data.ok === true && r.data.rank.filter((e) => e.name === DUP_NAME).length === 2, JSON.stringify(r.data).slice(0, 160));
 
 /* ---------- 4.5 API: 平台分离(手游/端游) ---------- */
 const DUAN = "端游" + (RUN % 1000), SHOU = "手游" + (RUN % 1000);
