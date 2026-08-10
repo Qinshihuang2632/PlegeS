@@ -3,6 +3,7 @@
 > 维护约定:记录「哪天做了什么游戏的什么版本」,像历史进程一样按时间在文末追加。
 > 各小游戏的**详细改进点**见对应游戏目录下的版本日志(如 `hualegexue\hlgx_summary_report.md`)。
 > docx 由 `python make_docx.py platform_log.md` 生成。
+> 版本更新未提及贡献者时,一律默认只有 ps(项目所有者)。
 
 ## 当前状态
 
