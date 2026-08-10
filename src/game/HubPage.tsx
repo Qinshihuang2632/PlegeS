@@ -11,6 +11,7 @@ import { APP_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
+    const [thanksOpen, setThanksOpen] = useState(false);
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
@@ -70,18 +71,11 @@ export function HubPage() {
                 </Button>
             </nav>
 
-            {/* 特别鸣谢专栏(按贡献次数从多到少排列) */}
-            <section className="mt-10 text-center" aria-label="特别鸣谢">
-                <h3 className="text-sm font-bold tracking-wide text-foreground">特别鸣谢</h3>
-                <div className="mx-auto mt-2 h-px w-20 bg-border/70" aria-hidden />
-                <p className="mt-3 text-xs text-muted-foreground">感谢以下成员的建议与操作帮助</p>
-                <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-                    <li>@在下雨</li>
-                    <li>@Skjusty</li>
-                    <li>@安比</li>
-                    <li>@绝艺如君</li>
-                    <li>@壹棵小玖菜</li>
-                </ul>
+            {/* 特别鸣谢(点击查看, 不占页面空间) */}
+            <section className="mt-8 text-center">
+                <Button variant="link" className="text-xs text-muted-foreground" onClick={() => setThanksOpen(true)}>
+                    💐 特别鸣谢
+                </Button>
             </section>
 
             <footer className="mt-2 text-center text-xs text-muted-foreground">
@@ -96,6 +90,46 @@ export function HubPage() {
                         <DialogDescription>三分钟看懂怎么玩,新手不迷路</DialogDescription>
                     </DialogHeader>
                     <GameRules />
+                </DialogContent>
+            </Dialog>
+
+            {/* 特别鸣谢弹窗(✕ 可关闭; 名单按贡献次数从多到少) */}
+            <Dialog open={thanksOpen} onOpenChange={setThanksOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>💐 特别鸣谢</DialogTitle>
+                        <DialogDescription>感谢以下成员的建议与操作帮助</DialogDescription>
+                    </DialogHeader>
+                    <ul className="space-y-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@在下雨</span>
+                            <span className="block text-xs text-muted-foreground">感谢多轮版本的建议与云端迁移支持</span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@Skjusty</span>
+                            <span className="block text-xs text-muted-foreground">感谢 v2.1.5 扩容与 v2.1.8 更新支持</span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@安比</span>
+                            <span className="block text-xs text-muted-foreground">感谢 v2.1.6、v2.1.7 更新支持</span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@绝艺如君</span>
+                            <span className="block text-xs text-muted-foreground">感谢 v2.1.6 更新支持</span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@壹棵小玖菜</span>
+                            <span className="block text-xs text-muted-foreground">感谢 v2.1.8 更新支持</span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@鹜秋</span>
+                            <span className="block text-xs text-muted-foreground">感谢 v2.1.9 更新支持</span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@鼠鼠鼠了</span>
+                            <span className="block text-xs text-muted-foreground">感谢 v2.1.9 更新支持</span>
+                        </li>
+                    </ul>
                 </DialogContent>
             </Dialog>
         </div>

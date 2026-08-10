@@ -21,8 +21,8 @@ describe("物质库", () => {
         expect(HLGX_SUBSTANCES.length).toBeGreaterThan(100);
     });
 
-    it("共7个类别", () => {
-        expect(Object.keys(HLGX_CATS).length).toBe(7);
+    it("共8个类别(含混合物)", () => {
+        expect(Object.keys(HLGX_CATS).length).toBe(8);
     });
 
     it("全部物质都有性质简介", () => {
@@ -44,7 +44,7 @@ describe("物质库", () => {
     });
 
     it("简介不暴露物质类别(悬停可见, 防作弊)", () => {
-        const hint = /(酸|碱|盐|氧化物|金属|非金属|有机物|单质|化合物|氢氧化物)/;
+        const hint = /(酸|碱|盐|氧化物|金属|非金属|有机物|单质|化合物|氢氧化物|混合物)/;
         const leak = HLGX_SUBSTANCES.filter(s => hint.test(HLGX_DESC[s.n] || ""));
         expect(leak.map(s => s.n + "(" + HLGX_DESC[s.n] + ")")).toEqual([]);
     });
@@ -81,11 +81,11 @@ describe("布局与分布", () => {
         expect(g.trayMax).toBe(8);
     });
 
-    it("方块总数与槽数一致, 7个类别每类至少3块", () => {
+    it("方块总数与槽数一致, 8个类别每类至少3块", () => {
         const g = new HuaGame();
         const cnt: Record<string, number> = {};
         g.tiles.forEach(t => { cnt[t.sub.c] = (cnt[t.sub.c] || 0) + 1; });
-        expect(Object.keys(cnt).length).toBe(7);
+        expect(Object.keys(cnt).length).toBe(8);
         for (const v of Object.values(cnt)) expect(v).toBeGreaterThanOrEqual(3);
     });
 

@@ -129,13 +129,14 @@ export function HuaPage() {
         return () => ro.disconnect();
     }, [game]);
 
-    /* 手牌槽单格尺寸适配小屏(防横向溢出) */
+    /* 手牌槽单格尺寸: 两行排布(10→5+5, 8→4+4), 按行宽计算, 卡牌更大易点 */
     useEffect(() => {
         const el = trayRef.current;
         if (!el) return;
+        const rowCols = Math.ceil(game.trayMax / 2);   // 每行格子数
         const update = () => {
-            const gaps = 6 * (game.trayMax - 1);
-            setCellSize(Math.max(28, Math.min(44, Math.floor((el.clientWidth - gaps) / game.trayMax))));
+            const gaps = 6 * (rowCols - 1);
+            setCellSize(Math.max(28, Math.min(56, Math.floor((el.clientWidth - gaps) / rowCols))));
         };
         update();
         const ro = new ResizeObserver(update);
@@ -366,7 +367,12 @@ export function HuaPage() {
                         <span>点击手牌选中,3 张同类点「消除选中」</span>
                     )}
                 </div>
-                <div ref={trayRef} className="flex items-start gap-1.5">
+                {/* 手牌槽两行排布(填满第一行再排第二行) */}
+                <div
+                    ref={trayRef}
+                    className="mx-auto flex flex-wrap items-start gap-1.5"
+                    style={{ width: cellSize * Math.ceil(game.trayMax / 2) + 6 * (Math.ceil(game.trayMax / 2) - 1) }}
+                >
                     {Array.from({ length: game.trayMax }).map((_, i) => {
                         const t = game.tray[i];
                         return t ? (

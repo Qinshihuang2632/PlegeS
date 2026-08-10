@@ -31,6 +31,20 @@ describe("违禁词检测", () => {
         expect(hasBadWord("CnM")).toBe(true);
     });
 
+    it("命中违法物品/毒品词(化学游戏易联想, v2.1.9 扩充)", () => {
+        for (const n of [
+            "冰毒", "海洛因", "大麻", "摇头丸", "K粉", "可卡因", "吗啡", "鸦片",
+            "甲基苯丙胺", "氯胺酮", "芬太尼", "笑气", "LSD", "迷幻蘑菇", "罂粟",
+            "麻黄碱", "丧尸药", "白粉", "炸药", "雷管", "枪支", "走私", "洗钱",
+        ]) {
+            expect(hasBadWord(n), `应命中: ${n}`).toBe(true);
+        }
+        // 正常化学名不误伤
+        expect(hasBadWord("盐酸")).toBe(false);
+        expect(hasBadWord("氢氧化钾")).toBe(false);
+        expect(hasBadWord("大麻叶提取物")).toBe(true);   // 含「大麻」
+    });
+
     it("词表非空且全小写(与 functions/_lib/badwords.js 同步)", () => {
         expect(BAD_WORDS.length).toBeGreaterThan(30);
         expect(BAD_WORDS.every((w) => w === w.toLowerCase())).toBe(true);
