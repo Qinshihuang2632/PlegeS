@@ -12,7 +12,8 @@
  *   - 防刷: 每 IP 60 秒限 1 次 / 昵称清洗(trim+长度1-10+去控制字符+违禁字)
  *     / 成绩合理性(用时≥10秒) / 单难度上限 200 条
  *   - 同名昵称不设限制(v2.1.6): 依靠上榜时间区分不同玩家, 放开同名申请
- * 排序契约与 Flask 版 hlgx_rank.py 完全一致。
+ *   - v2.2.0: 记录 clears(成功消除组数, 排名依据)与 version(通关版本, 跨版本比较)
+ * 排序契约: hp↓ → clears↓ → time↑ → tools↑(Flask 版 hp/time/tools 的扩展)。
  */
 import { MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, loadMode, saveMode, json } from "../../_lib/ranklib.js";
 import { countIncr, clientIp } from "../../_lib/ratelimit.js";
@@ -74,6 +75,9 @@ export async function onRequestPost({ request, env }) {
     const hp = clampInt(body.hp, 0, 3, 0);
     const secs = Math.max(0, clampInt(body.time, 0, Number.MAX_SAFE_INTEGER, 0));
     const tools = clampInt(body.tools, 0, 9, 0);
+    // v2.2.0: 成功消除组数(排名依据之一, 旧客户端缺省 0)与通关版本(跨版本比较)
+    const clears = clampInt(body.clears, 0, 9999, 0);
+    const version = String(body.version ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16) || "";
 
     // 成绩合理性: 一局至少几十次点击, 10 秒以内不可能(防脚本刷 1~2 秒假成绩)
     if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
@@ -82,7 +86,7 @@ export async function onRequestPost({ request, env }) {
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
 
     // 超越人数: 仅与同平台条目比较(手游/端游榜单分开)
-    const newKey = cmpKey({ hp, time: secs, tools });
+    const newKey = cmpKey({ hp, clears, time: secs, tools });
     const surpassed = entries.filter((e) =>
         (e.platform ?? "desktop") === platform && keyLess(newKey, cmpKey(e))).length;
 
@@ -91,6 +95,8 @@ export async function onRequestPost({ request, env }) {
         hp,
         time: secs,
         tools,
+        clears,          // v2.2.0: 成功消除组数
+        version,         // v2.2.0: 通关版本(旧条目无此字段)
         platform,
         date: fmtDate(),
     };

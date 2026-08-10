@@ -20,7 +20,9 @@ export function substanceInfo(sub: Tile["sub"]): string {
     return sub.n + ": " + (HLGX_DESC[sub.n] || "性质待补充");
 }
 
-/* 卡牌正面: 化学式 + 中文名(size 缩小时字号按比例缩放) */
+/* 卡牌正面: 化学式 + 中文名(size 缩小时字号按比例缩放)
+   v2.2.0: 无固定化学式的混合物(f 为占位符 "—")不显示横线,
+   名称以稍大字号直接居中, 避免玩家看到横线就凑在一起当混合物消 */
 export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
     tile: Tile;
     size?: number;
@@ -29,6 +31,7 @@ export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
     title?: string;
 }) {
     const k = size / TILE_W; // 缩放系数
+    const hasFormula = !!tile.sub.f && tile.sub.f !== "—";
     return (
         <div
             className={cn("hlgx-tile", className)}
@@ -36,8 +39,8 @@ export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
             title={title ?? substanceInfo(tile.sub)}
             onClick={onClick}
         >
-            <span className="hlgx-tile-f" style={{ fontSize: tileFontSize(tile.sub.f) * k }}>{tile.sub.f}</span>
-            <span className="hlgx-tile-n" style={{ fontSize: 9 * k }}>{tile.sub.n}</span>
+            {hasFormula && <span className="hlgx-tile-f" style={{ fontSize: tileFontSize(tile.sub.f) * k }}>{tile.sub.f}</span>}
+            <span className="hlgx-tile-n" style={{ fontSize: (hasFormula ? 9 : 12.5) * k }}>{tile.sub.n}</span>
         </div>
     );
 }

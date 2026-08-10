@@ -17,6 +17,8 @@ interface RankEntry {
     hp: number;
     time: number;
     tools: number;
+    clears?: number;    // v2.2.0: 成功消除组数(旧条目缺省 0)
+    version?: string;   // v2.2.0: 通关版本(旧条目无此字段)
     date: string;
     platform?: Platform;   // 旧条目无此字段 = 端游
 }
@@ -49,7 +51,7 @@ export function RankPage() {
         return () => { cancelled = true; };
     }, [curMode, curPlatform]);
 
-    const rule = `剩余血量多 → 用时短 → 技能使用次数少(失败记录也会上榜);榜单按平台分开,成绩只与本平台比较`;
+    const rule = `剩余血量多 → 成功消除组数多 → 用时短 → 技能使用次数少(失败记录也会上榜,0 心玩家中消除组数多者排前);榜单按平台分开,成绩只与本平台比较;「版本」列对应当局游戏版本,不同版本难度有别,便于横向比较`;
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-2xl px-3 pb-10 pt-3">
@@ -127,8 +129,9 @@ export function RankPage() {
                                 <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
                                     <th className="px-4 py-2.5 font-semibold">#</th>
                                     <th className="px-4 py-2.5 font-semibold">昵称</th>
-                                    <th className="px-4 py-2.5 font-semibold">血量</th>
+                                    <th className="px-4 py-2.5 font-semibold">血量(消除组数)</th>
                                     <th className="px-4 py-2.5 font-semibold">用时</th>
+                                    <th className="px-4 py-2.5 font-semibold">版本</th>
                                     <th className="px-4 py-2.5 font-semibold">技能</th>
                                     <th className="px-4 py-2.5 font-semibold">上榜时间</th>
                                 </tr>
@@ -138,8 +141,9 @@ export function RankPage() {
                                     <tr key={i} className="border-b border-muted/60 last:border-0">
                                         <td className="px-4 py-2.5">{MEDALS[i] ?? i + 1}</td>
                                         <td className="px-4 py-2.5 font-semibold">{e.name}</td>
-                                        <td className="px-4 py-2.5">❤ {e.hp}</td>
+                                        <td className="px-4 py-2.5">❤ {e.hp}({(e.clears ?? 0)}组)</td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
+                                        <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>
                                         <td className="px-4 py-2.5">{e.tools}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.date}</td>
                                     </tr>
@@ -158,8 +162,8 @@ export function RankPage() {
                                     <p className="text-xs text-muted-foreground">{e.date}</p>
                                 </div>
                                 <div className="text-right text-xs leading-relaxed">
-                                    <p>❤ {e.hp} · ⏱ {fmtTime(e.time)}</p>
-                                    <p className="text-muted-foreground">技能 {e.tools} 次</p>
+                                    <p>❤ {e.hp}({(e.clears ?? 0)}组) · ⏱ {fmtTime(e.time)}</p>
+                                    <p className="text-muted-foreground">技能 {e.tools} 次 · 版本 {e.version || "旧版"}</p>
                                 </div>
                             </div>
                         ))}

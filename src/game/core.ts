@@ -159,9 +159,10 @@ export class HuaGame {
     gameOver = false;
     win = false;
     hp = 3;                                  // 剩余血量(上限3)
+    clears = 0;                              // 成功消除组数(排行榜排名依据之一, v2.2.0)
     toolUsed = { undo: 0, out: 0, shuffle: 0 };
     settled = false;                         // 结算是否已处理
-    result: { win: boolean; remain: number; tools: number } | null = null;
+    result: { win: boolean; remain: number; tools: number; clears: number } | null = null;
 
     private tilesByLayer: Tile[][] = [];
     private listener: (() => void) | null = null;
@@ -203,6 +204,7 @@ export class HuaGame {
         this.gameOver = false; this.win = false;
         this.toolUsed = { undo: 0, out: 0, shuffle: 0 };
         this.hp = 3;
+        this.clears = 0;
         this.settled = false;
         this.result = null;
 
@@ -293,6 +295,7 @@ export class HuaGame {
         const sel = this.selected;
         this.tray = this.tray.filter(x => !sel.includes(x));
         this.selected = [];
+        this.clears++;                         // 成功消除一组(v2.2.0 计入排行榜)
         this.refreshBlocked();
         this.checkWin();
         this.checkLose();
@@ -324,33 +327,51 @@ export class HuaGame {
         }
         t.removed = false;
         this.rebuildLayers();                 // 层级可能变化, 重建分组索引
+        this.refreshBlocked();                // 放回的卡需重算遮挡状态(v2.2.0 修复)
         this.emit();
         return "done";
     }
 
-    /* 移出: 槽内最靠前3块放回棋盘空位 */
+    /* 移出: 槽内最靠前3块放回棋盘 —— 原位空置者放回原位, 原位被占者挪到空槽
+       v2.2.0 修复: 旧实现仅找「其它空槽」, 手牌槽里的卡都取自棋盘原位时
+       空槽集合为空 → 整批退回且次数已消耗, 表现为「移出不生效」 */
     moveOut(): ToolResult {
         if (this.gameOver || this.win || this.tray.length === 0) return "empty";
         if (this.toolUsed.out >= TOOL_LIMIT) return "limit";
         this.toolUsed.out++;
         const take = this.tray.splice(0, Math.min(3, this.tray.length));
         this.selected = this.selected.filter(x => !take.includes(x));
+        // 棋盘上仍被占据的位置(未移除的卡 + 仍在手牌槽/选中区的卡)
+        const occupied = new Set(
+            this.tiles.filter(x => !x.removed || this.tray.includes(x) || this.selected.includes(x))
+                .map(x => x.r + "," + x.c + "," + x.L));
+        // 可挪用的空槽: 已拾取、不在手牌槽/选中区、且非 take 自身
         const freeSlots = this.tiles.filter(x => x.removed && !this.tray.includes(x) && !take.includes(x) && !this.selected.includes(x));
-        if (freeSlots.length < take.length) {
-            // 空位不足 → 全部放回(次数已消耗, 与旧版一致)
-            this.tray.unshift(...take);
-            this.emit();
-            return "done";
+        // 1) 原位空置的卡直接放回原位
+        const toReloc: Tile[] = [];
+        for (const t of take) {
+            const key = t.r + "," + t.c + "," + t.L;
+            if (!occupied.has(key)) {
+                t.removed = false;
+                occupied.add(key);
+            } else {
+                toReloc.push(t);
+            }
         }
+        // 2) 原位被占的卡挪到其它空槽(空槽不足则留在槽内, 顺序保持)
         shuffleArr(freeSlots);
-        take.forEach((t, i) => {
-            const s = freeSlots[i];
+        const stuck: Tile[] = [];
+        for (const t of toReloc) {
+            const s = freeSlots.shift();
+            if (!s) { stuck.push(t); continue; }
             t.r = s.r; t.c = s.c; t.L = s.L;
             t.x = s.x; t.y = s.y;             // 同步缓存坐标
             t.removed = false;
             t.color = slotColorIdx(s.r, s.c, s.L);
-        });
+        }
+        if (stuck.length) this.tray.unshift(...stuck);
         this.rebuildLayers();
+        this.refreshBlocked();                // 放回的卡需重算遮挡状态
         this.emit();
         return "done";
     }
@@ -413,6 +434,7 @@ export class HuaGame {
             win: isWin,
             remain: this.tiles.filter(x => !x.removed).length,
             tools: this.toolUsed.undo + this.toolUsed.out + this.toolUsed.shuffle,
+            clears: this.clears,
         };
         this.emit();
     }

@@ -292,7 +292,7 @@ export const HLGX_SUBSTANCES: Substance[] = [
     { f: "Cu-Sn",          n: "青铜",       c: "mix" },
     { f: "Cu-Zn",          n: "黄铜",       c: "mix" },
     { f: "Al-Cu-Mg",       n: "硬铝",       c: "mix" },
-    { f: "Au(75%)",        n: "18K金",      c: "mix" },
+    { f: "—",             n: "18K金",      c: "mix" },   // v2.2.0: 不标含金量, 避免暴露混合物身份
     // 无机非金属材料(硅酸盐产品)
     { f: "—",              n: "普通玻璃",   c: "mix" },
     { f: "—",              n: "水泥",       c: "mix" },

@@ -129,8 +129,9 @@ export function RanksPage() {
                                     <th className="px-4 py-2.5 font-semibold">#</th>
                                     <th className="px-4 py-2.5 font-semibold">昵称</th>
                                     <th className="px-4 py-2.5 font-semibold">平台</th>
-                                    <th className="px-4 py-2.5 font-semibold">血量</th>
+                                    <th className="px-4 py-2.5 font-semibold">血量(消除组数)</th>
                                     <th className="px-4 py-2.5 font-semibold">用时</th>
+                                    <th className="px-4 py-2.5 font-semibold">版本</th>
                                     <th className="px-4 py-2.5 font-semibold">技能</th>
                                     <th className="px-4 py-2.5 font-semibold">上榜时间</th>
                                     <th className="px-4 py-2.5 text-right font-semibold">操作</th>
@@ -146,8 +147,9 @@ export function RanksPage() {
                                                 ? <span className="rounded-full bg-secondary px-2 py-0.5">📱 手游</span>
                                                 : <span className="rounded-full bg-secondary px-2 py-0.5">🖥️ 端游</span>}
                                         </td>
-                                        <td className="px-4 py-2.5">❤ {e.hp}</td>
+                                        <td className="px-4 py-2.5">❤ {e.hp}({(e.clears ?? 0)}组)</td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
+                                        <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>
                                         <td className="px-4 py-2.5">{e.tools}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.date}</td>
                                         <td className="px-4 py-2.5 text-right">

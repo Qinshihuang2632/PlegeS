@@ -187,7 +187,7 @@ export function HuaPage() {
     const onClear = () => {
         const r = game.clearSelected();
         if (r === "wrongSet") {
-            HLGX_Audio.lose();
+            HLGX_Audio.hurt();
             toast(`不是同类!扣除 1 点血量(剩 ${Math.max(0, game.hp)})`, {
                 className: "bg-destructive text-destructive-foreground",
             });
@@ -198,7 +198,9 @@ export function HuaPage() {
         const r = tool === "undo" ? game.undo() : tool === "out" ? game.moveOut() : game.shuffleTiles();
         if (r === "limit") toast(`${TOOL_LIMIT} 次已用完,本局不能再用了`);
         else if (r === "empty") toast("手牌槽是空的,先拾取卡牌吧");
-        else HLGX_Audio.skill();
+        else if (tool === "undo") HLGX_Audio.undo();
+        else if (tool === "out") HLGX_Audio.out();
+        else HLGX_Audio.shuffle();
     };
 
     /* ---- 结算: 提交成绩 + 展示 ---- */
@@ -219,6 +221,8 @@ export function HuaPage() {
                     hp: Math.max(0, game.hp),
                     time,
                     tools: r.tools,
+                    clears: r.clears,          // 成功消除组数(v2.2.0 排名依据)
+                    version: APP_VERSION,      // 通关版本(v2.2.0 便于跨版本比较)
                     platform,
                 }),
             });

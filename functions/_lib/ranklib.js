@@ -1,28 +1,36 @@
 /*
  * 化了个学 · 排行榜共享逻辑 (Pages Functions 内部模块, 下划线开头 = 非路由)
  * =====================================================================
- * 迁移自 Flask hlgx_rank.py, 契约与原版完全一致:
- *   - 排序规则(严格): hp 从大到小 → time 从小到大 → tools 从小到大
+ * 迁移自 Flask hlgx_rank.py, 契约与原版一致, v2.2.0 扩展:
+ *   - 排序规则(严格): hp 从大到小 → clears(成功消除组数)从大到小
+ *     → time 从小到大 → tools 从小到大
+ *     说明: clears 与剩余血量同为排名依据(v2.2.0)——0 心失败玩家中,
+ *     坚持消除更多组数(耗时更久)者排前, 高于开局速败玩家
  *   - KV 存储: 一个 namespace(binding=RANKINGS), key=mode, value=榜单数组 JSON
  *   - 日期格式: YYYY-MM-DD HH:MM(固定 Asia/Shanghai 时区, 与原 Flask 本地时区行为一致)
  */
 export const MODES = ["easy", "normal", "challenge"];
 
-/* 排序键: hp 取负 → 血量多排前; 时间短排前; 技能少排前 (与 Flask cmp_key 一致) */
+/* 排序键: hp 取负 → 血量多排前; clears 取负 → 消除组数多排前; 时间短排前; 技能少排前 */
 export function cmpKey(e) {
-    return [-(e.hp | 0), e.time | 0, e.tools | 0];
+    return [-(e.hp | 0), -(e.clears | 0), e.time | 0, e.tools | 0];
 }
 
 /* 字典序比较 a < b (数组比较, 等价 Python 元组比较) */
 export function keyLess(a, b) {
-    return a[0] < b[0] ||
-        (a[0] === b[0] && (a[1] < b[1] || (a[1] === b[1] && a[2] < b[2])));
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return a[i] < b[i];
+    }
+    return false;
 }
 
 export function sortRank(entries) {
     return [...entries].sort((a, b) => {
         const ka = cmpKey(a), kb = cmpKey(b);
-        return ka[0] - kb[0] || ka[1] - kb[1] || ka[2] - kb[2];
+        for (let i = 0; i < ka.length; i++) {
+            if (ka[i] !== kb[i]) return ka[i] - kb[i];
+        }
+        return 0;
     });
 }
 

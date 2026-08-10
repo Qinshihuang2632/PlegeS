@@ -355,6 +355,35 @@ describe("基础行为", () => {
         expect(g.toolUsed.undo).toBe(1);
     });
 
+    it("移出: 原位空置时放回原位(修复不生效 bug)", () => {
+        const g = new HuaGame();
+        const t = g.tiles.find(x => !g.isBlocked(x))!;
+        g.pickTile(t);
+        const r = g.moveOut();
+        expect(r).toBe("done");
+        expect(g.tray.length).toBe(0);      // 卡已放回棋盘, 不再滞留手牌槽
+        expect(t.removed).toBe(false);      // 放回后可见可点
+        expect(g.toolUsed.out).toBe(1);
+    });
+
+    it("成功消除组数 clears: 消除+1, 误消不加, 结算携带", () => {
+        const g = new HuaGame();
+        expect(g.clears).toBe(0);
+        g.tray = [mkSub2("oxide", undefined, true), mkSub2("oxide", undefined, true), mkSub2("oxide", undefined, true)];
+        g.selected = [...g.tray];
+        g.clearSelected();
+        expect(g.clears).toBe(1);
+        g.tray = [mkSub2("metal", undefined, true), mkSub2("acid", undefined, true), mkSub2("base", undefined, true)];
+        g.selected = [...g.tray];
+        g.clearSelected();
+        expect(g.clears).toBe(1);           // wrongSet 不计数
+        expect(g.result).toBe(null);        // 未结算
+        g.tiles = [mk("oxide", true), mk("metal", true), mk("salt", true)];
+        g.tray = [mk("acid"), mk("base")];
+        g.checkWin();
+        expect(g.result?.clears).toBe(1);
+    });
+
     it("fmtTime 格式化", () => {
         expect(fmtTime(0)).toBe("00:00");
         expect(fmtTime(65)).toBe("01:05");

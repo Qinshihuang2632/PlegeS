@@ -6,6 +6,8 @@ export interface RankEntry {
     hp: number;
     time: number;
     tools: number;
+    clears?: number; // v2.2.0: 成功消除组数(旧条目缺省 0)
+    version?: string; // v2.2.0: 通关版本(旧条目无此字段)
     date: string;
     key: number; // 管理用索引(存储数组下标)
     platform?: Platform; // 手游/端游; 旧条目无此字段 = 端游

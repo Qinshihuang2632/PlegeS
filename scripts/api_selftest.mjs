@@ -112,6 +112,27 @@ r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?
 const order = r.data.rank.map((e) => e.name).join(",");
 check("排序 hp↓→time↑→tools↑", order === "H4,T100A,T100B,T200", order);
 
+/* ---------- 3.5 v2.2.0: 清除组数排序 + 版本记录 ---------- */
+reset();
+await post({ mode: "easy", name: "C0A", hp: 0, time: 300, tools: 0, clears: 20 });
+await post({ mode: "easy", name: "C0B", hp: 0, time: 60, tools: 0, clears: 5 });
+await post({ mode: "easy", name: "C0C", hp: 0, time: 120, tools: 0, clears: 20 });
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
+check("0心排序: 同hp先比清除组数, 同组数比时间短", r.data.rank.map((e) => e.name).join(",") === "C0C,C0A,C0B", r.data.rank.map((e) => e.name).join(","));
+reset();
+await post({ mode: "easy", name: "SV", hp: 3, time: 30, tools: 0, clears: 99, version: "v2.2.0\nx" });
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
+check("clears/version 存储: clears=99, version 清洗控制字符", r.data.rank[0].clears === 99 && r.data.rank[0].version === "v2.2.0x", JSON.stringify(r.data.rank[0]));
+reset();
+r = await post({ mode: "easy", name: "CV", hp: 3, time: 30, tools: 0, clears: -5 });
+check("clears 负数 → 0", r.data.rank[0].clears === 0, JSON.stringify(r.data.rank[0]));
+reset();
+await post({ mode: "easy", name: "慢者", hp: 0, time: 200, tools: 0, clears: 10 });
+r = await post({ mode: "easy", name: "快者", hp: 0, time: 100, tools: 0, clears: 10 });
+check("surpassed: 同0心同组数, 时间更短者超越慢者 → 1", r.data.surpassed === 1, "got " + r.data.surpassed);
+r = await post({ mode: "easy", name: "少组", hp: 0, time: 50, tools: 0, clears: 8 });
+check("surpassed: 同0心但组数更少 → 不超越 → 0", r.data.surpassed === 0, "got " + r.data.surpassed);
+
 /* ---------- 4. surpassed 超越人数 (严格优于才计数) ---------- */
 reset();
 await post({ mode: "easy", name: "A", hp: 3, time: 100, tools: 0 });

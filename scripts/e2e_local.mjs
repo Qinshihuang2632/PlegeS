@@ -67,10 +67,11 @@ r = await get("/hlgx/api/rank?mode=乱写");
 check("GET rank 非法mode回退normal", r.status === 200 && r.text.includes('"mode":"normal"'), r.text.slice(0, 120));
 
 /* ---------- 3. API: POST rank (中文昵称 UTF-8 + 限频) ---------- */
-let p = await postRank({ mode: "easy", name: RUN_NAME, hp: 3, time: 131, tools: 0 });
+let p = await postRank({ mode: "easy", name: RUN_NAME, hp: 3, time: 131, tools: 0, clears: 17, version: "v2.2.0" });
 check("POST rank 200 + ok:true", p.status === 200 && p.data.ok === true, JSON.stringify(p.data).slice(0, 200));
 check("POST 中文昵称正确返回(UTF-8)", p.data.rank && p.data.rank[0].name === RUN_NAME, JSON.stringify(p.data.rank && p.data.rank[0]));
 check("POST date 格式正确", /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(p.data.rank[0].date || ""), p.data.rank[0].date);
+check("POST clears/version 记录(消除组数/通关版本)", p.data.rank && p.data.rank[0].clears === 17 && p.data.rank[0].version === "v2.2.0", JSON.stringify(p.data.rank && p.data.rank[0]));
 
 p = await postRank({ mode: "easy", name: "", hp: 1, time: 1, tools: 0 });
 check("POST 空昵称 → 400", p.status === 400 && p.data.msg === "缺少昵称", "status " + p.status + " " + JSON.stringify(p.data));
