@@ -1,6 +1,6 @@
 /*
  * 化了个学 · 物质数据库 (src/game/substances.ts)
- * 范围: 高考化学课标常见元素、化合物、有机物, 共 218 种
+ * 范围: 高考化学课标常见元素、化合物、有机物, 共 217 种
  * 字段: f=化学式(用unicode下标), n=中文名, c=主分类, multi=附加可消除类别
  * 分类: metal金属单质 / nonmetal非金属单质 / oxide氧化物
  *        acid酸 / base碱 / salt盐 / organic有机物
@@ -105,7 +105,6 @@ export const HLGX_SUBSTANCES: Substance[] = [
     { f: "P₂O₅",     n: "五氧化二磷", c: "oxide" },
     { f: "BaO",      n: "氧化钡",   c: "oxide" },
     { f: "N₂O₅",     n: "五氧化二氮", c: "oxide" },
-    { f: "OF₂",      n: "二氟化氧", c: "oxide" },
     { f: "ClO₂",     n: "二氧化氯", c: "oxide" },
     { f: "K₂O",      n: "氧化钾",   c: "oxide" },
     { f: "K₂O₂",     n: "过氧化钾", c: "oxide" },
@@ -343,7 +342,6 @@ export const HLGX_DESC: Record<string, string> = {
     "五氧化二磷": "强吸水干燥剂",
     "氧化钡": "白色,剧毒粉末",
     "五氧化二氮": "白色固体,易分解",
-    "二氟化氧": "强氧化性气体",
     "二氧化氯": "高效消毒剂",
     "氧化钾": "灰白,遇水放热",
     "过氧化钾": "强氧化性",

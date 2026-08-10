@@ -118,11 +118,11 @@ export function HuaPage() {
         setNameOpen(true);
     };
 
-    /* 棋盘缩放适配小屏 */
+    /* 棋盘缩放适配小屏: 7×7 底层几乎占满容器宽(去掉内置 20px 边距, 仅留 2px 呼吸空间) */
     useEffect(() => {
         const el = boardRef.current;
         if (!el) return;
-        const update = () => setScale(Math.min(1, (el.clientWidth - 8) / game.boardW));
+        const update = () => setScale(Math.min(1, (el.clientWidth - 2) / Math.max(1, game.boardW - 20)));
         update();
         const ro = new ResizeObserver(update);
         ro.observe(el);

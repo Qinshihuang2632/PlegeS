@@ -30,7 +30,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>⚗️</div>
                     <h2 className="text-lg font-bold">化了个学</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        消除同类物质,玩法类似「羊了个羊」。覆盖高考化学 190+ 种常见物质,支持血量 / 计时 / 排行榜。
+                        消除同类物质,玩法类似「羊了个羊」。覆盖高考化学 200+ 种常见物质,支持血量 / 计时 / 排行榜。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
@@ -70,7 +70,14 @@ export function HubPage() {
                 </Button>
             </nav>
 
-            <footer className="mt-10 text-center text-xs text-muted-foreground">
+            {/* 特别鸣谢专栏(v2.1.8 预留, 内容暂空) */}
+            <section className="mt-10 text-center" aria-label="特别鸣谢">
+                <h3 className="text-sm font-bold tracking-wide text-foreground">特别鸣谢</h3>
+                <div className="mx-auto mt-2 h-px w-20 bg-border/70" aria-hidden />
+                <div className="h-6" aria-hidden />
+            </section>
+
+            <footer className="mt-2 text-center text-xs text-muted-foreground">
                 化了个学 · 版本 {APP_VERSION}(仅供个人娱乐)
             </footer>
 
