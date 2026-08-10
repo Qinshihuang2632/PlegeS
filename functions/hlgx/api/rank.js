@@ -1,12 +1,16 @@
 /*
  * 化了个学 · 排行榜 API  (Cloudflare Pages Function)
  * 路由: /hlgx/api/rank
- *   GET    ?mode=easy|normal|challenge   查询某难度榜单(已排序)
- *   POST   请求体 JSON {mode, name, hp, time, tools}  提交成绩
- * 说明(v2.1.0):
- *   - DELETE 已移除: 清榜/删记录等管理功能全部收归 /admin/api/*(会话鉴权)
- *   - POST 加固: 每 IP 30 秒限 1 次 / 昵称清洗(trim+长度1-12+去控制字符)
- *     / 数值夹取 / 单难度上限 200 条(防 KV 无限增长)
+ *   GET    ?mode=easy|normal|challenge[&platform=mobile|desktop]
+ *          查询某难度榜单(已排序); 传 platform 只返回该平台条目(旧条目无 platform 归端游)
+ *   POST   请求体 JSON {mode, name, hp, time, tools, platform?}
+ *          提交成绩; platform 缺省按 User-Agent 兜底判断(手游/端游)
+ * 说明(v2.1.4):
+ *   - 平台区分: 手游(mobile)/端游(desktop)榜单分开, 排名仅与同平台比较;
+ *     旧客户端不传 platform 时按 UA 判断, 历史条目(无 platform 字段)归端游
+ *   - DELETE 已移除: 管理功能全部收归 /admin/api/*(会话鉴权)
+ *   - 防刷: 每 IP 60 秒限 1 次 / 昵称清洗(trim+长度1-10+去控制字符+违禁字)
+ *     / 成绩合理性(用时≥10秒) / 单难度上限 200 条 / 同名 24h 限 3 次
  * 排序契约与 Flask 版 hlgx_rank.py 完全一致。
  */
 import { MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, loadMode, saveMode, json } from "../../_lib/ranklib.js";
@@ -16,23 +20,40 @@ import { hasBadWord } from "../../_lib/badwords.js";
 const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒, KV TTL 下限为 60)
 const RANK_LIMIT = 200;     // 单难度榜单条目上限
 
-/* GET /hlgx/api/rank?mode=X → { "mode": X, "rank": [排序后的条目] } */
+/** 平台解析: 显式值优先, 否则按 User-Agent 兜底(旧客户端自动区分) */
+function resolvePlatform(body, request) {
+    const p = String(body.platform ?? "").toLowerCase();
+    if (p === "mobile" || p === "desktop") return p;
+    const ua = String(request.headers.get("user-agent") || "");
+    return /mobile|android|iphone|ipad|ipod/i.test(ua) ? "mobile" : "desktop";
+}
+
+/* GET /hlgx/api/rank?mode=X[&platform=Y]
+   → { "mode": X, "platform": "all"|"mobile"|"desktop", "rank": [排序后条目] } */
 export async function onRequestGet({ request, env }) {
     const url = new URL(request.url);
     let mode = url.searchParams.get("mode") || "normal";
     if (!MODES.includes(mode)) mode = "normal";
-    const rank = sortRank(await loadMode(env, mode));
-    return json({ mode, rank });
+    const platform = url.searchParams.get("platform");   // null | "mobile" | "desktop" | 其他
+    let rank = sortRank(await loadMode(env, mode));
+    if (platform === "mobile") {
+        rank = rank.filter((e) => e.platform === "mobile");
+    } else if (platform === "desktop") {
+        rank = rank.filter((e) => e.platform !== "mobile");   // 旧条目(无 platform)归端游
+    }
+    return json({ mode, platform: platform === "mobile" || platform === "desktop" ? platform : "all", rank });
 }
 
-/* POST /hlgx/api/rank  请求体 {mode, name, hp, time, tools}
-   → { "ok": true, "surpassed": N, "rank": [最新排序] } */
+/* POST /hlgx/api/rank  请求体 {mode, name, hp, time, tools, platform?}
+   → { "ok": true, "platform": X, "surpassed": N, "rank": [最新排序] } */
 export async function onRequestPost({ request, env }) {
     let body = {};
     try { body = await request.json(); } catch { /* 非法 JSON 按空体处理 */ }
 
     let mode = String(body.mode ?? "normal");
     if (!MODES.includes(mode)) mode = "normal";
+
+    const platform = resolvePlatform(body, request);
 
     // 提交频率限制: 同一 IP 每 60 秒最多 1 次(防脚本刷榜; KV TTL 下限 60s)
     const ip = clientIp(request);
@@ -64,18 +85,20 @@ export async function onRequestPost({ request, env }) {
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
 
-    // 先算超越人数(用当前榜单, 不含本次) — 与 Flask 一致
+    // 超越人数: 仅与同平台条目比较(手游/端游榜单分开)
     const newKey = cmpKey({ hp, time: secs, tools });
-    const surpassed = entries.filter((e) => keyLess(newKey, cmpKey(e))).length;
+    const surpassed = entries.filter((e) =>
+        (e.platform ?? "desktop") === platform && keyLess(newKey, cmpKey(e))).length;
 
     const entry = {
         name,
         hp,
         time: secs,
         tools,
+        platform,
         date: fmtDate(),
     };
     entries.push(entry);
     await saveMode(env, mode, entries);
-    return json({ ok: true, surpassed, rank: sortRank(entries) });
+    return json({ ok: true, platform, surpassed, rank: sortRank(entries) });
 }

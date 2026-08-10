@@ -73,13 +73,13 @@ const post = (body, headers = {}) =>
 /* ---------- 1. GET 查询 ---------- */
 reset();
 let r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank"), env });
-check("GET 默认 mode=normal 且空榜", deepEq(r.data, { mode: "normal", rank: [] }), JSON.stringify(r.data));
+check("GET 默认 mode=normal 且空榜", deepEq(r.data, { mode: "normal", platform: "all", rank: [] }), JSON.stringify(r.data));
 
 r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
-check("GET mode=easy", deepEq(r.data, { mode: "easy", rank: [] }), JSON.stringify(r.data));
+check("GET mode=easy", deepEq(r.data, { mode: "easy", platform: "all", rank: [] }), JSON.stringify(r.data));
 
 r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=瞎写"), env });
-check("GET 非法 mode 回退 normal", deepEq(r.data, { mode: "normal", rank: [] }), JSON.stringify(r.data));
+check("GET 非法 mode 回退 normal", deepEq(r.data, { mode: "normal", platform: "all", rank: [] }), JSON.stringify(r.data));
 
 /* ---------- 2. POST 校验与 clamp ---------- */
 reset();
@@ -214,6 +214,39 @@ check("换名不受同名限制", r.status === 200, JSON.stringify(r.data));
 // 7.4 用户 API 已移除 DELETE(管理功能收归管理端)
 reset();
 check("用户 API 不再导出 onRequestDelete", typeof rankApi.onRequestDelete === "undefined", "");
+/* ---------- 7.7 平台分离(手游/端游榜单分开) ---------- */
+reset();
+// UA 兜底: 无 platform + Android UA → mobile
+r = await call(rankApi.onRequestPost, {
+    request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "触屏玩家", hp: 3, time: 30, tools: 0 }, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Mobile" }),
+    env,
+});
+check("UA 兜底: Android UA → mobile", r.data.platform === "mobile" && r.data.rank[0].platform === "mobile", JSON.stringify(r.data));
+// 显式 platform
+r = await post({ mode: "easy", name: "键鼠玩家", hp: 3, time: 40, tools: 0, platform: "desktop" });
+check("显式 platform: desktop 提交", r.data.platform === "desktop" && r.data.rank.some((e) => e.name === "键鼠玩家" && e.platform === "desktop"), JSON.stringify(r.data));
+r = await post({ mode: "easy", name: "手机玩家", hp: 3, time: 50, tools: 0, platform: "mobile" });
+check("显式 platform: mobile 提交", r.data.platform === "mobile" && r.data.rank.some((e) => e.name === "手机玩家" && e.platform === "mobile"), JSON.stringify(r.data));
+// GET 过滤
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy&platform=mobile"), env });
+check("GET platform=mobile 只含手游", r.data.platform === "mobile" && r.data.rank.length === 2 && r.data.rank.every((e) => e.platform === "mobile"), r.data.rank.map((e) => e.name).join(","));
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy&platform=desktop"), env });
+check("GET platform=desktop 只含端游", r.data.platform === "desktop" && r.data.rank.length === 1 && r.data.rank.every((e) => e.platform !== "mobile"), r.data.rank.map((e) => e.name).join(","));
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
+check("GET 缺省 → 全部 + platform=all", r.data.platform === "all" && r.data.rank.length === 3, JSON.stringify(r.data));
+// surpassed 只与同平台比较
+reset();
+await post({ mode: "easy", name: "端游快", hp: 3, time: 100, tools: 0, platform: "desktop" });
+r = await post({ mode: "easy", name: "手游快", hp: 3, time: 20, tools: 0, platform: "mobile" });
+check("surpassed 只与同平台比: 手游(3,20) 超越数为 0", r.data.surpassed === 0, "got " + r.data.surpassed);
+// 旧条目(无 platform)归端游
+reset();
+store.set("easy", JSON.stringify([{ name: "历史记录", hp: 3, time: 100, tools: 0, date: "2026-08-09 12:00" }]));
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy&platform=desktop"), env });
+check("旧条目无 platform → 归端游", r.data.rank.length === 1 && r.data.rank[0].name === "历史记录", JSON.stringify(r.data));
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy&platform=mobile"), env });
+check("旧条目不出现在手游榜", r.data.rank.length === 0, JSON.stringify(r.data));
+
 /* ---------- 8. 管理登录: 令牌校验 / 锁定 ---------- */
 reset();
 r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", {}, { "X-Forwarded-For": "mg-ip-1" }), env });

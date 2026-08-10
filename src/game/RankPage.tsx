@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { fmtTime } from "./core";
+import { detectPlatform, PLATFORM_LABEL, type Platform } from "./platform";
+import { APP_VERSION } from "@/version";
 
 interface RankEntry {
     name: string;
@@ -16,6 +18,7 @@ interface RankEntry {
     time: number;
     tools: number;
     date: string;
+    platform?: Platform;   // 旧条目无此字段 = 端游
 }
 
 const MODES = [
@@ -28,6 +31,7 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function RankPage() {
     const [curMode, setCurMode] = useState<"easy" | "normal" | "challenge">("normal");
+    const [curPlatform, setCurPlatform] = useState<Platform>(() => detectPlatform());
     const [entries, setEntries] = useState<RankEntry[] | null>(null);
     const [showRules, setShowRules] = useState(false);
     const [error, setError] = useState(false);
@@ -36,16 +40,16 @@ export function RankPage() {
         let cancelled = false;
         setEntries(null);
         setError(false);
-        fetch(`/hlgx/api/rank?mode=${curMode}`)
+        fetch(`/hlgx/api/rank?mode=${curMode}&platform=${curPlatform}`)
             .then((res) => res.json())
             .then((data: { rank?: RankEntry[] }) => {
                 if (!cancelled) setEntries(data.rank ?? []);
             })
             .catch(() => { if (!cancelled) setError(true); });
         return () => { cancelled = true; };
-    }, [curMode]);
+    }, [curMode, curPlatform]);
 
-    const rule = "剩余血量多 → 用时短 → 技能使用次数少(失败记录也会上榜)";
+    const rule = `剩余血量多 → 用时短 → 技能使用次数少(失败记录也会上榜);榜单按平台分开,成绩只与本平台比较`;
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-2xl px-3 pb-10 pt-3">
@@ -69,6 +73,22 @@ export function RankPage() {
                         )}
                     >
                         {label}
+                    </button>
+                ))}
+            </div>
+
+            {/* 平台切换: 手游/端游榜单分开 */}
+            <div className="mb-2 flex justify-center gap-1 rounded-full bg-secondary/60 p-1">
+                {(["desktop", "mobile"] as Platform[]).map((p) => (
+                    <button
+                        key={p}
+                        onClick={() => setCurPlatform(p)}
+                        className={cn(
+                            "flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                            curPlatform === p ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground",
+                        )}
+                    >
+                        {p === "mobile" ? "📱" : "🖥️"} {PLATFORM_LABEL[p]}
                     </button>
                 ))}
             </div>
@@ -147,7 +167,7 @@ export function RankPage() {
                 </>
             )}
 
-            <footer className="mt-8 text-center text-xs text-muted-foreground">化了个学 · v2.1.0(仅供个人娱乐)</footer>
+            <footer className="mt-8 text-center text-xs text-muted-foreground">化了个学 · {APP_VERSION}(仅供个人娱乐)</footer>
         </div>
     );
 }

@@ -31,6 +31,7 @@ async function send(path, method, body, headers = {}) {
 }
 /* 独立 IP 提交(避免触发 60s 提交限频; 本地 KV 持久化, 每次运行用时间戳保证全新 IP) */
 const RUN = Date.now();
+const RUN_NAME = "帅帅" + String(RUN % 100000);   // 每轮唯一昵称(避开同名 24h 限频)
 let ipn = 0;
 const postRank = (body) => send("/hlgx/api/rank", "POST", body, { "X-Forwarded-For": `e2e-${RUN}-${++ipn}` });
 const postRankSameIp = (body) => send("/hlgx/api/rank", "POST", body, { "X-Forwarded-For": `e2e-${RUN}-same` });
@@ -65,17 +66,17 @@ r = await get("/hlgx/api/rank?mode=乱写");
 check("GET rank 非法mode回退normal", r.status === 200 && r.text.includes('"mode":"normal"'), r.text.slice(0, 120));
 
 /* ---------- 3. API: POST rank (中文昵称 UTF-8 + 限频) ---------- */
-let p = await postRank({ mode: "easy", name: "帅帅", hp: 3, time: 131, tools: 0 });
+let p = await postRank({ mode: "easy", name: RUN_NAME, hp: 3, time: 131, tools: 0 });
 check("POST rank 200 + ok:true", p.status === 200 && p.data.ok === true, JSON.stringify(p.data).slice(0, 200));
-check("POST 中文昵称正确返回(UTF-8)", p.data.rank && p.data.rank[0].name === "帅帅", JSON.stringify(p.data.rank && p.data.rank[0]));
+check("POST 中文昵称正确返回(UTF-8)", p.data.rank && p.data.rank[0].name === RUN_NAME, JSON.stringify(p.data.rank && p.data.rank[0]));
 check("POST date 格式正确", /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(p.data.rank[0].date || ""), p.data.rank[0].date);
 
 p = await postRank({ mode: "easy", name: "", hp: 1, time: 1, tools: 0 });
 check("POST 空昵称 → 400", p.status === 400 && p.data.msg === "缺少昵称", "status " + p.status + " " + JSON.stringify(p.data));
 
-p = await postRankSameIp({ mode: "easy", name: "同IP一", hp: 1, time: 20, tools: 0 });
+p = await postRankSameIp({ mode: "easy", name: "同IP" + (RUN % 1000), hp: 1, time: 20, tools: 0 });
 check("限频: 同IP第1次提交成功", p.status === 200, "status " + p.status);
-p = await postRankSameIp({ mode: "easy", name: "同IP二", hp: 1, time: 21, tools: 0 });
+p = await postRankSameIp({ mode: "easy", name: "同IP" + (RUN % 1000) + "b", hp: 1, time: 21, tools: 0 });
 check("限频: 同IP 60秒内第2次 → 429", p.status === 429 && p.data.msg === "提交过于频繁,请稍后再试", "status " + p.status + " " + JSON.stringify(p.data));
 
 p = await postRank({ mode: "easy", name: "秒杀", hp: 3, time: 2, tools: 0 });
@@ -91,14 +92,23 @@ p = await postRank({ mode: "easy", name: "一二三四五六七八九十十一",
 check("昵称超 10 字 → 400", p.status === 400 && p.data.msg === "昵称不能超过 10 个字", "status " + p.status + " " + JSON.stringify(p.data));
 
 /* ---------- 4. API: exists / suggest ---------- */
-r = await get("/hlgx/api/name/exists?name=" + encodeURIComponent("帅帅"));
+r = await get("/hlgx/api/name/exists?name=" + encodeURIComponent(RUN_NAME));
 check("exists 已存在 → true", r.status === 200 && r.text.includes('"exists":true'), r.text);
 
 r = await get("/hlgx/api/name/exists?name=" + encodeURIComponent("路人"));
 check("exists 不存在 → false", r.status === 200 && r.text.includes('"exists":false'), r.text);
 
-r = await get("/hlgx/api/name/suggest?name=" + encodeURIComponent("帅帅"));
-check("suggest 返回 *001 形式", r.status === 200 && /"name":"帅帅\*\d{3}"/.test(r.text), r.text);
+r = await get("/hlgx/api/name/suggest?name=" + encodeURIComponent(RUN_NAME));
+check("suggest 返回 *001 形式", r.status === 200 && new RegExp('"name":"' + RUN_NAME + '\\*\\d{3}"').test(r.text), r.text);
+
+/* ---------- 4.5 API: 平台分离(手游/端游) ---------- */
+const DUAN = "端游" + (RUN % 1000), SHOU = "手游" + (RUN % 1000);
+await postRank({ mode: "easy", name: DUAN, hp: 3, time: 30, tools: 0, platform: "desktop" });
+await postRank({ mode: "easy", name: SHOU, hp: 3, time: 31, tools: 0, platform: "mobile" });
+r = await get("/hlgx/api/rank?mode=easy&platform=mobile");
+check("GET platform=mobile 过滤", r.status === 200 && r.text.includes('"platform":"mobile"') && r.text.includes(SHOU) && !r.text.includes(DUAN), r.text.slice(0, 200));
+r = await get("/hlgx/api/rank?mode=easy&platform=desktop");
+check("GET platform=desktop 过滤", r.status === 200 && r.text.includes('"platform":"desktop"') && r.text.includes(DUAN) && !r.text.includes(SHOU), r.text.slice(0, 200));
 
 /* ---------- 5. 用户 API 不再提供 DELETE ---------- */
 p = await send("/hlgx/api/rank?mode=easy", "DELETE");
@@ -108,9 +118,9 @@ check("用户 API DELETE → 404 接口不存在", p.status === 404 && p.data.ms
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN_LOCAL || "wkQBogU6fQgL4ON3O_5C70FsbJY7w2Qw";   // 本地令牌, 见 .dev.vars(不入 git)
 
 // 6.1 登录
-p = await send("/admin/api/auth", "POST", { token: "wrong" }, { "X-Forwarded-For": "e2e-admin-wrong" });
+p = await send("/admin/api/auth", "POST", { token: "wrong" }, { "X-Forwarded-For": "e2e-admin-wrong-" + RUN });
 check("管理登录 错令牌 → 401", p.status === 401, "status " + p.status);
-p = await send("/admin/api/auth", "POST", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "e2e-admin" });
+p = await send("/admin/api/auth", "POST", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "e2e-admin-" + RUN });
 const cookie = (p.setCookie || "").split(";")[0];
 check("管理登录 正确令牌 → 200 + Cookie", p.status === 200 && p.data.ok === true && cookie.startsWith("hlgx_admin="), p.setCookie || "");
 
@@ -122,8 +132,8 @@ check("管理榜单 未登录 → 401", p.status === 401, "status " + p.status);
 
 // 6.3 榜单管理: 查看 → 单条删除 → 清空(全部留审计)
 p = await send("/admin/api/rank?mode=easy", "GET", null, { cookie });
-const entry = (p.data?.rank || [])[0];
-check("管理榜单 含刚才提交的记录(帅帅)", !!entry && entry.name === "帅帅", JSON.stringify(p.data?.rank));
+const entry = (p.data?.rank || []).find((e) => e.name === RUN_NAME);
+check("管理榜单 含刚才提交的记录(" + RUN_NAME + ")", !!entry, JSON.stringify(p.data?.rank));
 p = await send("/admin/api/rank?mode=easy&key=" + entry.key, "DELETE", null, { cookie });
 check("单条删除 → 200", p.status === 200 && p.data.ok === true, JSON.stringify(p.data));
 p = await send("/admin/api/rank?mode=easy", "DELETE", null, { cookie });

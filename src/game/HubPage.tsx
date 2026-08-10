@@ -7,8 +7,7 @@ import { Link } from "react-router";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GameRules } from "./GameRules";
-
-export const APP_VERSION = "v2.1.0";
+import { APP_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);

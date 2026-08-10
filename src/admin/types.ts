@@ -1,4 +1,6 @@
 /* 管理后台共享类型 */
+export type Platform = "mobile" | "desktop";
+
 export interface RankEntry {
     name: string;
     hp: number;
@@ -6,6 +8,7 @@ export interface RankEntry {
     tools: number;
     date: string;
     key: number; // 管理用索引(存储数组下标)
+    platform?: Platform; // 手游/端游; 旧条目无此字段 = 端游
 }
 
 export interface RankList {

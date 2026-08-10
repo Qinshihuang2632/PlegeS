@@ -13,7 +13,6 @@ import { apiClearRank, apiDeleteRankEntry, apiRanks } from "../api";
 import { ConfirmDialog } from "../ConfirmDialog";
 import type { RankEntry } from "../types";
 import { fmtTime } from "@/game/core";
-
 const MODES = [
     { mode: "easy", label: "简单" },
     { mode: "normal", label: "标准" },
@@ -129,6 +128,7 @@ export function RanksPage() {
                                 <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
                                     <th className="px-4 py-2.5 font-semibold">#</th>
                                     <th className="px-4 py-2.5 font-semibold">昵称</th>
+                                    <th className="px-4 py-2.5 font-semibold">平台</th>
                                     <th className="px-4 py-2.5 font-semibold">血量</th>
                                     <th className="px-4 py-2.5 font-semibold">用时</th>
                                     <th className="px-4 py-2.5 font-semibold">技能</th>
@@ -141,6 +141,11 @@ export function RanksPage() {
                                     <tr key={e.key} className="border-b border-muted/60 last:border-0">
                                         <td className="px-4 py-2.5">{i + 1}</td>
                                         <td className="max-w-[10rem] truncate px-4 py-2.5 font-semibold">{e.name}</td>
+                                        <td className="px-4 py-2.5 text-xs">
+                                            {e.platform === "mobile"
+                                                ? <span className="rounded-full bg-secondary px-2 py-0.5">📱 手游</span>
+                                                : <span className="rounded-full bg-secondary px-2 py-0.5">🖥️ 端游</span>}
+                                        </td>
                                         <td className="px-4 py-2.5">❤ {e.hp}</td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
                                         <td className="px-4 py-2.5">{e.tools}</td>

@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { HLGX_Audio } from "./audio";
 import { hasBadWord } from "./badwords";
 import { fmtTime, TOOL_LIMIT, type Mode, type Tile } from "./core";
+import { detectPlatform, PLATFORM_LABEL } from "./platform";
+import { APP_VERSION } from "@/version";
 import { BoardTile, TrayCell } from "./game-ui";
 import { GameRules } from "./GameRules";
 import { useGame } from "./useGame";
@@ -54,6 +56,7 @@ interface ResultInfo {
 export function HuaPage() {
     const navigate = useNavigate();
     const { game, elapsed, stopTimer, startTimer } = useGame();
+    const platform = detectPlatform();   // 手游/端游: 提交与展示用
 
     /* ---- 通用 UI 状态 ---- */
     const [muted, setMuted] = useState(false);
@@ -238,6 +241,7 @@ export function HuaPage() {
                     hp: Math.max(0, game.hp),
                     time,
                     tools: r.tools,
+                    platform,
                 }),
             });
             const data = await res.json().catch(() => null);
@@ -337,8 +341,11 @@ export function HuaPage() {
                 ))}
             </div>
 
-            {/* 状态栏: 血量 / 计时 / 剩余 */}
+            {/* 状态栏: 平台 / 血量 / 计时 / 剩余 */}
             <div className="mb-3 flex items-center justify-center gap-4 text-sm">
+                <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground" title="榜单按平台分开,成绩只与本平台比较">
+                    {platform === "mobile" ? "📱" : "🖥️"} {PLATFORM_LABEL[platform]}
+                </span>
                 <span className="flex items-center gap-1" aria-label={`血量 ${Math.max(0, game.hp)}`}>
                     {[0, 1, 2].map((i) => (
                         <span key={i} aria-hidden>{i < Math.max(0, game.hp) ? "❤️" : "🤍"}</span>
@@ -441,7 +448,7 @@ export function HuaPage() {
                 </Tooltip>
             </div>
 
-            <footer className="mt-8 text-center text-xs text-muted-foreground">化了个学 · v2.1.0(仅供个人娱乐)</footer>
+            <footer className="mt-8 text-center text-xs text-muted-foreground">化了个学 · {APP_VERSION}(仅供个人娱乐)</footer>
 
             {/* ---------- 弹窗 ---------- */}
 
