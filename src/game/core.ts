@@ -92,10 +92,11 @@ export function buildSlots(layers: number[]): Slot[] {
 export function buildExtremeSlots(): Slot[] {
     const corners = [{ r: 0, c: 0 }, { r: 0, c: 5 }, { r: 5, c: 0 }, { r: 5, c: 5 }];
     const slots: Slot[] = [];
-    // 第一楼层: 4 个小金字塔(1×1 在 3×3 区域中心; 2×2 取水平居中两列, 正金字塔不外斜)
+    // 第一楼层: 4 个正金字塔(1×1 尖端 → 2×2 → 3×3, 逐层向右下收, 与困难模式金字塔一致)
+    // 2×2 取 3×3 区域右下角, 尖端位于 2×2 左上角 —— 偏移方向统一, 正金字塔投影
     for (const p of corners) slots.push({ r: p.r + 1, c: p.c + 1, L: 0 });
     for (const p of corners)
-        for (let dr = 0; dr < 2; dr++)
+        for (let dr = 1; dr < 3; dr++)
             for (let dc = 1; dc < 3; dc++)
                 slots.push({ r: p.r + dr, c: p.c + dc, L: 1 });
     for (const p of corners)
@@ -277,15 +278,8 @@ export class HuaGame {
 
     /* 像素遮挡解锁: 只要被任何更上层方块盖住就不可点, 盖住它的方块被取走即解锁
        加速: 坐标已缓存, 遮挡只查更上层分组, 跳过已移除块
-       挑战模式(extreme, v2.2.4): 改为「层间完全遮盖」——更上层任一卡未移除,
-       本层整层不可见(开局仅 4 个金字塔尖可拾取; 逐层清空后下层才露出) */
+       (v2.2.5 恢复: 挑战模式同样使用遮挡关系, 不做层间整层锁定) */
     isBlocked(t: Tile): boolean {
-        if (this.mode === "extreme") {
-            for (let L = 0; L < t.L; L++) {
-                if (this.tilesByLayer[L].some(o => !o.removed)) return true;
-            }
-            return false;
-        }
         const pa = { x: t.x, y: t.y };
         for (let L = 0; L < t.L; L++) {
             for (const o of this.tilesByLayer[L]) {
