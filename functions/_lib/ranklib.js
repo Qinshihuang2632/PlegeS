@@ -9,7 +9,7 @@
  *   - KV 存储: 一个 namespace(binding=RANKINGS), key=mode, value=榜单数组 JSON
  *   - 日期格式: YYYY-MM-DD HH:MM(固定 Asia/Shanghai 时区, 与原 Flask 本地时区行为一致)
  */
-export const MODES = ["easy", "normal", "challenge"];
+export const MODES = ["easy", "normal", "challenge", "extreme"];   // v2.2.2: 新增挑战(extreme)
 
 /* 排序键: hp 取负 → 血量多排前; clears 取负 → 消除组数多排前; 时间短排前; 技能少排前
    v2.2.1: 0 心且无 clears 字段的旧记录(无法得知消除组数)按「用时越长越靠前」,

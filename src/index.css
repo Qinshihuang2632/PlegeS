@@ -120,8 +120,8 @@
   transition: transform 0.16s ease, opacity 0.16s ease;
 }
 
-.hlgx-tile-f { font-weight: 800; line-height: 1.1; }
-.hlgx-tile-n { font-size: 9px; opacity: 0.92; letter-spacing: 0.3px; }
+.hlgx-tile-f { font-weight: 800; line-height: 1.1; text-align: center; white-space: nowrap; max-width: 100%; overflow: hidden; }
+.hlgx-tile-n { font-size: 9px; opacity: 0.92; letter-spacing: 0.3px; text-align: center; white-space: nowrap; max-width: 100%; overflow: hidden; }
 
 /* 棋盘卡牌 */
 .hlgx-tile-board { position: absolute; inset: 0; pointer-events: auto; }

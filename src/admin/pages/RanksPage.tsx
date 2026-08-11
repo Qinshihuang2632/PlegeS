@@ -16,7 +16,8 @@ import { fmtTime } from "@/game/core";
 const MODES = [
     { mode: "easy", label: "简单" },
     { mode: "normal", label: "标准" },
-    { mode: "challenge", label: "挑战" },
+    { mode: "challenge", label: "困难" },
+    { mode: "extreme", label: "挑战" },
 ];
 
 type ConfirmState =

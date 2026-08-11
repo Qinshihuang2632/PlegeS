@@ -26,13 +26,14 @@ interface RankEntry {
 const MODES = [
     { mode: "easy", label: "简单" },
     { mode: "normal", label: "标准" },
-    { mode: "challenge", label: "挑战" },
+    { mode: "challenge", label: "困难" },
+    { mode: "extreme", label: "挑战" },
 ] as const;
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function RankPage() {
-    const [curMode, setCurMode] = useState<"easy" | "normal" | "challenge">("normal");
+    const [curMode, setCurMode] = useState<"easy" | "normal" | "challenge" | "extreme">("normal");
     const [curPlatform, setCurPlatform] = useState<Platform>(() => detectPlatform());
     const [entries, setEntries] = useState<RankEntry[] | null>(null);
     const [showRules, setShowRules] = useState(false);

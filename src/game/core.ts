@@ -19,11 +19,15 @@ export const CELL = 58;          // 网格单元(含间隙)px
 export const TOOL_LIMIT = 3;     // 每个道具每局最多使用次数
 export const COLOR_COUNT = 8;    // 卡牌配色(位置决定): 同层相邻块颜色不同
 
-/* 难度分级: 简单=槽10+5层 / 标准=槽10+7层 / 挑战=槽8+8层 */
+/* 难度分级: 简单=槽10+5层 / 标准=槽10+7层 / 困难=槽8+8层(原「挑战」, v2.2.2 改名)
+   挑战=槽10+全新布局(4 小金字塔 + 4 根 3×3 柱子 + 倒置 8 层金字塔, 14 层 368 块) */
+export const EXTREME_LAYERS = [1, 2, 3, 3, 3, 3, 8, 7, 6, 5, 4, 3, 2, 1]; // 每层单元尺寸标注(布局见 buildExtremeSlots)
+
 export const HLGX_DIFFICULTIES = {
     easy:      { label: "简单", tray: 10, layers: [1, 2, 3, 4, 5] },
     normal:    { label: "标准", tray: 10, layers: [1, 2, 3, 4, 5, 6, 7] },
-    challenge: { label: "挑战", tray: 8,  layers: [1, 2, 3, 4, 5, 6, 7, 8] },
+    challenge: { label: "困难", tray: 8,  layers: [1, 2, 3, 4, 5, 6, 7, 8] },
+    extreme:   { label: "挑战", tray: 10, layers: EXTREME_LAYERS },
 } as const;
 export type Mode = keyof typeof HLGX_DIFFICULTIES;
 
@@ -78,11 +82,49 @@ export function buildSlots(layers: number[]): Slot[] {
     return slots;
 }
 
-/* 各层在棋盘内同心居中, 构成正金字塔 */
+/* 挑战模式(extreme)布局 —— 放弃单一金字塔, 三层结构(v2.2.2):
+ *   第一楼层: 4 个相同的 3 层小金字塔(1×1, 2×2, 3×3)对称分布在四角
+ *   第二楼层: 接在小金字塔下方的 4 根 3×3「柱子」(3 层)
+ *   第三楼层: 倒置的 8 层金字塔(8×8 在顶, 1×1 在底, 居中)
+ *   二三楼层联系: 4 根柱子的 3×3 底面恰好盖住 8×8 层的四角 3×3 区域
+ *   总槽数 = 4×14(小金字塔) + 4×27(柱子) + 204(倒置金字塔) = 368
+ * 四角 3×3 区域(基准 8×8 网格): 左上(0-2,0-2) 右上(0-2,5-7) 左下(5-7,0-2) 右下(5-7,5-7) */
+export function buildExtremeSlots(): Slot[] {
+    const corners = [{ r: 0, c: 0 }, { r: 0, c: 5 }, { r: 5, c: 0 }, { r: 5, c: 5 }];
+    const slots: Slot[] = [];
+    // 第一楼层: 4 个小金字塔(1×1 在 3×3 区域中心, 2×2 靠角, 3×3 铺满区域)
+    for (const p of corners) slots.push({ r: p.r + 1, c: p.c + 1, L: 0 });
+    for (const p of corners)
+        for (let dr = 0; dr < 2; dr++)
+            for (let dc = 0; dc < 2; dc++)
+                slots.push({ r: p.r + dr, c: p.c + dc, L: 1 });
+    for (const p of corners)
+        for (let dr = 0; dr < 3; dr++)
+            for (let dc = 0; dc < 3; dc++)
+                slots.push({ r: p.r + dr, c: p.c + dc, L: 2 });
+    // 第二楼层: 4 根 3×3 柱子(3 层), 与小金字塔同区域
+    for (let L = 3; L <= 5; L++)
+        for (const p of corners)
+            for (let dr = 0; dr < 3; dr++)
+                for (let dc = 0; dc < 3; dc++)
+                    slots.push({ r: p.r + dr, c: p.c + dc, L });
+    // 第三楼层: 倒置 8 层金字塔(8×8 在顶被柱子遮挡, 逐层缩小至 1×1)
+    for (let S = 8; S >= 1; S--) {
+        const L = 6 + (8 - S);
+        for (let r = 0; r < S; r++)
+            for (let c = 0; c < S; c++)
+                slots.push({ r, c, L });
+    }
+    return slots;
+}
+
+/* 各层在棋盘内同心居中, 构成正金字塔;
+   挑战布局(14 层): L<7 的四角区域/8×8 层以 8×8 为基准不居中, L≥7 的倒置层居中 */
 export function slotXY(s: Slot, layers: number[]): { x: number; y: number } {
     const S = layers[s.L];
     const max = Math.max(...layers);
-    const base = ((max - S) * CELL) / 2;
+    const isExtreme = layers.length >= 14;
+    const base = isExtreme && s.L < 7 ? 0 : ((max - S) * CELL) / 2;
     return { x: base + s.c * CELL, y: base + s.r * CELL };
 }
 
@@ -208,7 +250,7 @@ export class HuaGame {
         this.settled = false;
         this.result = null;
 
-        const slots = buildSlots(this.layers);
+        const slots = this.mode === "extreme" ? buildExtremeSlots() : buildSlots(this.layers);
         const stack = buildStack(slots.length);
         shuffleArr(stack);                    // 打散到各层
 

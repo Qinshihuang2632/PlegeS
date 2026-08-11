@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { HLGX_CATS, HLGX_DESC, HLGX_SUBSTANCES, type Category } from "./substances";
 import {
-    HuaGame, TOOL_LIMIT, buildSlots, buildStack, catsOf, fmtTime, slotColorIdx,
+    HuaGame, TOOL_LIMIT, buildExtremeSlots, buildSlots, buildStack, catsOf, fmtTime, slotColorIdx,
     type Tile,
 } from "./core";
 
@@ -74,11 +74,37 @@ describe("布局与分布", () => {
         expect(g.tiles.length).toBe(140);
     });
 
-    it("简单55槽(5层) / 挑战204槽(8层, 槽8)", () => {
+    it("简单55槽(5层) / 困难204槽(8层, 槽8)", () => {
         expect(buildSlots([1, 2, 3, 4, 5]).length).toBe(55);
         const g = new HuaGame("challenge");
         expect(g.tiles.length).toBe(204);
         expect(g.trayMax).toBe(8);
+    });
+
+    /* v2.2.2 挑战(extreme)布局: 4 小金字塔(56) + 4 根 3×3 柱子(108) + 倒置 8 层金字塔(204) = 368 */
+    it("挑战368槽(14层, 槽10): 小金字塔+柱子+倒置金字塔", () => {
+        const slots = buildExtremeSlots();
+        expect(slots.length).toBe(368);
+        expect(slots.some(s => s.L === 13)).toBe(true);          // 倒置金字塔底 1×1
+        const g = new HuaGame("extreme");
+        expect(g.layers.length).toBe(14);
+        expect(g.trayMax).toBe(10);
+        expect(g.tiles.length).toBe(368);
+        // 第一楼层: 顶层 4 个 1×1 对称分布四角 3×3 区域中心
+        const top = g.tiles.filter(t => t.L === 0);
+        expect(top.length).toBe(4);
+        const keys = top.map(t => t.r + "," + t.c).sort().join(";");
+        expect(keys).toBe("1,1;1,6;6,1;6,6");
+        // 第二楼层: 4 根柱子各 3 层 3×3 → L3 共 36 块
+        expect(g.tiles.filter(t => t.L === 3).length).toBe(36);
+        // 第三楼层: 8×8 层被 4 根柱子完全遮挡(四角 3×3 区域), 露出的仅中间十字 28 格
+        const l6 = g.tiles.filter(t => t.L === 6);
+        expect(l6.length).toBe(64);
+        const visible6 = l6.filter(t => !g.isBlocked(t));
+        expect(visible6.length).toBe(28);                        // 64 - 4×3×3 = 28
+        // 倒置: 越往下越小, 最底层 1×1
+        expect(g.tiles.filter(t => t.L === 7).length).toBe(49);
+        expect(g.tiles.filter(t => t.L === 13).length).toBe(1);
     });
 
     it("方块总数与槽数一致, 8个类别每类至少3块", () => {
@@ -97,6 +123,13 @@ describe("布局与分布", () => {
             for (const v of Object.values(cnt)) {
                 expect(v % 3, `类别 ${JSON.stringify(cnt)} mod3=${v % 3}`).not.toBe(1);
             }
+        }
+        // 挑战布局(368 槽)同样保证 mod3 无 ≡1
+        const st = buildStack(buildExtremeSlots().length);
+        const cnt: Record<string, number> = {};
+        st.forEach(s => { cnt[s.c] = (cnt[s.c] || 0) + 1; });
+        for (const v of Object.values(cnt)) {
+            expect(v % 3, `挑战布局类别 ${JSON.stringify(cnt)} mod3=${v % 3}`).not.toBe(1);
         }
     });
 
