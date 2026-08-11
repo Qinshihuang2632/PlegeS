@@ -123,7 +123,7 @@ export function HubPage() {
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@鹜秋</span>
-                            <span className="block text-xs text-muted-foreground">感谢 v2.1.9 更新支持</span>
+                            <span className="block text-xs text-muted-foreground">感谢 v2.1.9 与 v2.2.1 更新支持</span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@鼠鼠鼠了</span>
