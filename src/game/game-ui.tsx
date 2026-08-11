@@ -22,14 +22,16 @@ function fitFont(text: string, base: number, maxW: number): number {
     return Math.max(6, Math.min(base, Math.floor((maxW - 4) / len)));
 }
 
-export function substanceInfo(sub: Tile["sub"]): string {
-    return sub.n + ": " + (HLGX_DESC[sub.n] || "性质待补充");
+/* 悬浮简介: 物质名 + 性质简介 + 层数(顶层为第 1 层, 往下递增, v2.2.6) */
+export function substanceInfo(sub: Tile["sub"], layer = 1): string {
+    return `${sub.n}: ${HLGX_DESC[sub.n] || "性质待补充"}(第 ${layer} 层)`;
 }
 
-/* 卡牌正面: 化学式 + 中文名(size 缩小时字号按比例缩放)
+/* 卡牌正面: 化学式 + 中文名 + 层数角标(size 缩小时字号按比例缩放)
    v2.2.0: 无固定化学式的混合物(f 为占位符 "—")不显示横线, 名称居中
    v2.2.2: 公式过长(>10 字符放不下)也省略; 名称/公式字号按字符数收缩,
-   配合 nowrap 保证不换行、整体居中(修复「普通玻璃」断行、油水混合物偏左等) */
+   配合 nowrap 保证不换行、整体居中(修复「普通玻璃」断行、油水混合物偏左等)
+   v2.2.6: 左上角显示层数角标(顶层=1), 悬浮简介同时显示层数 */
 export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
     tile: Tile;
     size?: number;
@@ -43,15 +45,17 @@ export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
     const name = tile.sub.n;
     const fSize = hasFormula ? fitFont(f, tileFontSize(f), size) * k : 0;
     const nSize = fitFont(name, hasFormula ? 9 : 12.5, size) * k;
+    const layer = tile.L + 1;   // 顶层(最先接触)为第 1 层
     return (
         <div
             className={cn("hlgx-tile", className)}
             style={{ width: size, height: size, background: TILE_COLORS[tile.color] }}
-            title={title ?? substanceInfo(tile.sub)}
+            title={title ?? substanceInfo(tile.sub, layer)}
             onClick={onClick}
         >
             {hasFormula && <span className="hlgx-tile-f" style={{ fontSize: fSize }}>{f}</span>}
             <span className="hlgx-tile-n" style={{ fontSize: nSize }}>{name}</span>
+            <span className="hlgx-tile-layer" style={{ fontSize: Math.max(5.5, 7 * k) }}>{layer}</span>
         </div>
     );
 }
