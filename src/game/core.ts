@@ -20,14 +20,14 @@ export const TOOL_LIMIT = 3;     // 每个道具每局最多使用次数
 export const COLOR_COUNT = 8;    // 卡牌配色(位置决定): 同层相邻块颜色不同
 
 /* 难度分级: 简单=槽10+5层 / 标准=槽10+7层 / 困难=槽8+8层(原「挑战」, v2.2.2 改名)
-   挑战=槽10+全新布局(4 小金字塔 + 4 根 3×3 柱子 + 倒置 8 层金字塔, 14 层 368 块) */
+   挑战=槽8+全新布局(4 小金字塔 + 4 根 3×3 柱子 + 倒置 8 层金字塔, 14 层 368 块, v2.2.3 槽改8) */
 export const EXTREME_LAYERS = [1, 2, 3, 3, 3, 3, 8, 7, 6, 5, 4, 3, 2, 1]; // 每层单元尺寸标注(布局见 buildExtremeSlots)
 
 export const HLGX_DIFFICULTIES = {
     easy:      { label: "简单", tray: 10, layers: [1, 2, 3, 4, 5] },
     normal:    { label: "标准", tray: 10, layers: [1, 2, 3, 4, 5, 6, 7] },
     challenge: { label: "困难", tray: 8,  layers: [1, 2, 3, 4, 5, 6, 7, 8] },
-    extreme:   { label: "挑战", tray: 10, layers: EXTREME_LAYERS },
+    extreme:   { label: "挑战", tray: 8,  layers: EXTREME_LAYERS },
 } as const;
 export type Mode = keyof typeof HLGX_DIFFICULTIES;
 

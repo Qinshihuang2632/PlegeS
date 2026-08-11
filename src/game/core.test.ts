@@ -81,14 +81,15 @@ describe("布局与分布", () => {
         expect(g.trayMax).toBe(8);
     });
 
-    /* v2.2.2 挑战(extreme)布局: 4 小金字塔(56) + 4 根 3×3 柱子(108) + 倒置 8 层金字塔(204) = 368 */
-    it("挑战368槽(14层, 槽10): 小金字塔+柱子+倒置金字塔", () => {
+    /* v2.2.2 挑战(extreme)布局: 4 小金字塔(56) + 4 根 3×3 柱子(108) + 倒置 8 层金字塔(204) = 368
+       v2.2.3: 手牌槽与困难一致改 8 张 */
+    it("挑战368槽(14层, 槽8): 小金字塔+柱子+倒置金字塔", () => {
         const slots = buildExtremeSlots();
         expect(slots.length).toBe(368);
         expect(slots.some(s => s.L === 13)).toBe(true);          // 倒置金字塔底 1×1
         const g = new HuaGame("extreme");
         expect(g.layers.length).toBe(14);
-        expect(g.trayMax).toBe(10);
+        expect(g.trayMax).toBe(8);
         expect(g.tiles.length).toBe(368);
         // 第一楼层: 顶层 4 个 1×1 对称分布四角 3×3 区域中心
         const top = g.tiles.filter(t => t.L === 0);
