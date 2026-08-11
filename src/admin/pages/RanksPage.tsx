@@ -147,7 +147,7 @@ export function RanksPage() {
                                                 ? <span className="rounded-full bg-secondary px-2 py-0.5">📱 手游</span>
                                                 : <span className="rounded-full bg-secondary px-2 py-0.5">🖥️ 端游</span>}
                                         </td>
-                                        <td className="px-4 py-2.5">❤ {e.hp}({(e.clears ?? 0)}组)</td>
+                                        <td className="px-4 py-2.5">❤ {e.hp}({e.clears !== undefined ? e.clears + "组" : "—"})</td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>
                                         <td className="px-4 py-2.5">{e.tools}</td>

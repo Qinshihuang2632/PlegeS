@@ -141,8 +141,7 @@ export function RankPage() {
                                     <tr key={i} className="border-b border-muted/60 last:border-0">
                                         <td className="px-4 py-2.5">{MEDALS[i] ?? i + 1}</td>
                                         <td className="px-4 py-2.5 font-semibold">{e.name}</td>
-                                        <td className="px-4 py-2.5">❤ {e.hp}({(e.clears ?? 0)}组)</td>
-                                        <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
+                                        <td className="px-4 py-2.5">❤ {e.hp}({e.clears !== undefined ? e.clears + "组" : "—"})</td>                                        <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>
                                         <td className="px-4 py-2.5">{e.tools}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.date}</td>
@@ -162,7 +161,7 @@ export function RankPage() {
                                     <p className="text-xs text-muted-foreground">{e.date}</p>
                                 </div>
                                 <div className="text-right text-xs leading-relaxed">
-                                    <p>❤ {e.hp}({(e.clears ?? 0)}组) · ⏱ {fmtTime(e.time)}</p>
+                                    <p>❤ {e.hp}({e.clears !== undefined ? e.clears + "组" : "—"}) · ⏱ {fmtTime(e.time)}</p>
                                     <p className="text-muted-foreground">技能 {e.tools} 次 · 版本 {e.version || "旧版"}</p>
                                 </div>
                             </div>

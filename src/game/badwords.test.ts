@@ -45,6 +45,18 @@ describe("违禁词检测", () => {
         expect(hasBadWord("大麻叶提取物")).toBe(true);   // 含「大麻」
     });
 
+    it("命中麻醉药品/精神药品名录(v2.2.1 扩充)", () => {
+        for (const n of [
+            "阿桔片", "罂粟果", "罂粟壳", "哌替啶", "福尔可定", "乙基吗啡",
+            "二氢埃托啡", "瑞芬太尼", "舒芬太尼", "右丙氧芬", "地芬诺酯",
+            "双氢可待因", "帝巴因", "美沙酮", "氢可酮", "羟考酮", "氢吗啡酮",
+            "可待因", "复方樟脑酊", "布桂嗪", "马吲哚", "丁丙诺啡", "羟丁酸",
+            "三唑仑", "哌醋甲酯", "司可巴比妥",
+        ]) {
+            expect(hasBadWord(n), `应命中: ${n}`).toBe(true);
+        }
+    });
+
     it("词表非空且全小写(与 functions/_lib/badwords.js 同步)", () => {
         expect(BAD_WORDS.length).toBeGreaterThan(30);
         expect(BAD_WORDS.every((w) => w === w.toLowerCase())).toBe(true);

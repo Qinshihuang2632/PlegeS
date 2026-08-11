@@ -133,6 +133,22 @@ check("surpassed: 同0心同组数, 时间更短者超越慢者 → 1", r.data.s
 r = await post({ mode: "easy", name: "少组", hp: 0, time: 50, tools: 0, clears: 8 });
 check("surpassed: 同0心但组数更少 → 不超越 → 0", r.data.surpassed === 0, "got " + r.data.surpassed);
 
+/* ---------- 3.6 v2.2.1: 0 心旧记录(无 clears 字段)按用时降序 ---------- */
+reset();
+store.set("easy", JSON.stringify([
+    { name: "旧快", hp: 0, time: 30, tools: 0, date: "2026-08-09 00:00" },
+    { name: "旧慢", hp: 0, time: 300, tools: 0, date: "2026-08-09 00:00" },
+]));
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
+check("0心无组数旧记录: 用时越长越靠前", r.data.rank.map((e) => e.name).join(",") === "旧慢,旧快", r.data.rank.map((e) => e.name).join(","));
+reset();
+store.set("easy", JSON.stringify([
+    { name: "无数", hp: 0, time: 400, tools: 0, date: "2026-08-09 00:00" },
+    { name: "有数", hp: 0, time: 100, tools: 0, clears: 3, date: "2026-08-09 00:00" },
+]));
+r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
+check("0心有组数记录排在无组数记录之前", r.data.rank.map((e) => e.name).join(",") === "有数,无数", r.data.rank.map((e) => e.name).join(","));
+
 /* ---------- 4. surpassed 超越人数 (严格优于才计数) ---------- */
 reset();
 await post({ mode: "easy", name: "A", hp: 3, time: 100, tools: 0 });

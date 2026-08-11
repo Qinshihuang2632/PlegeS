@@ -11,9 +11,15 @@
  */
 export const MODES = ["easy", "normal", "challenge"];
 
-/* 排序键: hp 取负 → 血量多排前; clears 取负 → 消除组数多排前; 时间短排前; 技能少排前 */
+/* 排序键: hp 取负 → 血量多排前; clears 取负 → 消除组数多排前; 时间短排前; 技能少排前
+   v2.2.1: 0 心且无 clears 字段的旧记录(无法得知消除组数)按「用时越长越靠前」,
+   排在 0 心有组数数据记录之后(第二维 0 < 1) */
 export function cmpKey(e) {
-    return [-(e.hp | 0), -(e.clears | 0), e.time | 0, e.tools | 0];
+    const hp = e.hp | 0;
+    if (hp === 0 && e.clears === undefined) {
+        return [0, 1, -(e.time | 0), 0, 0];
+    }
+    return [-hp, 0, -(e.clears | 0), e.time | 0, e.tools | 0];
 }
 
 /* 字典序比较 a < b (数组比较, 等价 Python 元组比较) */
