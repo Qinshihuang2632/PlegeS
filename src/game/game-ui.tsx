@@ -78,14 +78,15 @@ export function BoardTile({ tile, zIndex, onClick, shake }: {
             style={{
                 left: tile.x,
                 top: tile.y,
-                width: TILE_W,
-                height: TILE_W,
+                width: tile.size,
+                height: tile.size,
                 zIndex,
                 ...(tile.removed ? { pointerEvents: "none" as const } : {}),
             }}
         >
             <TileFace
                 tile={tile}
+                size={tile.size}   // 挑战模式大卡(150/75)字号/角标随之缩放
                 onClick={onClick}
                 className={cn(
                     "hlgx-tile-board",

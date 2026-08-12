@@ -81,39 +81,46 @@ describe("布局与分布", () => {
         expect(g.trayMax).toBe(8);
     });
 
-    /* v2.2.2 挑战(extreme)布局: 4 小金字塔(56) + 4 根 3×3 柱子(108) + 倒置 8 层金字塔(204) = 368
-       v2.2.3: 手牌槽与困难一致改 8 张
-       v2.2.5: 像素遮挡(非整层锁定); 小金字塔为正金字塔(1 叠 4 叠 9, 统一向右下收) */
-    it("挑战368槽(14层, 槽8): 小金字塔+柱子+倒置金字塔", () => {
+    /* v2.2.9 挑战(extreme)布局: 大卡层间完全遮盖
+       第一层 4×150 + 第二层 16×75 + 第三层 36×50 + 柱子 36×3 + 倒置金字塔 204 = 368 */
+    it("挑战368槽(14层, 槽8): 层间完全遮盖 + 柱子重合 + 倒置金字塔", () => {
         const slots = buildExtremeSlots();
         expect(slots.length).toBe(368);
-        expect(slots.some(s => s.L === 13)).toBe(true);          // 倒置金字塔底 1×1
         const g = new HuaGame("extreme");
         expect(g.layers.length).toBe(14);
         expect(g.trayMax).toBe(8);
         expect(g.tiles.length).toBe(368);
-        // 第一楼层: 顶层 4 个 1×1 对称分布四角 3×3 区域中心
-        const top = g.tiles.filter(t => t.L === 0);
-        expect(top.length).toBe(4);
-        const keys = top.map(t => t.r + "," + t.c).sort().join(";");
-        expect(keys).toBe("1,1;1,6;6,1;6,6");
-        // 正金字塔: 2×2 层取 3×3 区域右下角(尖端位于 2×2 左上角, 统一向右下收)
+        // 第一层: 4 张 150 大卡(金字塔尖); 第二层 16 张 75; 第三层 36 张 50; 柱子 36×3
+        const l0 = g.tiles.filter(t => t.L === 0);
+        expect(l0.length).toBe(4);
+        expect(l0.every(t => t.size === 150)).toBe(true);
         const l1 = g.tiles.filter(t => t.L === 1);
         expect(l1.length).toBe(16);
-        const l1keys = l1.map(t => t.r + "," + t.c).sort().join(";");
-        expect(l1keys).toBe("1,1;1,2;1,6;1,7;2,1;2,2;2,6;2,7;6,1;6,2;6,6;6,7;7,1;7,2;7,6;7,7");
-        // 第二楼层: 4 根柱子各 3 层 3×3 → L3 共 36 块
+        expect(l1.every(t => t.size === 75)).toBe(true);
+        const l2 = g.tiles.filter(t => t.L === 2);
+        expect(l2.length).toBe(36);
         expect(g.tiles.filter(t => t.L === 3).length).toBe(36);
-        // 像素遮挡(v2.2.5): 开局可见 = 4 尖端 + 2×2 露出 3×4 + 3×3 露出 5×4 + 8×8 中间十字 28
-        const vis = g.tiles.filter(t => !t.removed && !g.isBlocked(t));
-        expect(vis.length).toBe(64);
-        expect(vis.filter(t => t.L === 0).length).toBe(4);       // 4 个尖端
+        // 层间完全遮盖: 第一层覆盖第二层(150 盖 75), 第二层覆盖第三层, 第三层覆盖柱子
+        expect(l0.every(t => !g.isBlocked(t))).toBe(true);       // 4 个尖端可见
+        expect(l1.every(t => g.isBlocked(t))).toBe(true);
+        expect(l2.every(t => g.isBlocked(t))).toBe(true);
+        expect(g.tiles.filter(t => t.L === 3).every(t => g.isBlocked(t))).toBe(true);
+        // 倒置金字塔 8×8 层: 四角 36 张被柱子遮, 中间十字 28 张露出
         const l6 = g.tiles.filter(t => t.L === 6);
         expect(l6.length).toBe(64);
-        expect(l6.filter(t => g.isBlocked(t)).length).toBe(36);  // 四角 3×3×4 被柱子遮
-        expect(l6.filter(t => !g.isBlocked(t)).length).toBe(28); // 中间十字露出
-        // 倒置: 越往下越小, 最底层 1×1
-        expect(g.tiles.filter(t => t.L === 7).length).toBe(49);
+        expect(l6.filter(t => g.isBlocked(t)).length).toBe(36);
+        expect(l6.filter(t => !g.isBlocked(t)).length).toBe(28);
+        // 开局可见 = 4 尖端 + 十字 28 = 32
+        const vis = g.tiles.filter(t => !t.removed && !g.isBlocked(t));
+        expect(vis.length).toBe(32);
+        // 取走 4 尖端 → 第二层 16 张全部露出
+        for (const t of l0) t.removed = true;
+        expect(l1.every(t => !g.isBlocked(t))).toBe(true);
+        // 倒置金字塔层间: 7×7 被 8×8 完全遮盖
+        const l7 = g.tiles.filter(t => t.L === 7);
+        expect(l7.length).toBe(49);
+        expect(l7.every(t => g.isBlocked(t))).toBe(true);
+        // 倒置: 最底层 1×1
         expect(g.tiles.filter(t => t.L === 13).length).toBe(1);
     });
 

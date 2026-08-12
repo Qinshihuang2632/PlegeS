@@ -73,7 +73,7 @@ const trayCount = () => document.querySelectorAll('.hlgx-tray-cell').length;
     rec('挑战开局卡牌', { total: tiles.length, removed: tiles.filter(t => t.removed).length, blocked: tiles.filter(t => t.blocked).length });
 
     const vis = tiles.filter(t => !t.removed && !t.blocked);
-    check('开局可见卡 = 64(4尖端+12+20+28)', vis.length === 64, '实际 ' + vis.length);
+    check('开局可见卡 = 32(4尖端+8×8十字28)', vis.length === 32, '实际 ' + vis.length);
     const tips = vis.filter(t => t.layer === 1);
     check('顶层尖端 4 张', tips.length === 4, '实际 ' + tips.length);
 
@@ -86,11 +86,11 @@ const trayCount = () => document.querySelectorAll('.hlgx-tray-cell').length;
         check(`点击尖端(层${t.layer}) 入槽`, after > before, `tray ${before}->${after}`);
     }
 
-    // 尖端移除后: 2×2 层(层2)解锁卡点击(重点: 幽灵容器检查)
+    // 尖端移除后: 第二层(层2, 75 大卡 16 张)解锁卡点击(重点: 幽灵容器检查)
     // 注意: 手牌槽 8 张, 取 4 尖端 + 3 张 2×2 = 7 张, 槽内安全(满槽会触发失败结算弹窗)
     tiles = await page.evaluate(DUMP);
     const l2 = tiles.filter(t => !t.removed && !t.blocked && t.layer === 2);
-    check('2×2 层解锁卡 16 张(尖端取走后全部解锁)', l2.length === 16, '实际 ' + l2.length);
+    check('第二层解锁卡 16 张(尖端取走后全部露出)', l2.length === 16, '实际 ' + l2.length);
     let ghostBlocked = 0;
     for (const t of l2.slice(0, 3)) {
         const hit = await page.evaluate(HIT, [t.cx, t.cy]);
@@ -99,7 +99,7 @@ const trayCount = () => document.querySelectorAll('.hlgx-tray-cell').length;
         await page.mouse.click(t.cx, t.cy);
         await page.waitForTimeout(300);
         const after = await page.evaluate(trayCount);
-        check('点击2×2层卡 入槽(无幽灵拦截)', after > before, `tray ${before}->${after} hit=${JSON.stringify(hit)}`);
+        check('点击第二层卡 入槽(无幽灵拦截)', after > before, `tray ${before}->${after} hit=${JSON.stringify(hit)}`);
     }
     check('elementFromPoint 无幽灵容器命中', ghostBlocked === 0, '幽灵命中 ' + ghostBlocked);
 
@@ -113,7 +113,7 @@ const trayCount = () => document.querySelectorAll('.hlgx-tray-cell').length;
         await page.mouse.click(t.cx, t.cy);
         await page.waitForTimeout(300);
         const after = await page.evaluate(trayCount);
-        check('点击3×3层卡 入槽', after > before, `hit=${JSON.stringify(hit)}`);
+        check('点击第三层卡 入槽', after > before, `hit=${JSON.stringify(hit)}`);
     }
 
     console.log(`\n结果: ${pass} 通过, ${fail} 失败`);

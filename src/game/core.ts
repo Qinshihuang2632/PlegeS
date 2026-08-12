@@ -31,12 +31,13 @@ export const HLGX_DIFFICULTIES = {
 } as const;
 export type Mode = keyof typeof HLGX_DIFFICULTIES;
 
-export interface Slot { r: number; c: number; L: number }
+export interface Slot { r: number; c: number; L: number; px?: { x: number; y: number }; size?: number }
 
 export interface Tile {
     id: number;
     r: number; c: number; L: number;
     x: number; y: number;        // 缓存像素坐标(isBlocked 不再重复计算)
+    size: number;                // 卡牌边长(挑战模式大卡 150/75, 其余 50)
     sub: Substance;
     color: number;               // 位置决定配色(同层相邻不同色)
     removed: boolean;
@@ -82,57 +83,62 @@ export function buildSlots(layers: number[]): Slot[] {
     return slots;
 }
 
-/* 挑战模式(extreme)布局 —— 放弃单一金字塔, 三层结构(v2.2.2):
- *   第一楼层: 4 个相同的 3 层小金字塔(1×1, 2×2, 3×3)对称分布在四角
- *   第二楼层: 接在小金字塔下方的 4 根 3×3「柱子」(3 层)
- *   第三楼层: 倒置的 8 层金字塔(8×8 在顶, 1×1 在底, 居中)
- *   二三楼层联系: 4 根柱子的 3×3 底面恰好盖住 8×8 层的四角 3×3 区域
- *   总槽数 = 4×14(小金字塔) + 4×27(柱子) + 204(倒置金字塔) = 368
- * 四角 3×3 区域(基准 8×8 网格): 左上(0-2,0-2) 右上(0-2,5-7) 左下(5-7,0-2) 右下(5-7,5-7) */
+/* 挑战模式(extreme)布局 —— 三层结构(v2.2.9 重构, 按用户遮挡设计):
+ *   第一楼层: 4 个正金字塔, 层间「完全遮盖」——卡牌尺寸逐层减半:
+ *             第 1 层 1 张 150×150(覆盖 2×2 拼区的四张各四分之一?不——
+ *             150² = 4×(75²), 即第一层卡面积 = 第二层单卡面积的 4 倍,
+ *             第二层 4 张 75×75 紧贴拼 150 区域, 被第一层完全覆盖;
+ *             第二层 4 张 75×75 覆盖第三层 9 张 50×50(75²≈2.25×50², 拼区重合)
+ *             第三层 9 张 50×50 紧贴拼 150 区域
+ *   第二楼层: 4 根 3×3 柱子(3 层), 每层 9 张 50×50, 与第三层完全一样且重合
+ *   第三楼层: 倒置的「困难」八层金字塔(58px 格, 50px 卡, 8×8 在顶被柱子遮四角,
+ *             7×7 … 1×1 居中; 相邻层 58px 格错位 29px < 50px 卡宽 → 下层完全遮盖)
+ *   总槽数 = 4+16+36(金字塔) + 108(柱子) + 204(倒置金字塔) = 368
+ * 四角区域起点(与 8×8 层 58px 格框架的四角 3×3 卡位对齐): (0,0) (290,0) (0,290) (290,290) */
 export function buildExtremeSlots(): Slot[] {
-    const corners = [{ r: 0, c: 0 }, { r: 0, c: 5 }, { r: 5, c: 0 }, { r: 5, c: 5 }];
+    const corners = [{ x: 0, y: 0 }, { x: 290, y: 0 }, { x: 0, y: 290 }, { x: 290, y: 290 }];
     const slots: Slot[] = [];
-    // 第一楼层: 4 个正金字塔(1×1 尖端 → 2×2 → 3×3, 逐层向右下收, 与困难模式金字塔一致)
-    // 2×2 取 3×3 区域右下角, 尖端位于 2×2 左上角 —— 偏移方向统一, 正金字塔投影
-    for (const p of corners) slots.push({ r: p.r + 1, c: p.c + 1, L: 0 });
+    // 第一楼层: 第 1 层 = 1 张 150×150 大卡(覆盖整个区域)
+    for (const p of corners) slots.push({ r: 0, c: 0, L: 0, px: { x: p.x, y: p.y }, size: 150 });
+    // 第一楼层: 第 2 层 = 4 张 75×75(紧贴拼 150 区域, 被第 1 层完全覆盖)
     for (const p of corners)
-        for (let dr = 1; dr < 3; dr++)
-            for (let dc = 1; dc < 3; dc++)
-                slots.push({ r: p.r + dr, c: p.c + dc, L: 1 });
+        for (let i = 0; i < 2; i++)
+            for (let j = 0; j < 2; j++)
+                slots.push({ r: i, c: j, L: 1, px: { x: p.x + j * 75, y: p.y + i * 75 }, size: 75 });
+    // 第一楼层: 第 3 层 = 9 张 50×50(紧贴拼 150 区域, 被第 2 层完全覆盖)
     for (const p of corners)
-        for (let dr = 0; dr < 3; dr++)
-            for (let dc = 0; dc < 3; dc++)
-                slots.push({ r: p.r + dr, c: p.c + dc, L: 2 });
-    // 第二楼层: 4 根 3×3 柱子(3 层), 与小金字塔同区域
+        for (let i = 0; i < 3; i++)
+            for (let j = 0; j < 3; j++)
+                slots.push({ r: i, c: j, L: 2, px: { x: p.x + j * 50, y: p.y + i * 50 }, size: 50 });
+    // 第二楼层: 4 根 3×3 柱子(3 层), 与第三层完全一样且重合
     for (let L = 3; L <= 5; L++)
         for (const p of corners)
-            for (let dr = 0; dr < 3; dr++)
-                for (let dc = 0; dc < 3; dc++)
-                    slots.push({ r: p.r + dr, c: p.c + dc, L });
-    // 第三楼层: 倒置 8 层金字塔(8×8 在顶被柱子遮挡, 逐层缩小至 1×1)
+            for (let i = 0; i < 3; i++)
+                for (let j = 0; j < 3; j++)
+                    slots.push({ r: i, c: j, L, px: { x: p.x + j * 50, y: p.y + i * 50 }, size: 50 });
+    // 第三楼层: 倒置 8 层金字塔(8×8 在顶, 1×1 在底, 居中; 58px 格)
     for (let S = 8; S >= 1; S--) {
         const L = 6 + (8 - S);
+        const base = ((8 - S) * 58) / 2;
         for (let r = 0; r < S; r++)
             for (let c = 0; c < S; c++)
-                slots.push({ r, c, L });
+                slots.push({ r, c, L, px: { x: base + c * 58, y: base + r * 58 }, size: 50 });
     }
     return slots;
 }
 
-/* 各层在棋盘内同心居中, 构成正金字塔;
-   挑战布局(14 层): L<7 的四角区域/8×8 层以 8×8 为基准不居中, L≥7 的倒置层居中 */
+/* 各层在棋盘内同心居中, 构成正金字塔 */
 export function slotXY(s: Slot, layers: number[]): { x: number; y: number } {
     const S = layers[s.L];
     const max = Math.max(...layers);
-    const isExtreme = layers.length >= 14;
-    const base = isExtreme && s.L < 7 ? 0 : ((max - S) * CELL) / 2;
+    const base = ((max - S) * CELL) / 2;
     return { x: base + s.c * CELL, y: base + s.r * CELL };
 }
 
-/* 纯算术重叠判断 */
-export function overlapXY(a: { x: number; y: number }, b: { x: number; y: number }): boolean {
-    return a.x < b.x + TILE_W && a.x + TILE_W > b.x &&
-           a.y < b.y + TILE_W && a.y + TILE_W > b.y;
+/* 纯算术重叠判断(按各自实际尺寸, 挑战模式存在 150/75 大卡) */
+export function overlapXY(a: { x: number; y: number; size: number }, b: { x: number; y: number; size: number }): boolean {
+    return a.x < b.x + b.size && a.x + a.size > b.x &&
+           a.y < b.y + b.size && a.y + a.size > b.y;
 }
 
 /* 位置决定颜色: 同层相邻块(±1格)必然不同色, 叠层也不同色; 对任意棋盘宽都成立 */
@@ -229,12 +235,12 @@ export class HuaGame {
     /* 棋盘尺寸(px) = 所有方块最大外延 + 边距 */
     get boardW(): number {
         let m = 0;
-        for (const t of this.tiles) m = Math.max(m, t.x + TILE_W);
+        for (const t of this.tiles) m = Math.max(m, t.x + t.size);
         return m + 20;
     }
     get boardH(): number {
         let m = 0;
-        for (const t of this.tiles) m = Math.max(m, t.y + TILE_W);
+        for (const t of this.tiles) m = Math.max(m, t.y + t.size);
         return m + 20;
     }
     get remaining(): number {
@@ -256,10 +262,11 @@ export class HuaGame {
         shuffleArr(stack);                    // 打散到各层
 
         this.tiles = slots.map((slot, i) => {
-            const pos = slotXY(slot, this.layers);
+            const pos = slot.px ?? slotXY(slot, this.layers);
             return {
                 id: i, r: slot.r, c: slot.c, L: slot.L,
                 x: pos.x, y: pos.y,           // 缓存坐标
+                size: slot.size ?? TILE_W,    // 挑战模式大卡(150/75)
                 sub: stack[i], color: slotColorIdx(slot.r, slot.c, slot.L),
                 removed: false, blocked: false,
             };
@@ -277,14 +284,13 @@ export class HuaGame {
     }
 
     /* 像素遮挡解锁: 只要被任何更上层方块盖住就不可点, 盖住它的方块被取走即解锁
-       加速: 坐标已缓存, 遮挡只查更上层分组, 跳过已移除块
-       (v2.2.5 恢复: 挑战模式同样使用遮挡关系, 不做层间整层锁定) */
+       加速: 坐标已缓存, 遮挡只查更上层分组, 跳过已移除块; 按各自实际尺寸判定
+       (挑战模式大卡 150/75 完全覆盖下层小卡, 实现层间完全遮盖) */
     isBlocked(t: Tile): boolean {
-        const pa = { x: t.x, y: t.y };
         for (let L = 0; L < t.L; L++) {
             for (const o of this.tilesByLayer[L]) {
                 if (o.removed) continue;
-                if (overlapXY(pa, { x: o.x, y: o.y })) return true;
+                if (overlapXY(t, o)) return true;
             }
         }
         return false;
