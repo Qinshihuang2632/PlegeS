@@ -83,29 +83,30 @@ export function buildSlots(layers: number[]): Slot[] {
     return slots;
 }
 
-/* 挑战模式(extreme)布局 —— 三层结构(v2.2.9 重构, 按用户遮挡设计):
- *   第一楼层: 4 个正金字塔, 层间「完全遮盖」——卡牌尺寸逐层减半:
- *             第 1 层 1 张 150×150(覆盖 2×2 拼区的四张各四分之一?不——
- *             150² = 4×(75²), 即第一层卡面积 = 第二层单卡面积的 4 倍,
- *             第二层 4 张 75×75 紧贴拼 150 区域, 被第一层完全覆盖;
- *             第二层 4 张 75×75 覆盖第三层 9 张 50×50(75²≈2.25×50², 拼区重合)
- *             第三层 9 张 50×50 紧贴拼 150 区域
- *   第二楼层: 4 根 3×3 柱子(3 层), 每层 9 张 50×50, 与第三层完全一样且重合
- *   第三楼层: 倒置的「困难」八层金字塔(58px 格, 50px 卡, 8×8 在顶被柱子遮四角,
- *             7×7 … 1×1 居中; 相邻层 58px 格错位 29px < 50px 卡宽 → 下层完全遮盖)
+/* 挑战模式(extreme)布局 —— v2.3.0 重构(统一 50px 卡, 层间完全遮盖):
+ *   遮挡原则(v2.3.0): 卡牌被上层覆盖面积 ≥ 本卡 1/4(四分之一/二分之一/四分之三/全部)时不可拾取
+ *   第一楼层: 4 个正金字塔(四角), 层间完全遮盖——
+ *             第 1 层 1 张 @区域(50,50)  盖第 2 层 4 张各 1/4 → 第 2 层全部不可拾取
+ *             第 2 层 4 张 @交界中心    盖第 3 层 9 张各 ≥1/4 → 第 3 层全部不可拾取
+ *             第 3 层 9 张满铺 150×150 区域
+ *   第二楼层: 4 根 3×3 柱子(3 层), 与第三层完全一样且重合
+ *   第三楼层: 倒置「困难」八层金字塔(紧贴 50px 卡, 8×8=400px 在顶, 逐层居中偏移 25px
+ *             → 相邻层重叠 50% ≥1/4, 下层被上层完全遮盖)
+ *   四角结构与柱子沿 45° 对角线向中心平移 ½√2×50≈35.4px(水平/垂直各 25px),
+ *   使 4 根柱子恰好完全覆盖 8×8 层(64 张全部被遮 ≥1/4)
  *   总槽数 = 4+16+36(金字塔) + 108(柱子) + 204(倒置金字塔) = 368
- * 四角区域起点(与 8×8 层 58px 格框架的四角 3×3 卡位对齐): (0,0) (290,0) (0,290) (290,290) */
+ * 四角区域起点(8×8 紧贴 400px 框架, 平移 25px 后): (25,25) (225,25) (25,225) (225,225) */
 export function buildExtremeSlots(): Slot[] {
-    const corners = [{ x: 0, y: 0 }, { x: 290, y: 0 }, { x: 0, y: 290 }, { x: 290, y: 290 }];
+    const corners = [{ x: 25, y: 25 }, { x: 225, y: 25 }, { x: 25, y: 225 }, { x: 225, y: 225 }];
     const slots: Slot[] = [];
-    // 第一楼层: 第 1 层 = 1 张 150×150 大卡(覆盖整个区域)
-    for (const p of corners) slots.push({ r: 0, c: 0, L: 0, px: { x: p.x, y: p.y }, size: 150 });
-    // 第一楼层: 第 2 层 = 4 张 75×75(紧贴拼 150 区域, 被第 1 层完全覆盖)
+    // 第一层: 1 张 @ (50,50) 相对 —— 覆盖第二层 4 张各 1/4
+    for (const p of corners) slots.push({ r: 0, c: 0, L: 0, px: { x: p.x + 50, y: p.y + 50 }, size: 50 });
+    // 第二层: 4 张 @ 3×3 区域的 4 个交界中心 —— 覆盖第三层 9 张各 ≥1/4
+    const l1off = [[25, 25], [75, 25], [25, 75], [75, 75]];
     for (const p of corners)
-        for (let i = 0; i < 2; i++)
-            for (let j = 0; j < 2; j++)
-                slots.push({ r: i, c: j, L: 1, px: { x: p.x + j * 75, y: p.y + i * 75 }, size: 75 });
-    // 第一楼层: 第 3 层 = 9 张 50×50(紧贴拼 150 区域, 被第 2 层完全覆盖)
+        for (const [dx, dy] of l1off)
+            slots.push({ r: 0, c: 0, L: 1, px: { x: p.x + dx, y: p.y + dy }, size: 50 });
+    // 第三层: 9 张满铺 150×150 区域(紧贴)
     for (const p of corners)
         for (let i = 0; i < 3; i++)
             for (let j = 0; j < 3; j++)
@@ -116,13 +117,13 @@ export function buildExtremeSlots(): Slot[] {
             for (let i = 0; i < 3; i++)
                 for (let j = 0; j < 3; j++)
                     slots.push({ r: i, c: j, L, px: { x: p.x + j * 50, y: p.y + i * 50 }, size: 50 });
-    // 第三楼层: 倒置 8 层金字塔(8×8 在顶, 1×1 在底, 居中; 58px 格)
+    // 第三楼层: 倒置 8 层金字塔(紧贴 50px 卡, 8×8 在顶, 逐层居中)
     for (let S = 8; S >= 1; S--) {
         const L = 6 + (8 - S);
-        const base = ((8 - S) * 58) / 2;
+        const base = ((8 - S) * 50) / 2;
         for (let r = 0; r < S; r++)
             for (let c = 0; c < S; c++)
-                slots.push({ r, c, L, px: { x: base + c * 58, y: base + r * 58 }, size: 50 });
+                slots.push({ r, c, L, px: { x: base + c * 50, y: base + r * 50 }, size: 50 });
     }
     return slots;
 }
@@ -135,10 +136,18 @@ export function slotXY(s: Slot, layers: number[]): { x: number; y: number } {
     return { x: base + s.c * CELL, y: base + s.r * CELL };
 }
 
-/* 纯算术重叠判断(按各自实际尺寸, 挑战模式存在 150/75 大卡) */
+/* 纯算术重叠判断(按各自实际尺寸) */
 export function overlapXY(a: { x: number; y: number; size: number }, b: { x: number; y: number; size: number }): boolean {
     return a.x < b.x + b.size && a.x + a.size > b.x &&
            a.y < b.y + b.size && a.y + a.size > b.y;
+}
+
+/* 上层卡 o 覆盖本卡 t 的面积比例(0~1) */
+export function overlapRatio(t: { x: number; y: number; size: number }, o: { x: number; y: number; size: number }): number {
+    const ix = Math.min(t.x + t.size, o.x + o.size) - Math.max(t.x, o.x);
+    const iy = Math.min(t.y + t.size, o.y + o.size) - Math.max(t.y, o.y);
+    if (ix <= 0 || iy <= 0) return 0;
+    return (ix * iy) / (t.size * t.size);
 }
 
 /* 位置决定颜色: 同层相邻块(±1格)必然不同色, 叠层也不同色; 对任意棋盘宽都成立 */
@@ -283,14 +292,14 @@ export class HuaGame {
         this.tiles.forEach(t => this.tilesByLayer[t.L].push(t));
     }
 
-    /* 像素遮挡解锁: 只要被任何更上层方块盖住就不可点, 盖住它的方块被取走即解锁
-       加速: 坐标已缓存, 遮挡只查更上层分组, 跳过已移除块; 按各自实际尺寸判定
-       (挑战模式大卡 150/75 完全覆盖下层小卡, 实现层间完全遮盖) */
+    /* 遮挡解锁(v2.3.0 原则): 卡牌被上层覆盖面积 ≥ 本卡 1/4(四分之一/二分之一/
+       四分之三/全部)时不可拾取; 盖住它的方块被取走即解锁。
+       加速: 坐标已缓存, 遮挡只查更上层分组, 跳过已移除块 */
     isBlocked(t: Tile): boolean {
         for (let L = 0; L < t.L; L++) {
             for (const o of this.tilesByLayer[L]) {
                 if (o.removed) continue;
-                if (overlapXY(t, o)) return true;
+                if (overlapRatio(t, o) >= 0.25) return true;
             }
         }
         return false;

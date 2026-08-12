@@ -73,7 +73,7 @@ const trayCount = () => document.querySelectorAll('.hlgx-tray-cell').length;
     rec('挑战开局卡牌', { total: tiles.length, removed: tiles.filter(t => t.removed).length, blocked: tiles.filter(t => t.blocked).length });
 
     const vis = tiles.filter(t => !t.removed && !t.blocked);
-    check('开局可见卡 = 32(4尖端+8×8十字28)', vis.length === 32, '实际 ' + vis.length);
+    check('开局可见卡 = 4(仅金字塔尖)', vis.length === 4, '实际 ' + vis.length);
     const tips = vis.filter(t => t.layer === 1);
     check('顶层尖端 4 张', tips.length === 4, '实际 ' + tips.length);
 
@@ -86,7 +86,7 @@ const trayCount = () => document.querySelectorAll('.hlgx-tray-cell').length;
         check(`点击尖端(层${t.layer}) 入槽`, after > before, `tray ${before}->${after}`);
     }
 
-    // 尖端移除后: 第二层(层2, 75 大卡 16 张)解锁卡点击(重点: 幽灵容器检查)
+    // 尖端移除后: 第二层(层2)16 张解锁卡点击(重点: 幽灵容器检查)
     // 注意: 手牌槽 8 张, 取 4 尖端 + 3 张 2×2 = 7 张, 槽内安全(满槽会触发失败结算弹窗)
     tiles = await page.evaluate(DUMP);
     const l2 = tiles.filter(t => !t.removed && !t.blocked && t.layer === 2);

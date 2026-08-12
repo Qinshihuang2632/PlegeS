@@ -9,7 +9,8 @@
 import { describe, expect, it } from "vitest";
 import { HLGX_CATS, HLGX_DESC, HLGX_SUBSTANCES, type Category } from "./substances";
 import {
-    HuaGame, TOOL_LIMIT, buildExtremeSlots, buildSlots, buildStack, catsOf, fmtTime, slotColorIdx,
+    HuaGame, TOOL_LIMIT, buildExtremeSlots, buildSlots, buildStack, catsOf, fmtTime,
+    overlapRatio, slotColorIdx,
     type Tile,
 } from "./core";
 
@@ -81,47 +82,58 @@ describe("布局与分布", () => {
         expect(g.trayMax).toBe(8);
     });
 
-    /* v2.2.9 挑战(extreme)布局: 大卡层间完全遮盖
-       第一层 4×150 + 第二层 16×75 + 第三层 36×50 + 柱子 36×3 + 倒置金字塔 204 = 368 */
-    it("挑战368槽(14层, 槽8): 层间完全遮盖 + 柱子重合 + 倒置金字塔", () => {
+    /* v2.3.0 挑战(extreme)布局: 统一 50px 卡, 层间完全遮盖(遮挡 ≥1/4 不可拾取),
+       四角结构沿对角线向中心平移 25px, 柱子完全覆盖 8×8 层
+       第一层 4×1 + 第二层 4×4 + 第三层 4×9 + 柱子 36×3 + 倒置金字塔 204 = 368 */
+    it("挑战368槽(14层, 槽8): 层间完全遮盖 + 柱子全覆盖 8×8, 开局仅 4 尖端", () => {
         const slots = buildExtremeSlots();
         expect(slots.length).toBe(368);
         const g = new HuaGame("extreme");
         expect(g.layers.length).toBe(14);
         expect(g.trayMax).toBe(8);
         expect(g.tiles.length).toBe(368);
-        // 第一层: 4 张 150 大卡(金字塔尖); 第二层 16 张 75; 第三层 36 张 50; 柱子 36×3
+        expect(g.tiles.every(t => t.size === 50)).toBe(true);   // 统一卡牌大小
+        // 第一层: 4 张可见(金字塔尖); 第二层 16 张全遮(被盖 1/4)
         const l0 = g.tiles.filter(t => t.L === 0);
         expect(l0.length).toBe(4);
-        expect(l0.every(t => t.size === 150)).toBe(true);
+        expect(l0.every(t => !g.isBlocked(t))).toBe(true);
         const l1 = g.tiles.filter(t => t.L === 1);
         expect(l1.length).toBe(16);
-        expect(l1.every(t => t.size === 75)).toBe(true);
+        expect(l1.every(t => g.isBlocked(t))).toBe(true);
+        // 第三层 36 张全遮; 柱子 108 张全遮(与第三层重合)
         const l2 = g.tiles.filter(t => t.L === 2);
         expect(l2.length).toBe(36);
-        expect(g.tiles.filter(t => t.L === 3).length).toBe(36);
-        // 层间完全遮盖: 第一层覆盖第二层(150 盖 75), 第二层覆盖第三层, 第三层覆盖柱子
-        expect(l0.every(t => !g.isBlocked(t))).toBe(true);       // 4 个尖端可见
-        expect(l1.every(t => g.isBlocked(t))).toBe(true);
         expect(l2.every(t => g.isBlocked(t))).toBe(true);
-        expect(g.tiles.filter(t => t.L === 3).every(t => g.isBlocked(t))).toBe(true);
-        // 倒置金字塔 8×8 层: 四角 36 张被柱子遮, 中间十字 28 张露出
+        for (let L = 3; L <= 5; L++)
+            expect(g.tiles.filter(t => t.L === L).every(t => g.isBlocked(t))).toBe(true);
+        // 8×8 层 64 张全部被柱子覆盖 ≥1/4 → 完全遮挡, 开局仅 4 尖端可拾取
         const l6 = g.tiles.filter(t => t.L === 6);
         expect(l6.length).toBe(64);
-        expect(l6.filter(t => g.isBlocked(t)).length).toBe(36);
-        expect(l6.filter(t => !g.isBlocked(t)).length).toBe(28);
-        // 开局可见 = 4 尖端 + 十字 28 = 32
+        expect(l6.every(t => g.isBlocked(t))).toBe(true);
         const vis = g.tiles.filter(t => !t.removed && !g.isBlocked(t));
-        expect(vis.length).toBe(32);
+        expect(vis.length).toBe(4);
+        expect(vis.every(t => t.L === 0)).toBe(true);
         // 取走 4 尖端 → 第二层 16 张全部露出
         for (const t of l0) t.removed = true;
         expect(l1.every(t => !g.isBlocked(t))).toBe(true);
-        // 倒置金字塔层间: 7×7 被 8×8 完全遮盖
+        // 倒置金字塔层间: 7×7 被 8×8 完全遮盖, 最底层 1×1
         const l7 = g.tiles.filter(t => t.L === 7);
         expect(l7.length).toBe(49);
         expect(l7.every(t => g.isBlocked(t))).toBe(true);
-        // 倒置: 最底层 1×1
         expect(g.tiles.filter(t => t.L === 13).length).toBe(1);
+    });
+
+    /* v2.3.0 需求4: 全关卡遮挡自洽检测 —— 任意卡的 blocked 状态 ⇔ 存在上层卡覆盖其 ≥1/4
+       (防止幽灵容器/几何误差导致的错误遮挡与漏出) */
+    it("全关卡遮挡自洽: blocked ⇔ 存在上层卡覆盖 ≥1/4", () => {
+        for (const mode of ["easy", "normal", "challenge", "extreme"] as const) {
+            const g = new HuaGame(mode);
+            for (const t of g.tiles) {
+                if (t.removed) continue;
+                const covered = g.tiles.some(o => !o.removed && o.L < t.L && overlapRatio(t, o) >= 0.25);
+                expect(covered, `${mode} L${t.L}(${t.r},${t.c}) blocked=${g.isBlocked(t)}`).toBe(g.isBlocked(t));
+            }
+        }
     });
 
     it("方块总数与槽数一致, 8个类别每类至少3块", () => {
