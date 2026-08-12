@@ -102,7 +102,7 @@ export function DashboardPage() {
             {/* 最近审计事件 */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">🕐 最近审计事件(5 条)</CardTitle>
+                    <CardTitle className="text-base">最近审计事件(5 条)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                     {loading ? (

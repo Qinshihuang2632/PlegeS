@@ -4,4 +4,4 @@
  * 升级版本时: 同步修改本文件与 platform_log.md(约定: 界面版本号必须跟随发布更新,
  * 否则游戏内仍显示旧版本)。三个页面(大厅/游戏/榜单)均从此处引用。
  */
-export const APP_VERSION = "v2.2.6";
+export const APP_VERSION = "v2.2.7";

@@ -31,11 +31,18 @@ const TUTORIAL_KEY = "hlgx_tutorial_done_v1";
 
 /* 昵称记忆: 刷新/重进后预填上次输入, 无需重新打字(localStorage, 隐私模式降级为空) */
 const NAME_STORAGE_KEY = "hlgx_name";
+const RANK_SKIP_KEY = "hlgx_skip_rank";   // v2.2.7: 记住「不参与排行榜」选择
 function readStoredName(): string {
     try { return localStorage.getItem(NAME_STORAGE_KEY) ?? ""; } catch { return ""; }
 }
 function storeName(raw: string) {
     try { localStorage.setItem(NAME_STORAGE_KEY, raw); } catch { /* 隐私模式忽略 */ }
+}
+function readStoredSkip(): boolean {
+    try { return localStorage.getItem(RANK_SKIP_KEY) === "1"; } catch { return false; }
+}
+function storeSkip(v: boolean) {
+    try { localStorage.setItem(RANK_SKIP_KEY, v ? "1" : "0"); } catch { /* 隐私模式忽略 */ }
 }
 
 const MODE_TABS: { mode: Mode; label: string }[] = [
@@ -70,6 +77,7 @@ export function HuaPage() {
 
     /* ---- 昵称/开局 ---- */
     const [nameOpen, setNameOpen] = useState(false);
+    const [nameDialogMode, setNameDialogMode] = useState<"first" | "change">("first");   // v2.2.7: 首次输入/更换昵称
     const [name, setName] = useState<string>(() => readStoredName());   // 预填上次输入
     const [skipRank, setSkipRank] = useState(false);
     const [nameTip, setNameTip] = useState("");
@@ -106,17 +114,28 @@ export function HuaPage() {
         },
     ];
 
-    /* 首次进入 → 新手引导; 之后直接弹昵称窗 */
+    /* 首次进入 → 新手引导 / 昵称窗; 已记住昵称 → 直接开局, 不再询问(v2.2.7) */
     useEffect(() => {
         const seen = localStorage.getItem(TUTORIAL_KEY) === "1";
-        if (!seen) setTutorialOpen(true);
-        else setNameOpen(true);
+        const saved = readStoredName();
+        const savedSkip = readStoredSkip();
+        if (saved || savedSkip) {
+            playerNameRef.current = saved || null;
+            inRankRef.current = !!saved && !savedSkip;
+            setSkipRank(savedSkip);
+            if (!seen) setTutorialOpen(true);
+            else beginPlay();
+        } else {
+            setNameOpen(true);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const closeTutorial = () => {
         localStorage.setItem(TUTORIAL_KEY, "1");
         setTutorialOpen(false);
-        setNameOpen(true);
+        if (playerNameRef.current || readStoredSkip()) beginPlay();
+        else setNameOpen(true);
     };
 
     /* 棋盘缩放适配小屏: 7×7 底层几乎占满容器宽(去掉内置 20px 边距, 仅留 2px 呼吸空间) */
@@ -158,6 +177,7 @@ export function HuaPage() {
         if (skipRank) {
             playerNameRef.current = null;
             inRankRef.current = false;
+            storeSkip(true);                 // v2.2.7: 记住选择, 下次直接开局
             beginPlay();
             return;
         }
@@ -169,6 +189,7 @@ export function HuaPage() {
         playerNameRef.current = n;
         inRankRef.current = true;
         storeName(n);
+        storeSkip(false);
         beginPlay();
     };
 
@@ -251,7 +272,7 @@ export function HuaPage() {
         void submitScore(elapsedRef.current);
     }, [game, game.result, stopTimer, submitScore]);
 
-    /* ---- 再来一局 / 换难度 ---- */
+    /* ---- 再来一局 / 换难度(v2.2.7: 不再弹昵称窗, 沿用已记住昵称) ---- */
     const restart = (m?: Mode) => {
         if (m) game.applyMode(m);
         game.newGame();
@@ -261,7 +282,6 @@ export function HuaPage() {
         audioPlayedRef.current = false;
         setNameTip("");
         setName(playerNameRef.current ?? name);
-        setNameOpen(true);
     };
 
     /* ---- 渲染 ---- */
@@ -280,11 +300,11 @@ export function HuaPage() {
                 <Button asChild variant="ghost" size="sm" className="-ml-2">
                     <Link to="/">← 返回大厅</Link>
                 </Button>
-                <h1 className="flex-1 text-center text-lg font-extrabold">⚗️ 化了个学</h1>
+                <h1 className="flex-1 text-center text-lg font-extrabold">化了个学</h1>
                 <div className="flex items-center gap-1">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRulesOpen(true)} aria-label="玩法介绍">📖</Button>
+                            <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)}>玩法</Button>
                         </TooltipTrigger>
                         <TooltipContent>玩法介绍</TooltipContent>
                     </Tooltip>
@@ -326,15 +346,15 @@ export function HuaPage() {
             {/* 状态栏: 平台 / 血量 / 计时 / 剩余 */}
             <div className="mb-3 flex items-center justify-center gap-4 text-sm">
                 <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-secondary-foreground" title="榜单按平台分开,成绩只与本平台比较">
-                    {platform === "mobile" ? "📱" : "🖥️"} {PLATFORM_LABEL[platform]}
+                    {PLATFORM_LABEL[platform]}
                 </span>
                 <span className="flex items-center gap-1" aria-label={`血量 ${Math.max(0, game.hp)}`}>
                     {[0, 1, 2].map((i) => (
                         <span key={i} aria-hidden>{i < Math.max(0, game.hp) ? "❤️" : "🤍"}</span>
                     ))}
                 </span>
-                <span className="tabular-nums font-mono">⏱ {fmtTime(elapsed)}</span>
-                <span className="text-muted-foreground">🃏 剩余 {game.remaining}</span>
+                <span className="tabular-nums font-mono">用时 {fmtTime(elapsed)}</span>
+                <span className="text-muted-foreground">剩余 {game.remaining}</span>
             </div>
 
             {/* 棋盘(小屏自动缩放) */}
@@ -367,7 +387,7 @@ export function HuaPage() {
                         手牌槽 {game.tray.length}/{game.trayMax}
                     </span>
                     {trayHasTriple ? (
-                        <span className="font-semibold text-success">✨ 凑够 3 张同类即可消除</span>
+                        <span className="font-semibold text-success">凑够 3 张同类即可消除</span>
                     ) : (
                         <span>点击手牌选中,3 张同类点「消除选中」</span>
                     )}
@@ -412,7 +432,7 @@ export function HuaPage() {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="secondary" disabled={toolLeft("undo") <= 0} onClick={() => useTool("undo")}>
-                            ↩ 撤回({toolLeft("undo")})
+                            撤回({toolLeft("undo")})
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>把槽内最后一张卡放回棋盘(原位被占会自动挪到空位)</TooltipContent>
@@ -420,7 +440,7 @@ export function HuaPage() {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="secondary" disabled={toolLeft("out") <= 0} onClick={() => useTool("out")}>
-                            📤 移出({toolLeft("out")})
+                            移出({toolLeft("out")})
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>把槽内最前面 3 张卡放回棋盘空位</TooltipContent>
@@ -481,12 +501,12 @@ export function HuaPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* 昵称窗(✕ = 返回大厅; 可跳过不参与排行) */}
+            {/* 昵称窗(✕ = 返回大厅; 可跳过不参与排行; v2.2.7: 首次输入或更换昵称) */}
             <Dialog open={nameOpen} onOpenChange={(o) => { if (!o) navigate("/"); }}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
-                        <DialogTitle>开始游戏</DialogTitle>
-                        <DialogDescription>设置昵称后成绩将计入排行榜</DialogDescription>
+                        <DialogTitle>{nameDialogMode === "change" ? "更换昵称" : "开始游戏"}</DialogTitle>
+                        <DialogDescription>{nameDialogMode === "change" ? "更换后将用新昵称继续游戏" : "设置昵称后成绩将计入排行榜"}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3">
                         <div className="space-y-1.5">
@@ -534,7 +554,7 @@ export function HuaPage() {
                     <DialogContent className="sm:max-w-sm">
                         <DialogHeader>
                             <DialogTitle className="text-xl">
-                                {resultInfo.win ? "🎉 通关啦!" : "💔 挑战失败"}
+                                {resultInfo.win ? "通关啦!" : "挑战失败"}
                             </DialogTitle>
                             <DialogDescription>
                                 {resultInfo.win
@@ -552,7 +572,7 @@ export function HuaPage() {
                                 </p>
                             ) : (
                                 resultInfo.surpassed !== null && (
-                                    <p className="mt-1.5 font-semibold text-primary">🏅 超越 {resultInfo.surpassed} 名玩家</p>
+                                    <p className="mt-1.5 font-semibold text-primary">超越 {resultInfo.surpassed} 名玩家</p>
                                 )
                             )}
                         </div>
@@ -562,6 +582,12 @@ export function HuaPage() {
                                 {resultInfo.failed && (
                                     <Button variant="secondary" onClick={() => void submitScore(resultInfo.time)}>重试提交</Button>
                                 )}
+                                <Button
+                                    variant="outline"
+                                    onClick={() => { setResultInfo(null); setNameDialogMode("change"); setNameOpen(true); }}
+                                >
+                                    更换昵称
+                                </Button>
                                 <Button onClick={() => restart()}>再来一局</Button>
                             </div>
                         </div>
@@ -573,7 +599,7 @@ export function HuaPage() {
             <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
                 <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>📖 玩法介绍</DialogTitle>
+                        <DialogTitle>玩法介绍</DialogTitle>
                         <DialogDescription>三分钟看懂怎么玩,新手不迷路</DialogDescription>
                     </DialogHeader>
                     <GameRules />

@@ -60,7 +60,7 @@ export function RankPage() {
                 <Button asChild variant="ghost" size="sm" className="-ml-2">
                     <Link to="/">← 返回大厅</Link>
                 </Button>
-                <h1 className="flex-1 text-center text-lg font-extrabold">🏆 排行榜</h1>
+                <h1 className="flex-1 text-center text-lg font-extrabold">排行榜</h1>
                 <div className="w-16" aria-hidden />
             </header>
 
@@ -91,7 +91,7 @@ export function RankPage() {
                             curPlatform === p ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground",
                         )}
                     >
-                        {p === "mobile" ? "📱" : "🖥️"} {PLATFORM_LABEL[p]}
+                        {PLATFORM_LABEL[p]}
                     </button>
                 ))}
             </div>
@@ -120,7 +120,7 @@ export function RankPage() {
                     {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-11 w-full rounded-xl" />)}
                 </div>
             ) : entries.length === 0 ? (
-                <p className="py-10 text-center text-sm text-muted-foreground">暂无记录,快来创造第一条吧 🧪</p>
+                <p className="py-10 text-center text-sm text-muted-foreground">暂无记录,快来创造第一条吧</p>
             ) : (
                 <>
                     {/* 桌面表格 */}

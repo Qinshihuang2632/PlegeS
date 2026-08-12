@@ -64,7 +64,7 @@ export function RanksPage() {
         <div className="mx-auto max-w-4xl space-y-4">
             <header className="flex flex-wrap items-end justify-between gap-2">
                 <div>
-                    <h1 className="text-xl font-extrabold">🏆 榜单管理</h1>
+                    <h1 className="text-xl font-extrabold">榜单管理</h1>
                     <p className="mt-0.5 text-sm text-muted-foreground">查看/搜索/删除记录,清榜操作全程留痕</p>
                 </div>
                 <div className="flex gap-2">
@@ -145,8 +145,8 @@ export function RanksPage() {
                                         <td className="max-w-[10rem] truncate px-4 py-2.5 font-semibold">{e.name}</td>
                                         <td className="px-4 py-2.5 text-xs">
                                             {e.platform === "mobile"
-                                                ? <span className="rounded-full bg-secondary px-2 py-0.5">📱 手游</span>
-                                                : <span className="rounded-full bg-secondary px-2 py-0.5">🖥️ 端游</span>}
+                                                ? <span className="rounded-full bg-secondary px-2 py-0.5">手游</span>
+                                                : <span className="rounded-full bg-secondary px-2 py-0.5">端游</span>}
                                         </td>
                                         <td className="px-4 py-2.5">❤ {e.hp}({e.clears !== undefined ? e.clears + "组" : "—"})</td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
