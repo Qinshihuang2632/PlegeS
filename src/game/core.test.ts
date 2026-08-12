@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { HLGX_CATS, HLGX_DESC, HLGX_SUBSTANCES, type Category } from "./substances";
 import {
     HuaGame, TOOL_LIMIT, buildExtremeSlots, buildSlots, buildStack, catsOf, fmtTime,
-    overlapRatio, slotColorIdx,
+    overlapXY, slotColorIdx,
     type Tile,
 } from "./core";
 
@@ -82,9 +82,9 @@ describe("布局与分布", () => {
         expect(g.trayMax).toBe(8);
     });
 
-    /* v2.3.0 挑战(extreme)布局: 统一 50px 卡, 层间完全遮盖(遮挡 ≥1/4 不可拾取),
-       四角结构沿对角线向中心平移 25px, 柱子完全覆盖 8×8 层
-       第一层 4×1 + 第二层 4×4 + 第三层 4×9 + 柱子 36×3 + 倒置金字塔 204 = 368 */
+    /* v2.3.0/v2.3.1 挑战(extreme)布局: 统一 50px 卡 + 58px 格(8px 间隙),
+       层间完全遮盖(任意重叠即遮挡), 四角结构沿对角线向中心平移 25px,
+       柱子完全覆盖 8×8 层: 第一层 4×1 + 第二层 4×4 + 第三层 4×9 + 柱子 36×3 + 倒置 204 = 368 */
     it("挑战368槽(14层, 槽8): 层间完全遮盖 + 柱子全覆盖 8×8, 开局仅 4 尖端", () => {
         const slots = buildExtremeSlots();
         expect(slots.length).toBe(368);
@@ -93,7 +93,14 @@ describe("布局与分布", () => {
         expect(g.trayMax).toBe(8);
         expect(g.tiles.length).toBe(368);
         expect(g.tiles.every(t => t.size === 50)).toBe(true);   // 统一卡牌大小
-        // 第一层: 4 张可见(金字塔尖); 第二层 16 张全遮(被盖 1/4)
+        // 同层卡牌 58px 格(8px 间隙, 与其他关卡一致, 防误触)
+        const l2 = g.tiles.filter(t => t.L === 2);
+        expect(l2.length).toBe(36);
+        const l2tl = l2.filter(t => t.x < 200 && t.y < 200);     // 左上区域 3×3 相邻卡
+        expect(l2tl.length).toBe(9);
+        const xs = [...new Set(l2tl.map(t => t.x))].sort((a, b) => a - b);
+        expect(xs).toEqual([25, 83, 141]);                       // 卡位间隔 58px(间隙 8px)
+        // 第一层: 4 张可见(金字塔尖); 第二层 16 张全遮
         const l0 = g.tiles.filter(t => t.L === 0);
         expect(l0.length).toBe(4);
         expect(l0.every(t => !g.isBlocked(t))).toBe(true);
@@ -101,12 +108,10 @@ describe("布局与分布", () => {
         expect(l1.length).toBe(16);
         expect(l1.every(t => g.isBlocked(t))).toBe(true);
         // 第三层 36 张全遮; 柱子 108 张全遮(与第三层重合)
-        const l2 = g.tiles.filter(t => t.L === 2);
-        expect(l2.length).toBe(36);
         expect(l2.every(t => g.isBlocked(t))).toBe(true);
         for (let L = 3; L <= 5; L++)
             expect(g.tiles.filter(t => t.L === L).every(t => g.isBlocked(t))).toBe(true);
-        // 8×8 层 64 张全部被柱子覆盖 ≥1/4 → 完全遮挡, 开局仅 4 尖端可拾取
+        // 8×8 层 64 张全部被柱子覆盖 → 完全遮挡, 开局仅 4 尖端可拾取
         const l6 = g.tiles.filter(t => t.L === 6);
         expect(l6.length).toBe(64);
         expect(l6.every(t => g.isBlocked(t))).toBe(true);
@@ -123,14 +128,14 @@ describe("布局与分布", () => {
         expect(g.tiles.filter(t => t.L === 13).length).toBe(1);
     });
 
-    /* v2.3.0 需求4: 全关卡遮挡自洽检测 —— 任意卡的 blocked 状态 ⇔ 存在上层卡覆盖其 ≥1/4
+    /* v2.3.1 全关卡遮挡自洽检测 —— 任意卡的 blocked 状态 ⇔ 存在上层卡与其像素重叠
        (防止幽灵容器/几何误差导致的错误遮挡与漏出) */
-    it("全关卡遮挡自洽: blocked ⇔ 存在上层卡覆盖 ≥1/4", () => {
+    it("全关卡遮挡自洽: blocked ⇔ 存在上层卡像素重叠", () => {
         for (const mode of ["easy", "normal", "challenge", "extreme"] as const) {
             const g = new HuaGame(mode);
             for (const t of g.tiles) {
                 if (t.removed) continue;
-                const covered = g.tiles.some(o => !o.removed && o.L < t.L && overlapRatio(t, o) >= 0.25);
+                const covered = g.tiles.some(o => !o.removed && o.L < t.L && overlapXY(t, o));
                 expect(covered, `${mode} L${t.L}(${t.r},${t.c}) blocked=${g.isBlocked(t)}`).toBe(g.isBlocked(t));
             }
         }
