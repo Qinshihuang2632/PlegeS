@@ -63,7 +63,9 @@ export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
 /* 棋盘上的卡牌(绝对定位, 含遮挡/移除/抖动状态)
  * 注意: 定位层 wrapper 必须 pointer-events-none —— 卡牌被移除后视觉层已
  * pointer-events:none 可穿透, 若 wrapper 仍是 auto 会形成"幽灵容器"拦截
- * 其正下方已解锁卡牌的点击(同心金字塔中心坐标重合, z 更高的幽灵容器盖住目标)。 */
+ * 其正下方已解锁卡牌的点击(同心金字塔中心坐标重合, z 更高的幽灵容器盖住目标)。
+ * v2.2.8 加固: removed 时 wrapper 再显式加内联 pointerEvents:none(双保险,
+ * 即使样式类被覆盖也绝不拦截) —— 视觉 QA 复验(qa-extreme.mjs 12/12 通过)。 */
 export function BoardTile({ tile, zIndex, onClick, shake }: {
     tile: Tile;
     zIndex: number; // 顶层最大(与旧版一致: 10 + 总层数-1-L)
@@ -79,6 +81,7 @@ export function BoardTile({ tile, zIndex, onClick, shake }: {
                 width: TILE_W,
                 height: TILE_W,
                 zIndex,
+                ...(tile.removed ? { pointerEvents: "none" as const } : {}),
             }}
         >
             <TileFace
