@@ -168,39 +168,38 @@ export function WsPage() {
 
             {/* 规则提示 */}
             <p className="mb-2 text-center text-xs text-muted-foreground">
-                每行都要拼成一个完整单词(与前一行依重复字母重叠);填满的非法行会扣血
+                每行、每列都要拼成一个完整单词;填满的非法行/列会扣血
             </p>
 
-            {/* 链式棋盘(每行按起始列错位, 不规则形状) */}
+            {/* 统一网格棋盘(N×N, 每行每列成词) */}
             <div className="mx-auto w-fit rounded-2xl border bg-card p-2 shadow-sm">
-                {game.rows.map((word, r) => (
-                    <div key={r} className="flex gap-1 py-0.5" style={{ paddingLeft: game.startCol[r] * 48 }}>
-                        {word.split("").map((_, c) => {
-                            const v = game.grid[r][c];
+                <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${game.N}, minmax(0, 1fr))` }}>
+                    {game.grid.flatMap((row, r) =>
+                        row.map((v, c) => {
                             const isFixed = game.puzzle[r][c] !== null;
                             const isSel = game.selected?.r === r && game.selected?.c === c;
                             return (
                                 <button
-                                    key={c}
+                                    key={`${r}-${c}`}
                                     onClick={() => onCell(r, c)}
                                     className={cn(
-                                        "flex h-11 w-11 items-center justify-center rounded-lg border text-lg font-bold uppercase transition sm:h-12 sm:w-12",
+                                        "flex h-12 w-12 items-center justify-center rounded-lg border text-lg font-bold uppercase transition sm:h-14 sm:w-14",
                                         isFixed
                                             ? "border-transparent bg-muted text-muted-foreground"
-                                            : game.rowDone[r]
-                                                ? "border-transparent bg-success/15 text-success"
-                                                : game.rowBad[r]
-                                                    ? "border-transparent bg-destructive/15 text-destructive"
-                                                    : "border bg-card shadow-sm hover:bg-muted",
+                                            : game.rowDone[r] || game.rowBad[r]
+                                                ? (game.rowDone[r]
+                                                    ? "border-transparent bg-success/15 text-success"
+                                                    : "border-transparent bg-destructive/15 text-destructive")
+                                                : "border bg-card shadow-sm hover:bg-muted",
                                         isSel && "ring-2 ring-primary",
                                     )}
                                 >
                                     {v ?? ""}
                                 </button>
                             );
-                        })}
-                    </div>
-                ))}
+                        }),
+                    )}
+                </div>
             </div>
 
             {/* 道具: 提示 */}
