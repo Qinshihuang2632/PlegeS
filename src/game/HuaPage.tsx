@@ -106,7 +106,7 @@ export function HuaPage() {
         {
             icon: "🧰",
             title: "道具救场",
-            body: "卡关时用道具:撤回(最后一张放回棋盘)、移出(最前 3 张放回棋盘)、洗牌(打乱场上卡牌)。每种每局最多 3 次,优先救急用。",
+            body: "卡关时用道具:撤回(最后一张放回棋盘)、移出(移除当前选中的至多 3 张卡,无伤消除)、洗牌(打乱场上卡牌)。每种每局最多 3 次,优先救急用。",
         },
         {
             icon: "❤️",
@@ -236,7 +236,7 @@ export function HuaPage() {
     const useTool = (tool: "undo" | "out" | "shuffle") => {
         const r = tool === "undo" ? game.undo() : tool === "out" ? game.moveOut() : game.shuffleTiles();
         if (r === "limit") toast(`${TOOL_LIMIT} 次已用完,本局不能再用了`);
-        else if (r === "empty") toast("手牌槽是空的,先拾取卡牌吧");
+        else if (r === "empty") toast(tool === "out" ? "请先选中要移出的卡牌" : "手牌槽是空的,先拾取卡牌吧");
         else if (tool === "undo") HLGX_Audio.undo();
         else if (tool === "out") HLGX_Audio.out();
         else HLGX_Audio.shuffle();
@@ -462,11 +462,11 @@ export function HuaPage() {
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
-                        <Button variant="secondary" disabled={toolLeft("out") <= 0} onClick={() => useTool("out")}>
+                        <Button variant="secondary" disabled={game.selected.length === 0 || toolLeft("out") <= 0} onClick={() => useTool("out")}>
                             移出({toolLeft("out")})
                         </Button>
                     </TooltipTrigger>
-                    <TooltipContent>把槽内最前面 3 张卡放回棋盘空位</TooltipContent>
+                    <TooltipContent>移除当前选中的至多 3 张卡(无伤消除,不扣血)</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>

@@ -388,43 +388,19 @@ export class HuaGame {
     /* 移出: 槽内最靠前3块放回棋盘 —— 原位空置者放回原位, 原位被占者挪到空槽
        v2.2.0 修复: 旧实现仅找「其它空槽」, 手牌槽里的卡都取自棋盘原位时
        空槽集合为空 → 整批退回且次数已消耗, 表现为「移出不生效」 */
+    /* 移出(v2.3.4 重做): 将当前选中的至多 3 张卡直接移除(等价于无伤消除,
+       可 1/2/3 张、可不同类; 不扣血、不计消除组数; 未选中则返回 empty 不消耗次数) */
     moveOut(): ToolResult {
-        if (this.gameOver || this.win || this.tray.length === 0) return "empty";
+        if (this.gameOver || this.win) return "empty";
         if (this.toolUsed.out >= TOOL_LIMIT) return "limit";
+        const sel = this.selected.slice(0, 3);
+        if (sel.length === 0) return "empty";
         this.toolUsed.out++;
-        const take = this.tray.splice(0, Math.min(3, this.tray.length));
-        this.selected = this.selected.filter(x => !take.includes(x));
-        // 棋盘上仍被占据的位置(未移除的卡 + 仍在手牌槽/选中区的卡)
-        const occupied = new Set(
-            this.tiles.filter(x => !x.removed || this.tray.includes(x) || this.selected.includes(x))
-                .map(x => x.r + "," + x.c + "," + x.L));
-        // 可挪用的空槽: 已拾取、不在手牌槽/选中区、且非 take 自身
-        const freeSlots = this.tiles.filter(x => x.removed && !this.tray.includes(x) && !take.includes(x) && !this.selected.includes(x));
-        // 1) 原位空置的卡直接放回原位
-        const toReloc: Tile[] = [];
-        for (const t of take) {
-            const key = t.r + "," + t.c + "," + t.L;
-            if (!occupied.has(key)) {
-                t.removed = false;
-                occupied.add(key);
-            } else {
-                toReloc.push(t);
-            }
-        }
-        // 2) 原位被占的卡挪到其它空槽(空槽不足则留在槽内, 顺序保持)
-        shuffleArr(freeSlots);
-        const stuck: Tile[] = [];
-        for (const t of toReloc) {
-            const s = freeSlots.shift();
-            if (!s) { stuck.push(t); continue; }
-            t.r = s.r; t.c = s.c; t.L = s.L;
-            t.x = s.x; t.y = s.y;             // 同步缓存坐标
-            t.removed = false;
-            t.color = slotColorIdx(s.r, s.c, s.L);
-        }
-        if (stuck.length) this.tray.unshift(...stuck);
-        this.rebuildLayers();
-        this.refreshBlocked();                // 放回的卡需重算遮挡状态
+        this.tray = this.tray.filter(x => !sel.includes(x));
+        this.selected = [];
+        this.refreshBlocked();
+        this.checkWin();
+        this.checkLose();
         this.emit();
         return "done";
     }

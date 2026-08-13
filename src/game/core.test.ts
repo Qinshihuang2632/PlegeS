@@ -422,15 +422,32 @@ describe("基础行为", () => {
         expect(g.toolUsed.undo).toBe(1);
     });
 
-    it("移出: 原位空置时放回原位(修复不生效 bug)", () => {
+    it("移出: 移除选中的至多3张(无伤消除, 不扣血不计组数)", () => {
         const g = new HuaGame();
-        const t = g.tiles.find(x => !g.isBlocked(x))!;
-        g.pickTile(t);
+        g.tray = [mkSub2("metal", undefined, true), mkSub2("acid", undefined, true), mkSub2("base", undefined, true)];
+        g.selected = [g.tray[0], g.tray[1]];                    // 选中 2 张(不同类)
+        const hpBefore = g.hp, clearsBefore = g.clears;
         const r = g.moveOut();
         expect(r).toBe("done");
-        expect(g.tray.length).toBe(0);      // 卡已放回棋盘, 不再滞留手牌槽
-        expect(t.removed).toBe(false);      // 放回后可见可点
+        expect(g.tray.length).toBe(1);       // 选中 2 张被移除
+        expect(g.selected.length).toBe(0);
+        expect(g.hp).toBe(hpBefore);         // 不扣血
+        expect(g.clears).toBe(clearsBefore); // 不计消除组数
         expect(g.toolUsed.out).toBe(1);
+    });
+
+    it("移出: 未选中 → empty 不消耗次数; 上限 3 次", () => {
+        const g = new HuaGame();
+        g.tray = [mkSub2("metal", undefined, true)];
+        expect(g.moveOut()).toBe("empty");   // 未选中
+        expect(g.toolUsed.out).toBe(0);
+        expect(g.tray.length).toBe(1);       // 卡仍在槽内
+        // 用完 3 次后返回 limit
+        for (let i = 0; i < 3; i++) {
+            g.toggleSelect(g.tray[0]);
+            expect(g.moveOut()).toBe("done");
+        }
+        expect(g.moveOut()).toBe("limit");
     });
 
     it("成功消除组数 clears: 消除+1, 误消不加, 结算携带", () => {
@@ -469,7 +486,12 @@ function runSim(g: HuaGame, strategy: "greedy" | "balanced" | "cautious") {
         for (const cat in cc) { if (cc[cat] >= 3) { target = cat; break; } }
         if (target) { g.selected = g.tray.filter(x => catsOf(x.sub).includes(target as Category)).slice(0, 3); g.clearSelected(); continue; }
         if (g.tray.length >= g.trayMax) {
-            if (g.toolUsed.out < TOOL_LIMIT) { g.moveOut(); continue; }
+            // v2.3.4: 移出改为移除选中卡, 模拟器需先选中
+            if (g.toolUsed.out < TOOL_LIMIT && g.tray.length > 0) {
+                g.selected = g.tray.slice(0, Math.min(3, g.tray.length));
+                g.moveOut();
+                continue;
+            }
             if (g.toolUsed.undo < TOOL_LIMIT) { g.undo(); continue; }
             break;
         }
@@ -478,7 +500,11 @@ function runSim(g: HuaGame, strategy: "greedy" | "balanced" | "cautious") {
         if (g.tray.length >= dangerLine) {
             const canFinish = g.tiles.some(t => !t.removed && !g.isBlocked(t) && catsOf(t.sub).some(cat => (cc[cat] || 0) === 2));
             if (!canFinish) {
-                if (g.toolUsed.out < TOOL_LIMIT) { g.moveOut(); continue; }
+                if (g.toolUsed.out < TOOL_LIMIT && g.tray.length > 0) {
+                    g.selected = g.tray.slice(0, Math.min(3, g.tray.length));
+                    g.moveOut();
+                    continue;
+                }
                 if (g.toolUsed.undo < TOOL_LIMIT) { g.undo(); continue; }
             }
         }
@@ -496,7 +522,11 @@ function runSim(g: HuaGame, strategy: "greedy" | "balanced" | "cautious") {
                 picked = clickable[Math.floor(Math.random() * clickable.length)];
             } else {
                 if (g.toolUsed.shuffle < TOOL_LIMIT) { g.shuffleTiles(); continue; }
-                if (g.toolUsed.out < TOOL_LIMIT) { g.moveOut(); continue; }
+                if (g.toolUsed.out < TOOL_LIMIT && g.tray.length > 0) {
+                    g.selected = g.tray.slice(0, Math.min(3, g.tray.length));
+                    g.moveOut();
+                    continue;
+                }
                 if (g.toolUsed.undo < TOOL_LIMIT) { g.undo(); continue; }
                 picked = clickable[Math.floor(Math.random() * clickable.length)];
             }
