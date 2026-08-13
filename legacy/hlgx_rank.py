@@ -13,22 +13,22 @@ API:
     GET    /hlgx/rank                                  排行榜查看页
 """
 import json
-import os
 import time
+from pathlib import Path
 from flask import Blueprint, request, jsonify, render_template
 
 hlgx_rank_bp = Blueprint("hlgx_rank", __name__)
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-DATA_FILE = os.path.join(BASE, "rankings.json")
+BASE = Path(__file__).resolve().parent   # 数据文件固定位于模块目录内, 不接受外部路径
+DATA_FILE = BASE / "rankings.json"
 MODES = ("easy", "normal", "challenge")
 
 
 def load():
-    if not os.path.exists(DATA_FILE):
+    if not DATA_FILE.exists():
         return {m: [] for m in MODES}
     try:
-        with open(DATA_FILE, encoding="utf-8") as f:
+        with DATA_FILE.open(encoding="utf-8") as f:
             data = json.load(f)
     except Exception:
         return {m: [] for m in MODES}
@@ -38,7 +38,7 @@ def load():
 
 
 def save(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
+    with DATA_FILE.open("w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 

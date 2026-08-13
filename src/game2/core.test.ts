@@ -6,8 +6,35 @@
  * 运行: npx vitest run --pool=forks
  */
 import { describe, expect, it } from "vitest";
-import { HINT_LIMIT, WsGame, WS_DIFFICULTIES, buildCross, dictFor, solveCross } from "./core";
+import { HINT_LIMIT, WsGame, WS_DIFFICULTIES, buildCross, dictFor, solveCross, type PlacedWord } from "./core";
 import { WS_WORDS, WS_WORDS_HARD } from "./words";
+
+/* 词所占格子 */
+function cellsOf(w: PlacedWord): [number, number][] {
+    const cells: [number, number][] = [];
+    for (let s = 0; s < w.word.length; s++)
+        cells.push(w.dir === "h" ? [w.r, w.c + s] : [w.r + s, w.c]);
+    return cells;
+}
+
+/* 并查集: 词之间若共享任意格即连通; 要求全部词属同一连通分量(连成一个图形) */
+function isConnected(words: PlacedWord[]): boolean {
+    const n = words.length;
+    if (n <= 1) return true;
+    const parent = Array.from({ length: n }, (_, i) => i);
+    const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x])));
+    const union = (a: number, b: number) => { parent[find(a)] = find(b); };
+    const owner = new Map<string, number>();
+    for (let i = 0; i < n; i++) {
+        for (const [r, c] of cellsOf(words[i])) {
+            const key = `${r},${c}`;
+            if (owner.has(key)) union(i, owner.get(key)!);
+            else owner.set(key, i);
+        }
+    }
+    const root = find(0);
+    return words.every((_, i) => find(i) === root);
+}
 
 describe("词库(课标及衍生)", () => {
     it("4/5/6 字母词库均 ≥100 且全部小写、无重复", () => {
@@ -60,6 +87,33 @@ describe("交叉单词网格生成(自由图形)", () => {
             const total = built!.H * built!.W;
             const occ = built!.map.size;
             expect(occ).toBeLessThan(total);
+        }
+    });
+});
+
+describe("单词连通成图(回归: 修前 ~96% 网格是断开的)", () => {
+    it("buildCross 生成的所有词共享格子、连成单一连通图形", () => {
+        for (const mode of ["easy", "normal", "hard"] as const) {
+            const d = WS_DIFFICULTIES[mode];
+            const dict = dictFor(mode);
+            for (let t = 0; t < 40; t++) {
+                const built = buildCross(d.words, dict, d.maxDim);
+                expect(built, `${mode} 生成失败`).not.toBeNull();
+                expect(isConnected(built!.words), `${mode} 第${t}次: 词未连通`).toBe(true);
+            }
+        }
+    });
+
+    it("网格尺寸受 maxDim 约束: H、W 均不超上限(图形紧凑)", () => {
+        for (const mode of ["easy", "normal", "hard"] as const) {
+            const d = WS_DIFFICULTIES[mode];
+            const dict = dictFor(mode);
+            for (let t = 0; t < 40; t++) {
+                const built = buildCross(d.words, dict, d.maxDim);
+                expect(built, `${mode} 生成失败`).not.toBeNull();
+                expect(built!.H, `${mode} H=${built!.H} > ${d.maxDim}`).toBeLessThanOrEqual(d.maxDim);
+                expect(built!.W, `${mode} W=${built!.W} > ${d.maxDim}`).toBeLessThanOrEqual(d.maxDim);
+            }
         }
     });
 });
@@ -120,21 +174,24 @@ describe("游戏流程", () => {
         expect(g.win).toBe(true);
 
         const g2 = new WsGame("easy");
-        // 找一个非首词的占用空格, 填入错误字母(该字母所在词变非法 → 扣血)
-        const blanks: [number, number][] = [];
-        for (let r = 0; r < g2.H; r++)
-            for (let c = 0; c < g2.W; c++)
-                if (g2.occupied[r][c] && g2.grid[r][c] === null && g2.puzzle[r][c] === null) blanks.push([r, c]);
-        const [br, bc] = blanks[0];
+        // 找一个只属于单一词的占用空格(非交叉点): 填错后只让这 1 个词变非法 → 恰好扣 1 血
+        const pickBlank = (): [number, number] => {
+            const single: [number, number][] = [];
+            for (let r = 0; r < g2.H; r++)
+                for (let c = 0; c < g2.W; c++) {
+                    if (!(g2.occupied[r][c] && g2.grid[r][c] === null && g2.puzzle[r][c] === null)) continue;
+                    const cnt = g2.words.filter((_, i) =>
+                        g2.wordCells(i).some(([rr, cc]) => rr === r && cc === c)).length;
+                    if (cnt === 1) single.push([r, c]);
+                }
+            return single.length ? single[0] : [-1, -1];
+        };
+        const [br, bc] = pickBlank();
+        expect(br, "应存在非交叉空格").toBeGreaterThanOrEqual(0);
+        const wi = g2.words.findIndex((_, i) => g2.wordCells(i).some(([rr, cc]) => rr === br && cc === bc));
         const ans = g2.cellAnswer(br, bc);
-        const wrong = ans === "a" ? "b" : "a";
-        g2.fill(br, bc, wrong);
-        // 该格所属的词填满后非法 → 扣血
-        const wi = g2.words.findIndex(w => {
-            const cells = g2.wordCells(g2.words.indexOf(w));
-            return cells.some(([rr, cc]) => rr === br && cc === bc);
-        });
-        // 填满该词其余格
+        g2.fill(br, bc, ans === "a" ? "b" : "a");
+        // 填满该词其余格 → 整词非法 → 扣 1 血
         for (const [rr, cc] of g2.wordCells(wi)) {
             if (g2.grid[rr][cc] === null) g2.fill(rr, cc, g2.cellAnswer(rr, cc));
         }

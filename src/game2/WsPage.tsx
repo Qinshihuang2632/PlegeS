@@ -1,8 +1,9 @@
 /*
  * p了个s · 英了个语 页面 (src/game2/WsPage.tsx)
  * =============================================
- * 链式单词拼图: 每行一个单词, 依重复字母与前词重叠拼接成不规则形状,
- * 删去部分字母形成关卡, 玩家补全; 每行填满校验为词库单词。
+ * 交叉单词网格: 横竖单词交叉成自由图形, 相交处共享字母;
+ * 挖空部分格形成关卡, 玩家补全; 每个词(横/竖)填满时校验是否词库单词, 非法扣血。
+ * 网格自适应容器宽度(格子始终等比方块), 高难度也不挤压溢出。
  * 桌面物理键盘 + 移动端屏幕字母条双输入; 爱心血量; 提示道具(每局 2 次)。
  * 排行榜移至主界面与「化了个学」共用(见 /hlgx/rank)。
  */
@@ -172,7 +173,7 @@ export function WsPage() {
             </p>
 
             {/* 交叉单词网格(整个一张表格, 未占用格灰色不可点) */}
-            <div className="mx-auto w-fit rounded-2xl border bg-card p-2 shadow-sm">
+            <div className="mx-auto w-full max-w-[26rem] rounded-2xl border bg-card p-2 shadow-sm">
                 <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${game.W}, minmax(0, 1fr))` }}>
                     {game.occupied.flatMap((row, r) =>
                         row.map((occ, c) => {
@@ -180,7 +181,7 @@ export function WsPage() {
                                 return (
                                     <div
                                         key={`${r}-${c}`}
-                                        className="h-12 w-12 rounded-lg bg-muted/40 sm:h-14 sm:w-14"
+                                        className="aspect-square w-full rounded-lg bg-muted/40"
                                         aria-hidden
                                     />
                                 );
@@ -202,7 +203,7 @@ export function WsPage() {
                                     key={`${r}-${c}`}
                                     onClick={() => onCell(r, c)}
                                     className={cn(
-                                        "flex h-12 w-12 items-center justify-center rounded-lg border text-lg font-bold uppercase transition sm:h-14 sm:w-14",
+                                        "flex aspect-square w-full items-center justify-center rounded-lg border text-base font-bold uppercase transition sm:text-lg",
                                         isFixed
                                             ? "border-transparent bg-muted text-muted-foreground"
                                             : isDone
