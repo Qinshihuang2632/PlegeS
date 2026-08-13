@@ -28,8 +28,12 @@
 │   ├── admin/api/          管理 API: auth / rank / logs / sessions
 │   └── [[path]].js         SPA 回退(静态资源优先, 未知 API 404)
 ├── public/                 _routes.json(Functions 路由白名单)/ 404.html
-├── scripts/                api_selftest(契约 61 项)/ e2e_local(E2E 31 项)/ verify_prod(线上)
-├── hualegexue/             ❄️ 冻结的旧 Flask 版源码(仅参考, 不再参与构建)
+├── scripts/                api_selftest(契约 61 项)/ e2e_local(E2E 31 项)/ verify_prod(线上)/ make_docx
+├── docs/                   版本日志/迁移审计/汇总报告(platform_log、MIGRATION_AUDIT、hlgx_summary_report)
+├── legacy/                 ❄️ 冻结的旧 Flask 版源码(仅参考, 不再参与构建)
+│   ├── hlgx_app.py         旧入口(注册 hlgx_hub / hlgx_rank / hualegexue.hlgx_hua 三个蓝图)
+│   ├── hualegexue/         hua 蓝图(含其模板与静态资源)
+│   └── templates/ + static/ 大厅/排行榜模板与样式
 └── wrangler.toml           Pages 部署配置(KV binding)
 ```
 
@@ -98,6 +102,7 @@ npm run deploy       # = npm run build && wrangler pages deploy dist --branch=ma
 
 ## 遗留说明
 
-- `hualegexue/` 为 v2.0.2 冻结的旧 Flask 版(单 HTML/单 JS),仅作历史参考,
-  不再双写、不参与构建;其逻辑断言已全部迁移至 `src/game/core.test.ts`
+- `legacy/` 为冻结的旧 Flask 版(入口 `legacy/hlgx_app.py` + `legacy/hualegexue/` 包),
+  仅作历史参考,不再双写、不参与构建;其逻辑断言已全部迁移至 `src/game/core.test.ts`
+- 历史文档与版本日志集中在 `docs/`(`platform_log.md`、`MIGRATION_AUDIT.md`、`hlgx_summary_report.md`)
 - `dist/` 为构建产物(已 gitignore),部署前执行 `npm run build`

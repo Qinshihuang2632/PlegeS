@@ -60,7 +60,7 @@ D:\program\
 
 **报告形式**
 - 本文档(.md)作为**版本迭代记录**长期维护,新版本追加在末尾
-- Word 版报告 `hlgx_summary_report.docx` 由通用脚本 `make_docx.py` 从本文档生成,内容同步
+- Word 版报告 `hlgx_summary_report.docx` 由通用脚本 `scripts/make_docx.py` 从本文档生成,内容同步
 
 ---
 
@@ -98,7 +98,7 @@ D:\program\
 
 - 排行榜与游戏静态资源整体迁移至 **Cloudflare Pages + KV**:不再依赖本地 Flask 运行时
 - 排行榜 API 上云(`/hlgx/api/rank`),KV 存储三难度榜单;`_routes.json` 路由白名单
-- 旧 Flask 镜像冻结为遗留版本,不再双写(详细迁移过程见根目录 MIGRATION_AUDIT.md)
+- 旧 Flask 镜像冻结为遗留版本,不再双写(详细迁移过程见 `docs/MIGRATION_AUDIT.md`;旧源码收纳于 `legacy/`)
 
 ---
 

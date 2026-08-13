@@ -23,7 +23,7 @@ def add_rich(p, text):
 
 
 def main():
-    src = sys.argv[1] if len(sys.argv) > 1 else "platform_log.md"
+    src = sys.argv[1] if len(sys.argv) > 1 else "docs/platform_log.md"
     dst = sys.argv[2] if len(sys.argv) > 2 else os.path.splitext(src)[0] + ".docx"
 
     doc = Document()

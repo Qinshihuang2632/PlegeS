@@ -73,7 +73,7 @@
 | `6943cd4` | v2.1.0 | 管理后台前端(登录/看板/榜单管理/审计日志/会话管理) |
 | `848f283` | v2.1.0 | 测试体系扩展与全量验证(契约 61 项 / E2E 31 项 / GUI 实测) |
 
-保留未动:本地工具 `make_docx.py`、`hualegexue/hlgx_selftest.js`、Flask 源码(`hlgx_app.py` 等)——
+保留未动:本地工具 `scripts/make_docx.py`、Flask 源码(`legacy/hlgx_app.py` 等)——
 仅作本地参考/工具,不参与线上构建(线上只发布 `dist/` + `functions/`)。
 
 ## 4. 测试证据
@@ -200,7 +200,7 @@ exists 精确匹配跨模式、suggest X*001 占用→X*002/全占用→*999、D
 
 ### 4.9 v2.1.4 版本号统一 / 违禁词扩充 / 平台分离
 - **版本号**:`src/version.ts` 单一来源(`APP_VERSION`),大厅/游戏/榜单三页统一引用;
-  约定:升级版本必须同步 version.ts + platform_log.md(此前界面停留在 v2.1.0 的教训)
+  约定:升级版本必须同步 version.ts + docs/platform_log.md(此前界面停留在 v2.1.0 的教训)
 - **违禁词扩充**:新增"违反党史国情/国家大政方针"类(台独/港独/藏独/疆独/蒙独/民族分裂/分裂国家/
   民运/六四/天安门事件/反党/反华/辱华/汉奸/卖国贼/精日)+ 英文脏话(motherfucker/dick/pussy/
   cunt/twat/wanker/nigger/faggot/retard/whore/slut/bastard/prick 及 f**k/s**t/b**ch 遮蔽写法),
