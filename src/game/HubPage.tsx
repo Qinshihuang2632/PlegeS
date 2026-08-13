@@ -45,9 +45,9 @@ export function HubPage() {
                     className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                     <div className="mb-3 text-4xl" aria-hidden>词</div>
-                    <h2 className="text-lg font-bold">单词数独</h2>
+                    <h2 className="text-lg font-bold">英了个语</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        每行每列拼成一个完整单词。高考词汇题库,简单 / 标准 / 困难三档,支持血量 / 计时 / 排行榜。
+                        每行拼成一个完整单词,与前一行依重复字母重叠成不规则拼图。高考课标词库,简单 / 标准 / 困难三档。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
