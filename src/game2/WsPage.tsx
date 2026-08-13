@@ -85,7 +85,7 @@ export function WsPage() {
     }, [game.gameOver]);
 
     const onCell = (r: number, c: number) => {
-        if (game.gameOver || game.win || game.rowDone[r] || game.puzzle[r][c] !== null) return;
+        if (game.gameOver || game.win || !game.occupied[r][c] || game.puzzle[r][c] !== null) return;
         game.selected = { r, c };
         refresh();
     };
@@ -97,9 +97,9 @@ export function WsPage() {
         if (game.fill(r, c, ch)) {
             // 自动跳到下一个空格
             let moved = false;
-            for (let rr = 0; rr < game.rows.length && !moved; rr++) {
-                for (let cc = 0; cc < game.rows[rr].length; cc++) {
-                    if (game.grid[rr][cc] === null && game.puzzle[rr][cc] === null) {
+            for (let rr = 0; rr < game.H && !moved; rr++) {
+                for (let cc = 0; cc < game.W; cc++) {
+                    if (game.occupied[rr][cc] && game.grid[rr][cc] === null && game.puzzle[rr][cc] === null) {
                         game.selected = { r: rr, c: cc };
                         moved = true;
                         break;
@@ -168,16 +168,35 @@ export function WsPage() {
 
             {/* 规则提示 */}
             <p className="mb-2 text-center text-xs text-muted-foreground">
-                每行、每列都要拼成一个完整单词;填满的非法行/列会扣血
+                横竖单词交叉拼图:每行/每列都是一个单词,相交处共享字母;灰色格不是单词成分,填满的非法词会扣血
             </p>
 
-            {/* 统一网格棋盘(N×N, 每行每列成词) */}
+            {/* 交叉单词网格(整个一张表格, 未占用格灰色不可点) */}
             <div className="mx-auto w-fit rounded-2xl border bg-card p-2 shadow-sm">
-                <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${game.N}, minmax(0, 1fr))` }}>
-                    {game.grid.flatMap((row, r) =>
-                        row.map((v, c) => {
+                <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${game.W}, minmax(0, 1fr))` }}>
+                    {game.occupied.flatMap((row, r) =>
+                        row.map((occ, c) => {
+                            if (!occ) {
+                                return (
+                                    <div
+                                        key={`${r}-${c}`}
+                                        className="h-12 w-12 rounded-lg bg-muted/40 sm:h-14 sm:w-14"
+                                        aria-hidden
+                                    />
+                                );
+                            }
+                            const v = game.grid[r][c];
                             const isFixed = game.puzzle[r][c] !== null;
                             const isSel = game.selected?.r === r && game.selected?.c === c;
+                            // 词状态: 属于任一完成词 → 绿; 任一非法词 → 红
+                            const wi = game.words.findIndex(w => {
+                                const cells: [number, number][] = [];
+                                for (let s = 0; s < w.word.length; s++)
+                                    cells.push(w.dir === "h" ? [w.r, w.c + s] : [w.r + s, w.c]);
+                                return cells.some(([rr, cc]) => rr === r && cc === c);
+                            });
+                            const isDone = wi >= 0 && game.wordDone[wi];
+                            const isBad = wi >= 0 && game.wordBad[wi];
                             return (
                                 <button
                                     key={`${r}-${c}`}
@@ -186,11 +205,11 @@ export function WsPage() {
                                         "flex h-12 w-12 items-center justify-center rounded-lg border text-lg font-bold uppercase transition sm:h-14 sm:w-14",
                                         isFixed
                                             ? "border-transparent bg-muted text-muted-foreground"
-                                            : game.rowDone[r] || game.rowBad[r]
-                                                ? (game.rowDone[r]
-                                                    ? "border-transparent bg-success/15 text-success"
-                                                    : "border-transparent bg-destructive/15 text-destructive")
-                                                : "border bg-card shadow-sm hover:bg-muted",
+                                            : isDone
+                                                ? "border-transparent bg-success/15 text-success"
+                                                : isBad
+                                                    ? "border-transparent bg-destructive/15 text-destructive"
+                                                    : "border bg-card shadow-sm hover:bg-muted",
                                         isSel && "ring-2 ring-primary",
                                     )}
                                 >

@@ -1,11 +1,12 @@
 /*
  * p了个s · 英了个语 核心逻辑测试 (Vitest)
  * ==========================================
- * 覆盖: 词库课标性、对称方阵生成(行/列均成词)、唯一解保证(简单/标准/困难)、
- * 难度参数、挖空与预填、填写/校验/扣血/胜负、提示道具。运行: npx vitest run --pool=forks
+ * 覆盖: 词库课标性、交叉网格生成(词数/交叉一致性/不重复/词库合法)、
+ * 唯一解保证(三难度)、挖空与预填、填写/校验/扣血/胜负、提示道具。
+ * 运行: npx vitest run --pool=forks
  */
 import { describe, expect, it } from "vitest";
-import { HINT_LIMIT, WsGame, WS_DIFFICULTIES, dictFor, pickSquare, solveSquare } from "./core";
+import { HINT_LIMIT, WsGame, WS_DIFFICULTIES, buildCross, dictFor, solveCross } from "./core";
 import { WS_WORDS, WS_WORDS_HARD } from "./words";
 
 describe("词库(课标及衍生)", () => {
@@ -26,20 +27,39 @@ describe("词库(课标及衍生)", () => {
     });
 });
 
-describe("word square 生成", () => {
-    it("三种难度均可生成对称方阵(行词/列词均在词库)", () => {
+describe("交叉单词网格生成(自由图形)", () => {
+    it("三种难度均可生成指定词数网格: 词不重复、全部在词库、交叉点字母一致", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {
-            const N = WS_DIFFICULTIES[mode].N;
+            const d = WS_DIFFICULTIES[mode];
             const dict = dictFor(mode);
             const set = new Set(dict);
-            const rows = pickSquare(N, dict);
-            expect(rows, `${mode} 生成失败`).not.toBeNull();
-            for (const w of rows!) expect(set.has(w)).toBe(true);
-            for (let i = 0; i < N; i++)
-                for (let j = 0; j < N; j++)
-                    expect(rows![i][j], `${mode} 不对称 (${i},${j})`).toBe(rows![j][i]);
-            for (let c = 0; c < N; c++)
-                expect(set.has(rows!.map(w => w[c]).join("")), `${mode} 列${c} 非法`).toBe(true);
+            const built = buildCross(d.words, dict);
+            expect(built, `${mode} 生成失败`).not.toBeNull();
+            expect(built!.words.length).toBe(d.words);
+            // 词不重复
+            const names = built!.words.map(w => w.word);
+            expect(new Set(names).size).toBe(names.length);
+            // 词库合法
+            for (const w of built!.words) expect(set.has(w.word)).toBe(true);
+            // 交叉一致性: 每个占用格字母唯一(同一格在不同词中字母一致)
+            for (const [k, v] of built!.map) {
+                const [r, c] = k.split(",").map(Number);
+                const letters = built!.words
+                    .filter(w => {
+                        if (w.dir === "h") return w.r === r && w.c <= c && c < w.c + w.word.length;
+                        return w.c === c && w.r <= r && r < w.r + w.word.length;
+                    })
+                    .map(w => {
+                        const s = w.dir === "h" ? c - w.c : r - w.r;
+                        return w.word[s];
+                    });
+                expect(letters.length).toBeGreaterThanOrEqual(1);
+                for (const L of letters) expect(L, `交叉格(${r},${c}) 字母冲突`).toBe(v);
+            }
+            // 自由图形: 存在未占用格(非全填)
+            const total = built!.H * built!.W;
+            const occ = built!.map.size;
+            expect(occ).toBeLessThan(total);
         }
     });
 });
@@ -49,62 +69,81 @@ describe("唯一解保证(无逻辑漏洞)", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {
             for (let t = 0; t < 6; t++) {
                 const g = new WsGame(mode);
-                const sols = solveSquare(g.puzzle, dictFor(mode));
+                const dict = dictFor(mode);
+                const sols = solveCross(g.occupied, g.puzzle, g.words, dict);
                 expect(sols.length, `${mode} 第${t}局解数=${sols.length}`).toBe(1);
-                expect(sols[0].join("|")).toBe(g.rows.join("|"));   // 唯一解 = 答案
+                // 唯一解 = 答案
+                const expectGrid = g.occupied.map((row, r) =>
+                    row.map((occ, c) => (occ ? g.cellAnswer(r, c) : "")));
+                expect(sols[0].join("|")).toBe(expectGrid.map(row => row.join("")).join("|"));
             }
         }
     });
 });
 
 describe("游戏流程", () => {
-    it("难度参数: 简单4×4/标准5×5/困难5×5难库, 挖空率递增", () => {
-        expect(WS_DIFFICULTIES.easy.N).toBe(4);
-        expect(WS_DIFFICULTIES.normal.N).toBe(5);
-        expect(WS_DIFFICULTIES.hard.N).toBe(5);
+    it("难度参数: 4词/6词/8词, 挖空率递增, 简单首词提示", () => {
+        expect(WS_DIFFICULTIES.easy.words).toBe(4);
+        expect(WS_DIFFICULTIES.normal.words).toBe(6);
+        expect(WS_DIFFICULTIES.hard.words).toBe(8);
         expect(WS_DIFFICULTIES.hard.dictKey).toBe("hard");
         expect(WS_DIFFICULTIES.hard.blankRate).toBeGreaterThan(WS_DIFFICULTIES.normal.blankRate);
         expect(WS_DIFFICULTIES.normal.blankRate).toBeGreaterThan(WS_DIFFICULTIES.easy.blankRate);
-        expect(WS_DIFFICULTIES.hard.firstRowHint).toBe(false);
+        expect(WS_DIFFICULTIES.hard.firstHint).toBe(false);
     });
 
-    it("开局: 预填格不可改, 挖空待填; 简单首行全提示", () => {
+    it("开局: 未占用格不可填/不可点, 预填格不可改, 简单首词全提示", () => {
         const g = new WsGame("easy");
-        expect(g.rows.length).toBe(4);
-        for (let r = 0; r < g.N; r++)
-            for (let c = 0; c < g.N; c++)
+        expect(g.words.length).toBe(4);
+        // 未占用格不可填
+        for (let r = 0; r < g.H; r++)
+            for (let c = 0; c < g.W; c++)
+                if (!g.occupied[r][c]) expect(g.fill(r, c, "a")).toBe(false);
+        // 预填格不可改
+        for (let r = 0; r < g.H; r++)
+            for (let c = 0; c < g.W; c++)
                 if (g.puzzle[r][c] !== null) {
-                    expect(g.fill(r, c, "z")).toBe(false);   // 预填不可改
+                    expect(g.fill(r, c, "z")).toBe(false);
                     expect(g.grid[r][c]).toBe(g.puzzle[r][c]);
                 }
-        expect(g.puzzle[0].every(x => x !== null)).toBe(true);
+        // 首词全提示
+        const first = g.wordCells(0);
+        expect(first.every(([r, c]) => g.puzzle[r][c] !== null)).toBe(true);
         expect(g.totalBlanks).toBeGreaterThan(0);
     });
 
-    it("按答案填写全部空格 → 通关; 填错满行 → 扣血标红", () => {
+    it("按答案填写全部空格 → 通关; 填错使词非法 → 扣血", () => {
         const g = new WsGame("easy");
-        for (let r = 0; r < g.N; r++)
-            for (let c = 0; c < g.N; c++)
-                if (g.grid[r][c] === null) g.fill(r, c, g.rows[r][c]);
+        for (let r = 0; r < g.H; r++)
+            for (let c = 0; c < g.W; c++)
+                if (g.occupied[r][c] && g.grid[r][c] === null) g.fill(r, c, g.cellAnswer(r, c));
         expect(g.win).toBe(true);
 
         const g2 = new WsGame("easy");
-        const blanks: { r: number; c: number }[] = [];
-        for (let r = 0; r < g2.N; r++)
-            for (let c = 0; c < g2.N; c++)
-                if (g2.grid[r][c] === null && g2.puzzle[r][c] === null) blanks.push({ r, c });
-        const target = blanks.find(b => b.r > 0)!;
-        const wrong = g2.rows[target.r][target.c] === "a" ? "b" : "a";
-        g2.fill(target.r, target.c, wrong);
-        for (const b of blanks) {
-            if (b.r === target.r && b.c === target.c) continue;
-            if (g2.grid[b.r][b.c] === null) g2.fill(b.r, b.c, g2.rows[b.r][b.c]);
+        // 找一个非首词的占用空格, 填入错误字母(该字母所在词变非法 → 扣血)
+        const blanks: [number, number][] = [];
+        for (let r = 0; r < g2.H; r++)
+            for (let c = 0; c < g2.W; c++)
+                if (g2.occupied[r][c] && g2.grid[r][c] === null && g2.puzzle[r][c] === null) blanks.push([r, c]);
+        const [br, bc] = blanks[0];
+        const ans = g2.cellAnswer(br, bc);
+        const wrong = ans === "a" ? "b" : "a";
+        g2.fill(br, bc, wrong);
+        // 该格所属的词填满后非法 → 扣血
+        const wi = g2.words.findIndex(w => {
+            const cells = g2.wordCells(g2.words.indexOf(w));
+            return cells.some(([rr, cc]) => rr === br && cc === bc);
+        });
+        // 填满该词其余格
+        for (const [rr, cc] of g2.wordCells(wi)) {
+            if (g2.grid[rr][cc] === null) g2.fill(rr, cc, g2.cellAnswer(rr, cc));
         }
-        expect(g2.hp).toBeLessThan(3);
+        expect(g2.wordBad[wi]).toBe(true);
+        expect(g2.hp).toBe(2);
         expect(g2.win).toBe(false);
     });
 
-    it("提示道具: 每局最多 2 次, 向空位填正确字母", () => {
+    it("提示道具: 每局最多 2 次, 向占用空位填正确字母", () => {
         const g = new WsGame("normal");
         expect(HINT_LIMIT).toBe(2);
         const blanksBefore = g.totalBlanks;
