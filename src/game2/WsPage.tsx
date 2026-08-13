@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { WsGame, type WsMode } from "./core";
 import { fmtTime } from "@/game/core";
 import { detectPlatform } from "@/game/platform";
-import { APP_VERSION } from "@/version";
+import { WS_VERSION } from "./version";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
 
@@ -82,7 +82,7 @@ export function WsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     mode: game.mode, name: n, hp: game.hp, time,
-                    tools: 0, clears: game.fills, version: APP_VERSION,
+                    tools: 0, clears: game.fills, version: WS_VERSION,
                     platform: detectPlatform(),
                 }),
             }).then(r => r.json()).then(d => {
@@ -309,7 +309,7 @@ export function WsPage() {
                 )}
             </Dialog>
 
-            <footer className="mt-8 text-center text-xs text-muted-foreground">p了个s · 单词数独 · {APP_VERSION}</footer>
+            <footer className="mt-8 text-center text-xs text-muted-foreground">p了个s · 单词数独 · {WS_VERSION}</footer>
         </div>
     );
 }

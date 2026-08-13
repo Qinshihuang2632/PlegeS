@@ -8,7 +8,7 @@ import { Link } from "react-router";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GameRules } from "./GameRules";
-import { APP_VERSION } from "@/version";
+import { PLATFORM_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
@@ -84,7 +84,7 @@ export function HubPage() {
             </section>
 
             <footer className="mt-2 text-center text-xs text-muted-foreground">
-                p了个s · 版本 {APP_VERSION}(仅供个人娱乐)
+                p了个s · 平台 {PLATFORM_VERSION}(仅供个人娱乐)
             </footer>
 
             {/* 玩法介绍弹窗(✕ 可关闭) */}
