@@ -39,17 +39,21 @@ export function HubPage() {
                     </span>
                 </Link>
 
-                {/* 敬请期待 */}
-                <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
-                    <div className="mb-3 text-4xl" aria-hidden>待</div>
-                    <h2 className="text-lg font-bold">敬请期待</h2>
+                {/* 敬请期待 → 单词数独(v2.4.0 可玩) */}
+                <Link
+                    to="/ws"
+                    className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                    <div className="mb-3 text-4xl" aria-hidden>词</div>
+                    <h2 className="text-lg font-bold">单词数独</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        更多高考知识小游戏正在开发中……
+                        每行每列拼成一个完整单词。高考词汇题库,简单 / 标准 / 困难三档,支持血量 / 计时 / 排行榜。
                     </p>
-                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
-                        开发中
+                    <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+                        ● 可玩
                     </span>
-                </div>
+                </Link>
+
                 <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
                     <div className="mb-3 text-4xl" aria-hidden>待</div>
                     <h2 className="text-lg font-bold">敬请期待</h2>

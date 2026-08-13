@@ -1,0 +1,101 @@
+/*
+ * p了个s · 英语单词数独 排行榜 API (Cloudflare Pages Function)
+ * 路由: /ws/api/rank
+ *   GET    ?mode=easy|normal|hard 查询该难度榜单(已排序)
+ *   POST   请求体 JSON {mode, name, hp, time, tools, clears?, version?, platform?}
+ *          提交成绩; 排序 hp↓ → clears↓ → time↑ → tools↑
+ * KV 键: ws:easy / ws:normal / ws:hard(与化了个学的键分离)
+ * 防刷与校验规则与 /hlgx/api/rank 一致(60s/IP、昵称清洗、违禁词、≥10s、同名放开)。
+ */
+import { MODES as _MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, json } from "../../_lib/ranklib.js";
+import { countIncr, clientIp } from "../../_lib/ratelimit.js";
+import { hasBadWord } from "../../_lib/badwords.js";
+
+export const MODES = ["easy", "normal", "hard"];
+const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒)
+const RANK_LIMIT = 200;     // 单难度榜单条目上限
+const KEY_PREFIX = "ws:";   // KV 键前缀(与化了个学榜单分离)
+
+async function loadMode(env, mode) {
+    const raw = await env.RANKINGS.get(KEY_PREFIX + mode);
+    if (!raw) return [];
+    try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+    } catch {
+        return [];
+    }
+}
+async function saveMode(env, mode, list) {
+    await env.RANKINGS.put(KEY_PREFIX + mode, JSON.stringify(list));
+}
+
+function resolvePlatform(body, request) {
+    const p = String(body.platform ?? "").toLowerCase();
+    if (p === "mobile" || p === "desktop") return p;
+    const ua = String(request.headers.get("user-agent") || "");
+    return /mobile|android|iphone|ipad|ipod/i.test(ua) ? "mobile" : "desktop";
+}
+
+export async function onRequestGet({ request, env }) {
+    const url = new URL(request.url);
+    let mode = url.searchParams.get("mode") || "normal";
+    if (!MODES.includes(mode)) mode = "normal";
+    const platform = url.searchParams.get("platform");
+    let rank = sortRank(await loadMode(env, mode));
+    if (platform === "mobile") {
+        rank = rank.filter((e) => e.platform === "mobile");
+    } else if (platform === "desktop") {
+        rank = rank.filter((e) => e.platform !== "mobile");
+    }
+    return json({ mode, platform: platform === "mobile" || platform === "desktop" ? platform : "all", rank });
+}
+
+export async function onRequestPost({ request, env }) {
+    let body = {};
+    try { body = await request.json(); } catch { /* 非法 JSON 按空体处理 */ }
+
+    let mode = String(body.mode ?? "normal");
+    if (!MODES.includes(mode)) mode = "normal";
+
+    const platform = resolvePlatform(body, request);
+
+    const ip = clientIp(request);
+    const n = await countIncr(env, `ws:rl:${ip}`, SUBMIT_TTL, 1);
+    if (n > 1) return json({ ok: false, msg: "提交过于频繁,请稍后再试" }, 429);
+
+    let name = String(body.name ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
+    if (!name) return json({ ok: false, msg: "缺少昵称" }, 400);
+    if ([...name].length > 10) return json({ ok: false, msg: "昵称不能超过 10 个字" }, 400);
+    if (hasBadWord(name)) return json({ ok: false, msg: "昵称包含违禁词,请更换" }, 400);
+    if (/[<>]/.test(name)) return json({ ok: false, msg: "昵称包含非法字符" }, 400);
+
+    const hp = clampInt(body.hp, 0, 3, 0);
+    const secs = Math.max(0, clampInt(body.time, 0, Number.MAX_SAFE_INTEGER, 0));
+    const tools = clampInt(body.tools, 0, 9, 0);
+    const clears = clampInt(body.clears, 0, 9999, 0);
+    const version = String(body.version ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16);
+
+    if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
+
+    const entries = await loadMode(env, mode);
+    if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
+
+    const newKey = cmpKey({ hp, clears, time: secs, tools });
+    const surpassed = entries.filter((e) =>
+        (e.platform ?? "desktop") === platform && keyLess(newKey, cmpKey(e))).length;
+
+    const entry = {
+        name,
+        hp,
+        clears,
+        time: secs,
+        tools,
+        platform,
+        version,
+        date: fmtDate(),
+    };
+    entries.push(entry);
+    await saveMode(env, mode, entries);
+    return json({ ok: true, platform, surpassed, rank: sortRank(entries) });
+}

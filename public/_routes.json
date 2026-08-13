@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/hlgx/api/*", "/hlgx/hua", "/hlgx/rank", "/admin/*"],
+  "include": ["/hlgx/api/*", "/hlgx/hua", "/hlgx/rank", "/ws/api/*", "/ws", "/admin/*"],
   "exclude": []
 }
