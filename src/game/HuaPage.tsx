@@ -83,6 +83,7 @@ export function HuaPage() {
     const [nameTip, setNameTip] = useState("");
     const playerNameRef = useRef<string | null>(null);
     const inRankRef = useRef(false);
+    const nameChangeRestartRef = useRef(false);   // v2.3.2: 结算页换名确认→开新局; 局内换名→不重开,只更新默认昵称
 
     /* ---- 新手引导(首次进入) ---- */
     const [tutorialOpen, setTutorialOpen] = useState(false);
@@ -178,7 +179,7 @@ export function HuaPage() {
             playerNameRef.current = null;
             inRankRef.current = false;
             storeSkip(true);                 // v2.2.7: 记住选择, 下次直接开局
-            beginPlay();
+            finishNameDialog();
             return;
         }
         if (!n) { setNameTip("请输入昵称,或勾选「不参与排行榜」"); return; }
@@ -190,7 +191,23 @@ export function HuaPage() {
         inRankRef.current = true;
         storeName(n);
         storeSkip(false);
-        beginPlay();
+        finishNameDialog();
+    };
+
+    /* 首次确认 → 开新局; 更换昵称 → 按来源决定: 结算页换名重开一局, 局内换名不打断当前局 */
+    const finishNameDialog = () => {
+        if (nameDialogMode === "first" || nameChangeRestartRef.current) beginPlay();
+        else setNameOpen(false);
+        nameChangeRestartRef.current = false;
+    };
+
+    /* 局内/结算页「更换昵称」入口(v2.3.2): 预填当前默认昵称, 打开更换窗 */
+    const openNameChange = () => {
+        setNameTip("");
+        setName(playerNameRef.current ?? readStoredName());
+        setSkipRank(!inRankRef.current);
+        setNameDialogMode("change");
+        setNameOpen(true);
     };
 
     /* ---- 棋盘交互 ---- */
@@ -310,6 +327,12 @@ export function HuaPage() {
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" onClick={openNameChange}>改名</Button>
+                        </TooltipTrigger>
+                        <TooltipContent>修改默认昵称(当前:{playerNameRef.current ?? "未设置"}),本局成绩按新昵称提交</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }} aria-label="静音开关">
                                 {muted ? "🔇" : "🔊"}
                             </Button>
@@ -320,7 +343,7 @@ export function HuaPage() {
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => restart()} aria-label="重新开始">⟳</Button>
                         </TooltipTrigger>
-                        <TooltipContent>重新开始(需重新确认昵称)</TooltipContent>
+                        <TooltipContent>重新开始</TooltipContent>
                     </Tooltip>
                 </div>
             </header>
@@ -501,8 +524,8 @@ export function HuaPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* 昵称窗(✕ = 返回大厅; 可跳过不参与排行; v2.2.7: 首次输入或更换昵称) */}
-            <Dialog open={nameOpen} onOpenChange={(o) => { if (!o) navigate("/"); }}>
+            {/* 昵称窗(✕ = 首次未开局则返回大厅; 更换昵称则仅关闭, 保留当前局) */}
+            <Dialog open={nameOpen} onOpenChange={(o) => { if (!o) { if (nameDialogMode === "change") setNameOpen(false); else navigate("/"); } }}>
                 <DialogContent className="sm:max-w-sm">
                     <DialogHeader>
                         <DialogTitle>{nameDialogMode === "change" ? "更换昵称" : "开始游戏"}</DialogTitle>
@@ -540,9 +563,11 @@ export function HuaPage() {
                         {nameTip && <p className="text-xs text-destructive">{nameTip}</p>}
                     </div>
                     <div className="flex justify-between gap-2">
-                        <Button variant="ghost" onClick={() => navigate("/")}>← 返回大厅</Button>
+                        <Button variant="ghost" onClick={() => { if (nameDialogMode === "change") setNameOpen(false); else navigate("/"); }}>
+                            {nameDialogMode === "change" ? "取消" : "← 返回大厅"}
+                        </Button>
                         <Button onClick={confirmName} disabled={nameTooLong || nameBad}>
-                            确认开始
+                            {nameDialogMode === "change" ? "确认修改" : "确认开始"}
                         </Button>
                     </div>
                 </DialogContent>
@@ -584,7 +609,7 @@ export function HuaPage() {
                                 )}
                                 <Button
                                     variant="outline"
-                                    onClick={() => { setResultInfo(null); setNameDialogMode("change"); setNameOpen(true); }}
+                                    onClick={() => { setResultInfo(null); nameChangeRestartRef.current = true; openNameChange(); }}
                                 >
                                     更换昵称
                                 </Button>
