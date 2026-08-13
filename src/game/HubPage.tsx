@@ -1,6 +1,7 @@
 /*
- * 化了个学 · 游戏大厅
+ * p了个s · 高考知识游戏合集主界面(v2.3.5)
  * 卡片入口 + 玩法介绍弹窗(✕ 关闭)+ 版本页脚
+ * 第一款游戏「化了个学」为高考化学主题; 合集定位为高考知识, 不限于化学
  */
 import { useState } from "react";
 import { Link } from "react-router";
@@ -16,9 +17,9 @@ export function HubPage() {
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
             <header className="mb-8 text-center">
-                <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">化了个学</h1>
+                <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">p了个s</h1>
                 <p className="mt-2 text-sm text-muted-foreground">
-                    化学主题小游戏合集 · 高考化学知识挑战
+                    高考知识主题小游戏合集 · 寓教于乐
                 </p>
             </header>
 
@@ -43,7 +44,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>待</div>
                     <h2 className="text-lg font-bold">敬请期待</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        更多化学小游戏正在开发中……
+                        更多高考知识小游戏正在开发中……
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
                         开发中
@@ -53,7 +54,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>待</div>
                     <h2 className="text-lg font-bold">敬请期待</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        更多化学小游戏正在开发中……
+                        更多高考知识小游戏正在开发中……
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
                         开发中
@@ -79,7 +80,7 @@ export function HubPage() {
             </section>
 
             <footer className="mt-2 text-center text-xs text-muted-foreground">
-                化了个学 · 版本 {APP_VERSION}(仅供个人娱乐)
+                p了个s · 版本 {APP_VERSION}(仅供个人娱乐)
             </footer>
 
             {/* 玩法介绍弹窗(✕ 可关闭) */}
