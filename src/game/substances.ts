@@ -270,7 +270,7 @@ export const HLGX_SUBSTANCES: Substance[] = [
 
     // ---- 混合物(v2.1.9: 溶液/胶体/浊液、合金、硅酸盐产品、化石燃料、工业试剂、高聚物) ----
     // 分散系: 溶液
-    { f: "HCl",            n: "盐酸",       c: "mix" },   // HCl 水溶液(纯净物氯化氢在酸类)
+    { f: "HCl(aq)",       n: "盐酸",       c: "mix" },   // HCl 水溶液(v2.3.2 标识 (aq), 与氯化氢区分)
     { f: "NH₃(aq)",        n: "氨水",       c: "mix" },   // NH₃ 水溶液(纯净物一水合氨在碱类)
     { f: "HCl+HNO₃",       n: "王水",       c: "mix" },
     { f: "Na₂SiO₃(aq)",    n: "水玻璃",     c: "mix" },
@@ -278,9 +278,9 @@ export const HLGX_SUBSTANCES: Substance[] = [
     { f: "C₂H₅OH(aq)",     n: "酒精",       c: "mix" },
     { f: "H₂SO₄(aq)",      n: "稀硫酸",     c: "mix" },
     // 分散系: 胶体
-    { f: "Fe(OH)₃",        n: "氢氧化铁胶体", c: "mix" },
-    { f: "H₂O",            n: "云",         c: "mix" },
-    { f: "H₂O",            n: "雾",         c: "mix" },
+    { f: "Fe(OH)₃(胶)",   n: "氢氧化铁胶体", c: "mix" },   // v2.3.2: 标识胶体, 与氢氧化铁区分
+    { f: "H₂O(aq)",       n: "云",         c: "mix" },   // 水滴悬浮(气溶胶), 与「水」区分
+    { f: "H₂O(aq)",       n: "雾",         c: "mix" },
     { f: "—",              n: "烟",         c: "mix" },
     { f: "—",              n: "有色玻璃",   c: "mix" },
     // 分散系: 浊液
@@ -300,7 +300,7 @@ export const HLGX_SUBSTANCES: Substance[] = [
     // 化石燃料及加工产物
     { f: "—",              n: "石油",       c: "mix" },
     { f: "—",              n: "煤",         c: "mix" },
-    { f: "CH₄",            n: "天然气",     c: "mix" },
+    { f: "CH₄(主)",        n: "天然气",     c: "mix" },   // v2.3.2: 主要成分标识, 与甲烷区分
     { f: "—",              n: "汽油",       c: "mix" },
     { f: "—",              n: "煤油",       c: "mix" },
     { f: "—",              n: "柴油",       c: "mix" },
@@ -319,7 +319,7 @@ export const HLGX_SUBSTANCES: Substance[] = [
     { f: "(C₅H₈O₂)ₙ",      n: "有机玻璃",   c: "mix" },
     { f: "—",              n: "电木",       c: "mix" },
     // 其他常见易错点(石灰石主要成分 CaCO₃, 属混合物)
-    { f: "CaCO₃",          n: "石灰石",     c: "mix" },
+    { f: "CaCO₃(主)",      n: "石灰石",     c: "mix" },   // v2.3.2: 主要成分标识, 与碳酸钙区分
 ];
 
 /*
