@@ -82,21 +82,38 @@ export function buildCross(
                             const dir: "h" | "v" = pw.dir === "h" ? "v" : "h";
                             const nr = pw.dir === "h" ? pw.r - j : pw.r + k;
                             const nc = pw.dir === "h" ? pw.c + k : pw.c - j;
-                            // 逐格检查: 与已占格字母必须一致
+                            // 逐格检查: 与已占格字母必须一致; 同时收集"新增格"(非交叉点)
                             let conflict = false;
+                            const fresh: Array<[number, number]> = [];
                             for (let s = 0; s < w.length; s++) {
                                 const rr = dir === "h" ? nr : nr + s;
                                 const cc = dir === "h" ? nc + s : nc;
                                 const key = `${rr},${cc}`;
-                                if (map.has(key) && map.get(key) !== w[s]) { conflict = true; break; }
+                                if (map.has(key)) {
+                                    if (map.get(key) !== w[s]) { conflict = true; break; }
+                                } else {
+                                    fresh.push([rr, cc]);
+                                }
                             }
                             if (conflict) continue;
-                            // 端点邻接检查: 新词首尾各外扩一格, 若已占则冲突
+                            // 邻接检查(标准 crossword 规则, 防止产生不成词的连字):
+                            //   ① 新词首尾(沿自身方向)外扩一格不得已占 —— 避免同向两词拼成长词;
+                            //   ② 每个"新增格"的垂直方向邻居必须为空 —— 避免与已有字母相邻却无交叉,
+                            //      否则会拼出字典里没有的横向/纵向假词。
                             const beforeR = dir === "h" ? nr : nr - 1;
                             const beforeC = dir === "h" ? nc - 1 : nc;
                             const afterR = dir === "h" ? nr : nr + w.length;
                             const afterC = dir === "h" ? nc + w.length : nc;
                             if (map.has(`${beforeR},${beforeC}`) || map.has(`${afterR},${afterC}`)) continue;
+                            let adj = false;
+                            for (const [rr, cc] of fresh) {
+                                if (dir === "v") {
+                                    if (map.has(`${rr},${cc - 1}`) || map.has(`${rr},${cc + 1}`)) { adj = true; break; }
+                                } else {
+                                    if (map.has(`${rr - 1},${cc}`) || map.has(`${rr + 1},${cc}`)) { adj = true; break; }
+                                }
+                            }
+                            if (adj) continue;
                             // 边界框检查: 放置后任一方向不得超过 maxDim
                             const eR0 = nr, eR1 = dir === "v" ? nr + w.length - 1 : nr;
                             const eC0 = nc, eC1 = dir === "h" ? nc + w.length - 1 : nc;

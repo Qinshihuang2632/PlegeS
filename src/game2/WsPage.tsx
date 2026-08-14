@@ -126,6 +126,72 @@ export function WsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game]);
 
+    // 调试接口: 控制台执行 hlgxDebug() 导出当前局面快照, 方便反馈调试
+    //   # = 灰格(非单词成分) | 大写 = 预填(给定) | 小写 = 已填 | . = 待填空格
+    useEffect(() => {
+        const dump = () => {
+            const g = game;
+            const ascii = Array.from({ length: g.H }, (_, r) =>
+                Array.from({ length: g.W }, (_, c) => {
+                    if (!g.occupied[r][c]) return "#";
+                    const v = g.grid[r][c];
+                    if (v === null) return ".";
+                    return g.puzzle[r][c] !== null ? v.toUpperCase() : v.toLowerCase();
+                }).join(" "),
+            ).join("\n");
+            const words = g.words.map((w, i) => ({
+                i, word: w.word, dir: w.dir, r: w.r, c: w.c,
+                done: g.wordDone[i], bad: g.wordBad[i],
+            }));
+            const snapshot = {
+                mode: g.mode, H: g.H, W: g.W, hp: g.hp,
+                fills: g.fills, hints: g.hints, blanks: g.totalBlanks,
+                gameOver: g.gameOver, win: g.win,
+                legend: "#=灰格 大写=预填 小写=已填 .=待填",
+                ascii, words,
+                puzzle: g.puzzle, grid: g.grid,
+                occupied: g.occupied.map(row => row.map(x => (x ? 1 : 0))),
+            };
+            /* eslint-disable no-console */
+            console.log("%c[英了个语] 当前局面", "color:#0a84ff;font-weight:bold");
+            console.log(snapshot.ascii + "\n图例: " + snapshot.legend);
+            console.table(snapshot.words);
+            console.log("复制下面这一行发给我 ↓\n" + JSON.stringify(snapshot));
+            /* eslint-enable no-console */
+            return snapshot;
+        };
+        // hlgxAnswer(): 直接给出当前局完整答案(纯查看, 不改游戏状态)
+        //   大写 = 预填(给定) | 小写 = 该格正确答案(待填) | # = 灰格
+        const dumpAnswer = () => {
+            const g = game;
+            const ascii = Array.from({ length: g.H }, (_, r) =>
+                Array.from({ length: g.W }, (_, c) => {
+                    if (!g.occupied[r][c]) return "#";
+                    const ans = g.cellAnswer(r, c);
+                    return g.puzzle[r][c] !== null ? ans.toUpperCase() : ans.toLowerCase();
+                }).join(" "),
+            ).join("\n");
+            const words = g.words.map(w => `${w.word}(${w.dir} r${w.r} c${w.c})`);
+            const out = {
+                mode: g.mode, H: g.H, W: g.W,
+                legend: "大写=预填给定 小写=待填答案 #=灰格",
+                solution: ascii, words,
+            };
+            /* eslint-disable no-console */
+            console.log("%c[英了个语] 答案", "color:#15a35a;font-weight:bold");
+            console.log(out.solution + "\n图例: " + out.legend);
+            console.log("词表:", out.words.join("   "));
+            console.log("复制这一行发给我 ↓\n" + JSON.stringify(out));
+            /* eslint-enable no-console */
+            return out;
+        };
+        const w = window as unknown as Record<string, unknown>;
+        w.hlgxDebug = dump;
+        w.__WS_DEBUG__ = dump;
+        w.hlgxAnswer = dumpAnswer;
+        w.__WS_ANSWER__ = dumpAnswer;
+    }, [game]);
+
     return (
         <div className="mx-auto min-h-dvh w-full max-w-lg px-3 pb-10 pt-3">
             <header className="mb-3 flex items-center gap-2">

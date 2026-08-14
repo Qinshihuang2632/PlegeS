@@ -118,6 +118,40 @@ describe("单词连通成图(回归: 修前 ~96% 网格是断开的)", () => {
     });
 });
 
+describe("棋盘良构性(无不成词假词: 每段≥2连字必须是已定义词)", () => {
+    it("三难度生成的网格中, 任意横/纵≥2连字段都恰是某个已定义词", () => {
+        for (const mode of ["easy", "normal", "hard"] as const) {
+            for (let t = 0; t < 40; t++) {
+                const g = new WsGame(mode);
+                const hWords = new Set<string>(), vWords = new Set<string>();
+                for (const w of g.words) (w.dir === "h" ? hWords : vWords).add(`${w.r},${w.c},${w.word.length}`);
+                // 横向段: 任意≥2连字必须对应某横词
+                for (let r = 0; r < g.H; r++) {
+                    let c = 0;
+                    while (c < g.W) {
+                        if (!g.occupied[r][c]) { c++; continue; }
+                        const start = c;
+                        while (c < g.W && g.occupied[r][c]) c++;
+                        const len = c - start;
+                        if (len >= 2) expect(hWords.has(`${r},${start},${len}`), `${mode} 行${r} 段长${len} 非已定义横词`).toBe(true);
+                    }
+                }
+                // 纵向段
+                for (let c = 0; c < g.W; c++) {
+                    let r = 0;
+                    while (r < g.H) {
+                        if (!g.occupied[r][c]) { r++; continue; }
+                        const start = r;
+                        while (r < g.H && g.occupied[r][c]) r++;
+                        const len = r - start;
+                        if (len >= 2) expect(vWords.has(`${start},${c},${len}`), `${mode} 列${c} 段长${len} 非已定义竖词`).toBe(true);
+                    }
+                }
+            }
+        }
+    });
+});
+
 describe("唯一解保证(无逻辑漏洞)", () => {
     it("三种难度生成的题面均恰有 1 个解", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {

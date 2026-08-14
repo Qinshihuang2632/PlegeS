@@ -19,6 +19,11 @@ __pycache__/
 node_modules/
 .wrangler/
 .zcode/
+.mimosa/
+
+# 临时部署测试配置(与原 wrangler.toml 隔离, 仅本地用)
+.wrangler-test-config/
+wrangler.test.toml
 
 # 构建产物(dist 由 Vite 构建生成, 部署前 npm run build)
 /dist/
