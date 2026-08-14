@@ -1,8 +1,9 @@
 /*
  * p了个s · 英了个语 页面 (src/game2/WsPage.tsx)
  * =============================================
- * 链式单词拼图: 每行一个单词, 依重复字母与前词重叠拼接成不规则形状,
- * 删去部分字母形成关卡, 玩家补全; 每行填满校验为词库单词。
+ * 交叉单词网格: 横竖单词交叉成自由图形, 相交处共享字母;
+ * 挖空部分格形成关卡, 玩家补全; 每个词(横/竖)填满时校验是否词库单词, 非法扣血。
+ * 网格自适应容器宽度(格子始终等比方块), 高难度也不挤压溢出。
  * 桌面物理键盘 + 移动端屏幕字母条双输入; 爱心血量; 提示道具(每局 2 次)。
  * 排行榜移至主界面与「化了个学」共用(见 /hlgx/rank)。
  */
@@ -125,6 +126,72 @@ export function WsPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game]);
 
+    // 调试接口: 控制台执行 hlgxDebug() 导出当前局面快照, 方便反馈调试
+    //   # = 灰格(非单词成分) | 大写 = 预填(给定) | 小写 = 已填 | . = 待填空格
+    useEffect(() => {
+        const dump = () => {
+            const g = game;
+            const ascii = Array.from({ length: g.H }, (_, r) =>
+                Array.from({ length: g.W }, (_, c) => {
+                    if (!g.occupied[r][c]) return "#";
+                    const v = g.grid[r][c];
+                    if (v === null) return ".";
+                    return g.puzzle[r][c] !== null ? v.toUpperCase() : v.toLowerCase();
+                }).join(" "),
+            ).join("\n");
+            const words = g.words.map((w, i) => ({
+                i, word: w.word, dir: w.dir, r: w.r, c: w.c,
+                done: g.wordDone[i], bad: g.wordBad[i],
+            }));
+            const snapshot = {
+                mode: g.mode, H: g.H, W: g.W, hp: g.hp,
+                fills: g.fills, hints: g.hints, blanks: g.totalBlanks,
+                gameOver: g.gameOver, win: g.win,
+                legend: "#=灰格 大写=预填 小写=已填 .=待填",
+                ascii, words,
+                puzzle: g.puzzle, grid: g.grid,
+                occupied: g.occupied.map(row => row.map(x => (x ? 1 : 0))),
+            };
+            /* eslint-disable no-console */
+            console.log("%c[英了个语] 当前局面", "color:#0a84ff;font-weight:bold");
+            console.log(snapshot.ascii + "\n图例: " + snapshot.legend);
+            console.table(snapshot.words);
+            console.log("复制下面这一行发给我 ↓\n" + JSON.stringify(snapshot));
+            /* eslint-enable no-console */
+            return snapshot;
+        };
+        // hlgxAnswer(): 直接给出当前局完整答案(纯查看, 不改游戏状态)
+        //   大写 = 预填(给定) | 小写 = 该格正确答案(待填) | # = 灰格
+        const dumpAnswer = () => {
+            const g = game;
+            const ascii = Array.from({ length: g.H }, (_, r) =>
+                Array.from({ length: g.W }, (_, c) => {
+                    if (!g.occupied[r][c]) return "#";
+                    const ans = g.cellAnswer(r, c);
+                    return g.puzzle[r][c] !== null ? ans.toUpperCase() : ans.toLowerCase();
+                }).join(" "),
+            ).join("\n");
+            const words = g.words.map(w => `${w.word}(${w.dir} r${w.r} c${w.c})`);
+            const out = {
+                mode: g.mode, H: g.H, W: g.W,
+                legend: "大写=预填给定 小写=待填答案 #=灰格",
+                solution: ascii, words,
+            };
+            /* eslint-disable no-console */
+            console.log("%c[英了个语] 答案", "color:#15a35a;font-weight:bold");
+            console.log(out.solution + "\n图例: " + out.legend);
+            console.log("词表:", out.words.join("   "));
+            console.log("复制这一行发给我 ↓\n" + JSON.stringify(out));
+            /* eslint-enable no-console */
+            return out;
+        };
+        const w = window as unknown as Record<string, unknown>;
+        w.hlgxDebug = dump;
+        w.__WS_DEBUG__ = dump;
+        w.hlgxAnswer = dumpAnswer;
+        w.__WS_ANSWER__ = dumpAnswer;
+    }, [game]);
+
     return (
         <div className="mx-auto min-h-dvh w-full max-w-lg px-3 pb-10 pt-3">
             <header className="mb-3 flex items-center gap-2">
@@ -172,7 +239,7 @@ export function WsPage() {
             </p>
 
             {/* 交叉单词网格(整个一张表格, 未占用格灰色不可点) */}
-            <div className="mx-auto w-fit rounded-2xl border bg-card p-2 shadow-sm">
+            <div className="mx-auto w-full max-w-[26rem] rounded-2xl border bg-card p-2 shadow-sm">
                 <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${game.W}, minmax(0, 1fr))` }}>
                     {game.occupied.flatMap((row, r) =>
                         row.map((occ, c) => {
@@ -180,7 +247,7 @@ export function WsPage() {
                                 return (
                                     <div
                                         key={`${r}-${c}`}
-                                        className="h-12 w-12 rounded-lg bg-muted/40 sm:h-14 sm:w-14"
+                                        className="aspect-square w-full rounded-lg bg-muted/40"
                                         aria-hidden
                                     />
                                 );
@@ -202,7 +269,7 @@ export function WsPage() {
                                     key={`${r}-${c}`}
                                     onClick={() => onCell(r, c)}
                                     className={cn(
-                                        "flex h-12 w-12 items-center justify-center rounded-lg border text-lg font-bold uppercase transition sm:h-14 sm:w-14",
+                                        "flex aspect-square w-full items-center justify-center rounded-lg border text-base font-bold uppercase transition sm:text-lg",
                                         isFixed
                                             ? "border-transparent bg-muted text-muted-foreground"
                                             : isDone

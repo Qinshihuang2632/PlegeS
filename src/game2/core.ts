@@ -1,21 +1,23 @@
 /*
  * p了个s · 英了个语 核心逻辑 (src/game2/core.ts) —— 纯逻辑, 无 DOM
  * =================================================================
- * 玩法(v1.3.0): 填字游戏式「交叉单词网格」——
+ * 玩法(v1.3.1): 填字游戏式「交叉单词网格」——
  *   若干水平词与垂直词交叉摆放(相交处共享同一字母), 组成自由图形;
  *   未占用的表格位为灰色、不可点(不是单词的组成成分)。
  *   生成器自算标准答案, 挖空后经回溯求解器验证「唯一解」, 无逻辑漏洞。
  *   校验按横行纵列: 每个词(水平/垂直)填满时校验是否为词库单词, 非法扣血。
+ *   生成保证: 每个词都与已放词交叉共享至少 1 格(全图连通), 且边界框受各难度
+ *   maxDim 约束(简单 7 / 标准 9 / 困难 10), 图形紧凑不撑爆界面。
  * 道具: 提示(每局最多 2 次, 向随机空位填一个正确字母)。
- * 难度: 简单 4 词(4 字母, 2横2竖, 挖40%, 首词提示)/ 标准 6 词(5 字母, 3横3竖, 挖55%)/
- *       困难 8 词(5 字母课标难词, 4横4竖, 挖70%, 无提示); 均保证唯一解。
+ * 难度: 简单 4 词(4 字母, 挖40%, 首词提示)/ 标准 6 词(5 字母, 挖55%)/
+ *       困难 8 词(5 字母课标难词, 挖70%, 无提示); 均保证唯一解。
  */
 import { WS_WORDS, WS_WORDS_HARD } from "./words";
 
 export const WS_DIFFICULTIES = {
-    easy:   { label: "简单", words: 4, len: 4, dictKey: "basic", firstHint: true,  blankRate: 0.40 },
-    normal: { label: "标准", words: 6, len: 5, dictKey: "basic", firstHint: true,  blankRate: 0.55 },
-    hard:   { label: "困难", words: 8, len: 5, dictKey: "hard",  firstHint: false, blankRate: 0.70 },
+    easy:   { label: "简单", words: 4, len: 4, dictKey: "basic", firstHint: true,  blankRate: 0.40, maxDim: 7 },
+    normal: { label: "标准", words: 6, len: 5, dictKey: "basic", firstHint: true,  blankRate: 0.55, maxDim: 9 },
+    hard:   { label: "困难", words: 8, len: 5, dictKey: "hard",  firstHint: false, blankRate: 0.70, maxDim: 10 },
 } as const;
 export type WsMode = keyof typeof WS_DIFFICULTIES;
 
@@ -41,11 +43,14 @@ export interface PlacedWord {
 }
 
 /* 交叉单词网格生成: 第 1 词水平放置, 之后每词与已放词垂直交叉
-   (新词穿过某已放词的某个字母, 共享字母一致; 其余格不得与已有格冲突)。
-   词不重复。坐标可为负, 生成后归一化到 0 起。 */
+   (新词穿过某已放词的某个字母, 共享字母一致; 其余格不得与已有格冲突;
+   新词首尾不得紧贴已有字母, 以免两条同向词拼成一条长线)。词不重复。
+   生成过程中实时维护边界框, 任一方向超过 maxDim 即放弃该候选, 保证图形紧凑。
+   坐标可为负, 生成后归一化到 0 起。 */
 export function buildCross(
     count: number,
     dict: string[],
+    maxDim = Infinity,
 ): { words: PlacedWord[]; H: number; W: number; map: Map<string, string> } | null {
     const pool = [...new Set(dict)];
     for (let t = 0; t < 400; t++) {
@@ -56,11 +61,13 @@ export function buildCross(
         words.push({ word: first, r: 0, c: 0, dir: "h" });
         used.add(first);
         for (let k = 0; k < first.length; k++) map.set(`0,${k}`, first[k]);
+        // 当前边界框(未归一化): 首词占第 0 行、0..len-1 列
+        let minR = 0, maxR = 0, minC = 0, maxC = first.length - 1;
 
         let ok = true;
         for (let i = 1; i < count; i++) {
             // 随机挑一个已放词, 随机挑一个字母位, 尝试垂直方向放新词
-            const placed = shuffleArr(words);
+            const placed = shuffleArr([...words]);
             let placedOk = false;
             for (const pw of placed) {
                 const idxs = shuffleArr(Array.from({ length: pw.word.length }, (_, i) => i));
@@ -71,21 +78,48 @@ export function buildCross(
                         // 新词与 pw 垂直交叉: 新词的第 j 个字母 = anchor
                         for (const j of shuffleArr(Array.from({ length: w.length }, (_, i) => i))) {
                             if (w[j] !== anchor) continue;
-                            // 计算新词起点
-                            const nr = pw.dir === "h" ? pw.r + k - j : pw.r - k + j;
-                            const nc = pw.dir === "h" ? pw.c - k + j : pw.c + k - j;
+                            // 计算新词起点: pw 的第 k 格 (anchor) 与新词的第 j 格重合
                             const dir: "h" | "v" = pw.dir === "h" ? "v" : "h";
-                            // 逐格检查冲突
+                            const nr = pw.dir === "h" ? pw.r - j : pw.r + k;
+                            const nc = pw.dir === "h" ? pw.c + k : pw.c - j;
+                            // 逐格检查: 与已占格字母必须一致; 同时收集"新增格"(非交叉点)
                             let conflict = false;
+                            const fresh: Array<[number, number]> = [];
                             for (let s = 0; s < w.length; s++) {
                                 const rr = dir === "h" ? nr : nr + s;
                                 const cc = dir === "h" ? nc + s : nc;
                                 const key = `${rr},${cc}`;
                                 if (map.has(key)) {
                                     if (map.get(key) !== w[s]) { conflict = true; break; }
+                                } else {
+                                    fresh.push([rr, cc]);
                                 }
                             }
                             if (conflict) continue;
+                            // 邻接检查(标准 crossword 规则, 防止产生不成词的连字):
+                            //   ① 新词首尾(沿自身方向)外扩一格不得已占 —— 避免同向两词拼成长词;
+                            //   ② 每个"新增格"的垂直方向邻居必须为空 —— 避免与已有字母相邻却无交叉,
+                            //      否则会拼出字典里没有的横向/纵向假词。
+                            const beforeR = dir === "h" ? nr : nr - 1;
+                            const beforeC = dir === "h" ? nc - 1 : nc;
+                            const afterR = dir === "h" ? nr : nr + w.length;
+                            const afterC = dir === "h" ? nc + w.length : nc;
+                            if (map.has(`${beforeR},${beforeC}`) || map.has(`${afterR},${afterC}`)) continue;
+                            let adj = false;
+                            for (const [rr, cc] of fresh) {
+                                if (dir === "v") {
+                                    if (map.has(`${rr},${cc - 1}`) || map.has(`${rr},${cc + 1}`)) { adj = true; break; }
+                                } else {
+                                    if (map.has(`${rr - 1},${cc}`) || map.has(`${rr + 1},${cc}`)) { adj = true; break; }
+                                }
+                            }
+                            if (adj) continue;
+                            // 边界框检查: 放置后任一方向不得超过 maxDim
+                            const eR0 = nr, eR1 = dir === "v" ? nr + w.length - 1 : nr;
+                            const eC0 = nc, eC1 = dir === "h" ? nc + w.length - 1 : nc;
+                            const nMinR = Math.min(minR, eR0), nMaxR = Math.max(maxR, eR1);
+                            const nMinC = Math.min(minC, eC0), nMaxC = Math.max(maxC, eC1);
+                            if (nMaxR - nMinR + 1 > maxDim || nMaxC - nMinC + 1 > maxDim) continue;
                             // 放置
                             for (let s = 0; s < w.length; s++) {
                                 const rr = dir === "h" ? nr : nr + s;
@@ -94,6 +128,7 @@ export function buildCross(
                             }
                             words.push({ word: w, r: nr, c: nc, dir });
                             used.add(w);
+                            minR = nMinR; maxR = nMaxR; minC = nMinC; maxC = nMaxC;
                             placedOk = true;
                             break;
                         }
@@ -107,14 +142,6 @@ export function buildCross(
         }
         if (!ok) continue;
 
-        // 归一化坐标
-        let minR = Infinity, minC = Infinity, maxR = -Infinity, maxC = -Infinity;
-        for (const w of words) {
-            const rr = w.dir === "h" ? w.r : w.r + w.word.length - 1;
-            const cc = w.dir === "h" ? w.c + w.word.length - 1 : w.c;
-            minR = Math.min(minR, w.r, rr); minC = Math.min(minC, w.c, cc);
-            maxR = Math.max(maxR, w.r, rr); maxC = Math.max(maxC, w.c, cc);
-        }
         const H = maxR - minR + 1, W = maxC - minC + 1;
         const norm: PlacedWord[] = words.map(w => ({ ...w, r: w.r - minR, c: w.c - minC }));
         const nmap = new Map<string, string>();
@@ -254,7 +281,7 @@ export class WsGame {
     private buildUniquePuzzle(d: typeof WS_DIFFICULTIES[WsMode], dict: string[]):
         { words: PlacedWord[]; H: number; W: number; occupied: boolean[][]; puzzle: (string | null)[][]; grid: (string | null)[][] } {
         for (let attempt = 0; attempt < 60; attempt++) {
-            const built = buildCross(d.words, dict);
+            const built = buildCross(d.words, dict, d.maxDim);
             if (!built) continue;
             const { words, H, W, map } = built;
             const occupied: boolean[][] = Array.from({ length: H }, () => Array(W).fill(false));
@@ -287,7 +314,7 @@ export class WsGame {
             }
         }
         // 兜底(理论几乎不发生): 全部提示
-        const built = buildCross(d.words, dict) ?? { words: [], H: 1, W: 1, map: new Map<string, string>() };
+        const built = buildCross(d.words, dict, d.maxDim) ?? { words: [], H: 1, W: 1, map: new Map<string, string>() };
         const occupied: boolean[][] = Array.from({ length: built.H }, () => Array(built.W).fill(false));
         const grid: (string | null)[][] = Array.from({ length: built.H }, () => Array(built.W).fill(null));
         for (const [k, v] of built.map) {
