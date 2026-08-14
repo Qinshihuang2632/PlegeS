@@ -6,7 +6,7 @@
  * 运行: npx vitest run --pool=forks
  */
 import { describe, expect, it } from "vitest";
-import { HINT_LIMIT, WsGame, WS_DIFFICULTIES, buildCross, dictFor, solveCross, type PlacedWord } from "./core";
+import { HINT_LIMIT, MEANING_HINT_LIMIT, WsGame, WS_DIFFICULTIES, buildCross, dictFor, meaningOf, solveCross, type PlacedWord } from "./core";
 import { WS_WORDS, WS_WORDS_HARD } from "./words";
 
 /* 词所占格子 */
@@ -177,7 +177,9 @@ describe("游戏流程", () => {
         expect(WS_DIFFICULTIES.hard.dictKey).toBe("hard");
         expect(WS_DIFFICULTIES.hard.blankRate).toBeGreaterThan(WS_DIFFICULTIES.normal.blankRate);
         expect(WS_DIFFICULTIES.normal.blankRate).toBeGreaterThan(WS_DIFFICULTIES.easy.blankRate);
-        expect(WS_DIFFICULTIES.hard.firstHint).toBe(false);
+        expect(WS_DIFFICULTIES.easy.hintWords).toBe(1);
+        expect(WS_DIFFICULTIES.normal.hintWords).toBe(2);
+        expect(WS_DIFFICULTIES.hard.hintWords).toBe(1);
     });
 
     it("开局: 未占用格不可填/不可点, 预填格不可改, 简单首词全提示", () => {
@@ -194,10 +196,20 @@ describe("游戏流程", () => {
                     expect(g.fill(r, c, "z")).toBe(false);
                     expect(g.grid[r][c]).toBe(g.puzzle[r][c]);
                 }
-        // 首词全提示
-        const first = g.wordCells(0);
-        expect(first.every(([r, c]) => g.puzzle[r][c] !== null)).toBe(true);
-        expect(g.totalBlanks).toBeGreaterThan(0);
+        // hintWords 个词全提示
+        const hintW = WS_DIFFICULTIES.easy.hintWords;
+        for (let wi = 0; wi < hintW; wi++)
+            expect(g.wordCells(wi).every(([r, c]) => g.puzzle[r][c] !== null)).toBe(true);
+        expect(g.totalBlanks).toBeGreaterThanOrEqual(4);   // v1.4.0: 简单总空格 ≥4
+        // v1.4.0: 至少一个交叉格(两个词的共用字母)被挖空
+        const crossBlank = g.occupied.some((row, r) => row.some((occ, c) => {
+            if (!occ || g.puzzle[r][c] !== null) return false;
+            let n = 0;
+            for (let wi = 0; wi < g.words.length; wi++)
+                if (g.wordCells(wi).some(([rr, cc]) => rr === r && cc === c)) n++;
+            return n >= 2;
+        }));
+        expect(crossBlank).toBe(true);
     });
 
     it("按答案填写全部空格 → 通关; 填错使词非法 → 扣血", () => {
@@ -245,5 +257,26 @@ describe("游戏流程", () => {
         expect(g.hints).toBe(2);
         expect(g.hint()).toBe(false);
         expect(g.hints).toBe(2);
+    });
+
+    it("含义提示: 每局 1 次, 返回未填完单词的释义", () => {
+        const g = new WsGame("normal");
+        expect(MEANING_HINT_LIMIT).toBe(1);
+        const t1 = g.meaningHint();
+        expect(t1).not.toBeNull();
+        expect(g.meaningHints).toBe(1);
+        // 返回的释义与该词一致(词库有释义)
+        const ms = meaningOf(t1!.word);
+        expect(ms?.some(m => m.pos === t1!.meaning.pos && m.zh === t1!.meaning.zh)).toBe(true);
+        expect(g.meaningHint()).toBeNull();   // 已用满 1 次
+        expect(g.meaningHints).toBe(1);
+    });
+
+    it("生成词库全部有释义(课标及衍生 + 可解释)", () => {
+        for (const mode of ["easy", "normal", "hard"] as const) {
+            const dict = dictFor(mode);
+            expect(dict.length).toBeGreaterThanOrEqual(100);
+            for (const w of dict) expect(meaningOf(w), `${mode} 词 ${w} 缺释义`).not.toBeNull();
+        }
     });
 });

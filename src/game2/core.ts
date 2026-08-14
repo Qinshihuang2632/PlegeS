@@ -1,27 +1,33 @@
 /*
  * p了个s · 英了个语 核心逻辑 (src/game2/core.ts) —— 纯逻辑, 无 DOM
  * =================================================================
- * 玩法(v1.3.1): 填字游戏式「交叉单词网格」——
+ * 玩法(v1.4.0): 填字游戏式「交叉单词网格」——
  *   若干水平词与垂直词交叉摆放(相交处共享同一字母), 组成自由图形;
  *   未占用的表格位为灰色、不可点(不是单词的组成成分)。
  *   生成器自算标准答案, 挖空后经回溯求解器验证「唯一解」, 无逻辑漏洞。
  *   校验按横行纵列: 每个词(水平/垂直)填满时校验是否为词库单词, 非法扣血。
  *   生成保证: 每个词都与已放词交叉共享至少 1 格(全图连通), 且边界框受各难度
  *   maxDim 约束(简单 7 / 标准 9 / 困难 10), 图形紧凑不撑爆界面。
- * 道具: 提示(每局最多 2 次, 向随机空位填一个正确字母)。
- * 难度: 简单 4 词(4 字母, 挖40%, 首词提示)/ 标准 6 词(5 字母, 挖55%)/
- *       困难 8 词(5 字母课标难词, 挖70%, 无提示); 均保证唯一解。
+ *   生成只用「有释义的词」, 保证对局内每个词都能在结算页查看词性与释义。
+ * 道具: 填空提示(每局 2 次, 向随机空位填正确字母)/ 含义提示(每局 1 次,
+ *       提示随机一个未填完单词的随机一条释义)。
+ * 难度: 简单 4 词(4 字母, 挖40%, 首词全提示, 至少 1 交叉格被挖且总空 ≥4)/
+ *       标准 6 词(5 字母, 挖55%, 前 2 词全提示)/
+ *       困难 8 词(5 字母课标难词, 挖70%, 首词全提示); 均保证唯一解。
  */
 import { WS_WORDS, WS_WORDS_HARD } from "./words";
+import { WS_MEANINGS } from "./meanings";
+import { WS_MEANINGS_5 } from "./meanings5";
 
 export const WS_DIFFICULTIES = {
-    easy:   { label: "简单", words: 4, len: 4, dictKey: "basic", firstHint: true,  blankRate: 0.40, maxDim: 7 },
-    normal: { label: "标准", words: 6, len: 5, dictKey: "basic", firstHint: true,  blankRate: 0.55, maxDim: 9 },
-    hard:   { label: "困难", words: 8, len: 5, dictKey: "hard",  firstHint: false, blankRate: 0.70, maxDim: 10 },
+    easy:   { label: "简单", words: 4, len: 4, dictKey: "basic", hintWords: 1, blankRate: 0.40, maxDim: 7 },
+    normal: { label: "标准", words: 6, len: 5, dictKey: "basic", hintWords: 2, blankRate: 0.55, maxDim: 9 },
+    hard:   { label: "困难", words: 8, len: 5, dictKey: "hard",  hintWords: 1, blankRate: 0.70, maxDim: 10 },
 } as const;
 export type WsMode = keyof typeof WS_DIFFICULTIES;
 
-export const HINT_LIMIT = 2;   // 提示道具每局次数
+export const HINT_LIMIT = 2;          // 填空提示每局次数
+export const MEANING_HINT_LIMIT = 1;  // 含义提示每局次数
 
 export function shuffleArr<T>(a: T[]): T[] {
     for (let i = a.length - 1; i > 0; i--) {
@@ -31,8 +37,15 @@ export function shuffleArr<T>(a: T[]): T[] {
     return a;
 }
 
+/* 单词释义(4/5 字母词库); 无释义返回 null */
+export function meaningOf(word: string): { pos: string; zh: string }[] | null {
+    return WS_MEANINGS[word] ?? WS_MEANINGS_5[word] ?? null;
+}
+
+/* 生成词库 = 课标词 ∩ 有释义词(保证本局所有词可解释) */
 export function dictFor(mode: WsMode): string[] {
-    return WS_DIFFICULTIES[mode].dictKey === "hard" ? WS_WORDS_HARD : WS_WORDS[WS_DIFFICULTIES[mode].len];
+    const base = WS_DIFFICULTIES[mode].dictKey === "hard" ? WS_WORDS_HARD : WS_WORDS[WS_DIFFICULTIES[mode].len];
+    return base.filter(w => meaningOf(w) !== null);
 }
 
 export interface PlacedWord {
@@ -228,7 +241,8 @@ export class WsGame {
     startAt = 0;
     elapsed = 0;
     fills = 0;
-    hints = 0;
+    hints = 0;                        // 已用填空提示次数
+    meaningHints = 0;                 // 已用含义提示次数
 
     private dictSet: Set<string> = new Set();
 
@@ -249,6 +263,7 @@ export class WsGame {
         this.win = false;
         this.fills = 0;
         this.hints = 0;
+        this.meaningHints = 0;
         this.selected = null;
 
         const dict = [...this.dictSet];
@@ -293,9 +308,10 @@ export class WsGame {
                 grid[r][c] = v;
                 cells.push([r, c]);
             }
-            // 候选挖空格: 首词提示时排除词 0 的格子
-            const firstCells = d.firstHint ? this.wordCellsOf(words[0]) : [];
-            const cand = cells.filter(([r, c]) => !firstCells.some(([rr, cc]) => rr === r && cc === c));
+            // 候选挖空格: 前 hintWords 个词全提示(不挖其格子)
+            const hintCells: [number, number][] = [];
+            for (let wi = 0; wi < d.hintWords; wi++) hintCells.push(...this.wordCellsOf(words[wi]));
+            const cand = cells.filter(([r, c]) => !hintCells.some(([rr, cc]) => rr === r && cc === c));
             shuffleArr(cand);
             const target = Math.floor(cells.length * d.blankRate);
             let dug = 0;
@@ -307,6 +323,37 @@ export class WsGame {
                     dug++;
                 } else {
                     grid[r][c] = ans;   // 挖掉会多解 → 保留提示
+                }
+            }
+            // 简单难度额外保证: 至少一个「交叉格」(两个词的共用字母)被挖空, 且总空格 ≥4
+            if (this.mode === "easy") {
+                const crossCells = cells.filter(([r, c]) => {
+                    let n = 0;
+                    for (const w of words) {
+                        const cells2 = this.wordCellsOf(w);
+                        if (cells2.some(([rr, cc]) => rr === r && cc === c)) n++;
+                    }
+                    return n >= 2;
+                });
+                // 保证总空格 ≥4: 继续挖(保持唯一)
+                for (const [r, c] of cand) {
+                    if (dug >= 4) break;
+                    if (grid[r][c] !== null) continue;
+                    const ans = map.get(`${r},${c}`) ?? "";
+                    grid[r][c] = null;
+                    if (solveCross(occupied, grid, words, dict, 2).length === 1) dug++;
+                    else grid[r][c] = ans;
+                }
+                // 保证至少一个交叉格被挖: 否则尝试挖一个交叉格
+                if (!cells.some(([r, c]) => grid[r][c] === null && crossCells.some(([rr, cc]) => rr === r && cc === c))) {
+                    shuffleArr(crossCells);
+                    for (const [r, c] of crossCells) {
+                        if (grid[r][c] !== null) continue;
+                        const ans = map.get(`${r},${c}`) ?? "";
+                        grid[r][c] = null;
+                        if (solveCross(occupied, grid, words, dict, 2).length === 1) { dug++; break; }
+                        grid[r][c] = ans;
+                    }
                 }
             }
             if (dug > 0) {
@@ -336,6 +383,7 @@ export class WsGame {
         return this.grid.flat().filter(x => x === null).length;
     }
 
+    /* 填空提示(v1.4.0 更名): 向随机空位填一个正确字母(每局 HINT_LIMIT 次) */
     hint(): boolean {
         if (this.gameOver || this.win || this.hints >= HINT_LIMIT) return false;
         const blanks: [number, number][] = [];
@@ -347,6 +395,18 @@ export class WsGame {
         this.hints++;
         this.fill(r, c, this.cellAnswer(r, c));
         return true;
+    }
+
+    /* 含义提示(v1.4.0): 提示随机一个未填完单词的随机一条释义(每局 MEANING_HINT_LIMIT 次) */
+    meaningHint(): { word: string; meaning: { pos: string; zh: string } } | null {
+        if (this.gameOver || this.win || this.meaningHints >= MEANING_HINT_LIMIT) return null;
+        const undone: PlacedWord[] = this.words.filter((_, i) => !this.wordDone[i] && !this.wordBad[i]);
+        if (!undone.length) return null;
+        const w = undone[Math.floor(Math.random() * undone.length)];
+        const ms = meaningOf(w.word);
+        if (!ms || !ms.length) return null;
+        this.meaningHints++;
+        return { word: w.word, meaning: ms[Math.floor(Math.random() * ms.length)] };
     }
 
     cellAnswer(r: number, c: number): string {

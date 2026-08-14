@@ -12,7 +12,7 @@ import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { HINT_LIMIT, WsGame, type WsMode } from "./core";
+import { MEANING_HINT_LIMIT, HINT_LIMIT, meaningOf, WsGame, type WsMode } from "./core";
 import { fmtTime } from "@/game/core";
 import { detectPlatform } from "@/game/platform";
 import { WS_VERSION } from "./version";
@@ -39,6 +39,7 @@ export function WsPage() {
     const [curMode, setCurMode] = useState<WsMode>("easy");
     const [name, setName] = useState(readName());
     const [elapsed, setElapsed] = useState(0);
+    const [meaningTip, setMeaningTip] = useState<{ word: string; meaning: { pos: string; zh: string } } | null>(null);
     const [result, setResult] = useState<{ win: boolean; hp: number; time: number; surpassed: number | null } | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -75,7 +76,8 @@ export function WsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     mode: game.mode, name: n, hp: game.hp, time,
-                    tools: HINT_LIMIT - game.hints, clears: game.fills, version: WS_VERSION,
+                    tools: (HINT_LIMIT - game.hints) + (MEANING_HINT_LIMIT - game.meaningHints),
+                    clears: game.fills, version: WS_VERSION,
                     platform: detectPlatform(),
                 }),
             }).then(r => r.json()).then(d => {
@@ -113,6 +115,11 @@ export function WsPage() {
 
     const useHint = () => {
         if (game.hint()) refresh();
+    };
+
+    const useMeaningHint = () => {
+        const t = game.meaningHint();
+        if (t) setMeaningTip(t);
     };
 
     // 物理键盘
@@ -238,7 +245,7 @@ export function WsPage() {
                 横竖单词交叉拼图:每行/每列都是一个单词,相交处共享字母;灰色格不是单词成分,填满的非法词会扣血
             </p>
 
-            {/* 交叉单词网格(整个一张表格, 未占用格灰色不可点) */}
+            {/* 交叉单词网格(整个一张表格, 未占用格灰色不可点; v1.4.0 加虚线外框增强浅色区分) */}
             <div className="mx-auto w-full max-w-[26rem] rounded-2xl border bg-card p-2 shadow-sm">
                 <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${game.W}, minmax(0, 1fr))` }}>
                     {game.occupied.flatMap((row, r) =>
@@ -247,7 +254,7 @@ export function WsPage() {
                                 return (
                                     <div
                                         key={`${r}-${c}`}
-                                        className="aspect-square w-full rounded-lg bg-muted/40"
+                                        className="h-12 w-12 rounded-lg border border-dashed border-muted-foreground/40 bg-muted/60 sm:h-14 sm:w-14"
                                         aria-hidden
                                     />
                                 );
@@ -296,9 +303,22 @@ export function WsPage() {
                     disabled={HINT_LIMIT - game.hints <= 0 || game.gameOver}
                     onClick={useHint}
                 >
-                    提示({HINT_LIMIT - game.hints})
+                    填空提示({HINT_LIMIT - game.hints})
+                </Button>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    disabled={MEANING_HINT_LIMIT - game.meaningHints <= 0 || game.gameOver}
+                    onClick={useMeaningHint}
+                >
+                    含义提示({MEANING_HINT_LIMIT - game.meaningHints})
                 </Button>
             </div>
+            {meaningTip && (
+                <p className="mx-auto mt-2 max-w-md text-center text-xs leading-relaxed text-primary">
+                    含义提示: {meaningTip.word} [{meaningTip.meaning.pos}] {meaningTip.meaning.zh}
+                </p>
+            )}
 
             {/* 屏幕字母条(触屏友好) */}
             <div className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-1">
@@ -318,14 +338,16 @@ export function WsPage() {
                 {game.win ? "已通关" : game.gameOver ? "已失败" : "点击格子后输入字母(支持物理键盘)"}
             </p>
 
-            {/* 结算弹窗 */}
+            {/* 结算: 公布正确答案 + 逐词释义(玩家可查看, 不直接弹退出/再来一局) */}
             <Dialog open={result !== null} onOpenChange={(o) => { if (!o) setResult(null); }}>
                 {result && (
-                    <DialogContent className="sm:max-w-sm">
+                    <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle className="text-xl">{result.win ? "通关啦!" : "挑战失败"}</DialogTitle>
                             <DialogDescription>
-                                {result.win ? "每个单词都补全成了课标词汇!" : `血量耗尽——剩余待填 ${game.totalBlanks} 格`}
+                                {result.win
+                                    ? "每个单词都补全成了课标词汇!下方公布完整答案与释义"
+                                    : `血量耗尽——正确答案与释义如下`}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="rounded-xl bg-muted p-3 text-center text-sm leading-relaxed">
@@ -335,6 +357,46 @@ export function WsPage() {
                             )}
                             {!name.trim() && <p className="mt-1.5 text-xs text-destructive">未填写昵称,成绩未上榜</p>}
                         </div>
+
+                        {/* 正确答案网格 */}
+                        <div>
+                            <h4 className="mb-2 text-sm font-bold">正确答案</h4>
+                            <div className="mx-auto w-fit rounded-xl border bg-card p-1.5 shadow-sm">
+                                <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${game.W}, minmax(0, 1fr))` }}>
+                                    {game.occupied.flatMap((row, r) =>
+                                        row.map((occ, c) => (
+                                            <div
+                                                key={`${r}-${c}`}
+                                                className={cn(
+                                                    "flex h-8 w-8 items-center justify-center rounded text-base font-bold uppercase sm:h-9 sm:w-9",
+                                                    occ ? "bg-success/15 text-success" : "bg-muted/50",
+                                                )}
+                                            >
+                                                {occ ? game.cellAnswer(r, c) : ""}
+                                            </div>
+                                        )),
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 逐词释义(词性 + 中文, 多词性全列) */}
+                        <div>
+                            <h4 className="mb-2 text-sm font-bold">单词解析({game.words.length})</h4>
+                            <ul className="space-y-2">
+                                {game.words.map((w, i) => (
+                                    <li key={i} className="rounded-lg bg-muted/40 px-3 py-2">
+                                        <p className="font-bold uppercase">{w.word} <span className="font-normal normal-case text-muted-foreground">{w.dir === "h" ? "横" : "竖"}</span></p>
+                                        {(meaningOf(w.word) ?? []).map((m, j) => (
+                                            <p key={j} className="text-xs leading-relaxed text-muted-foreground">
+                                                <span className="font-semibold text-foreground">{m.pos}</span> {m.zh}
+                                            </p>
+                                        ))}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
                         <div className="flex justify-between gap-2">
                             <Button variant="ghost" onClick={() => { setResult(null); }}>关闭</Button>
                             <div className="flex gap-2">
