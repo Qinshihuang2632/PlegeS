@@ -259,14 +259,16 @@ describe("游戏流程", () => {
         expect(g.hints).toBe(2);
     });
 
-    it("含义提示: 每局 1 次, 返回未填完单词的释义", () => {
+    it("含义提示: 每局 1 次, 返回未填完词的词索引与单条释义(不暴露拼写)", () => {
         const g = new WsGame("normal");
         expect(MEANING_HINT_LIMIT).toBe(1);
         const t1 = g.meaningHint();
         expect(t1).not.toBeNull();
         expect(g.meaningHints).toBe(1);
-        // 返回的释义与该词一致(词库有释义)
-        const ms = meaningOf(t1!.word);
+        // 返回的是词索引(非拼写), 且释义与该词一致
+        expect(t1!.wi).toBeGreaterThanOrEqual(0);
+        expect(t1!.wi).toBeLessThan(g.words.length);
+        const ms = meaningOf(g.words[t1!.wi].word);
         expect(ms?.some(m => m.pos === t1!.meaning.pos && m.zh === t1!.meaning.zh)).toBe(true);
         expect(g.meaningHint()).toBeNull();   // 已用满 1 次
         expect(g.meaningHints).toBe(1);

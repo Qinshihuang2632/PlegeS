@@ -39,7 +39,13 @@ export function WsPage() {
     const [curMode, setCurMode] = useState<WsMode>("easy");
     const [name, setName] = useState(readName());
     const [elapsed, setElapsed] = useState(0);
-    const [meaningTip, setMeaningTip] = useState<{ word: string; meaning: { pos: string; zh: string } } | null>(null);
+    const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
+    const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const clearMeaningTip = () => {
+        if (tipTimerRef.current) clearTimeout(tipTimerRef.current);
+        setMeaningTip(null);
+    };
     const [result, setResult] = useState<{ win: boolean; hp: number; time: number; surpassed: number | null } | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -95,6 +101,7 @@ export function WsPage() {
 
     const typeChar = (ch: string) => {
         if (game.gameOver || game.win || !game.selected) return;
+        clearMeaningTip();   // 输入行为消除含义提示
         const { r, c } = game.selected;
         if (ch === "⌫") { game.erase(r, c); refresh(); return; }
         if (game.fill(r, c, ch)) {
@@ -119,8 +126,20 @@ export function WsPage() {
 
     const useMeaningHint = () => {
         const t = game.meaningHint();
-        if (t) setMeaningTip(t);
+        if (!t) return;
+        if (tipTimerRef.current) clearTimeout(tipTimerRef.current);
+        setMeaningTip(t);
+        // 7 秒后自动消除(v1.4.1)
+        tipTimerRef.current = setTimeout(() => setMeaningTip(null), 7000);
     };
+
+    // 任何键盘按键(不含滑动屏幕) → 消除含义提示
+    useEffect(() => {
+        const onKey = () => clearMeaningTip();
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // 物理键盘
     useEffect(() => {
@@ -245,7 +264,8 @@ export function WsPage() {
                 横竖单词交叉拼图:每行/每列都是一个单词,相交处共享字母;灰色格不是单词成分,填满的非法词会扣血
             </p>
 
-            {/* 交叉单词网格(整个一张表格, 未占用格灰色不可点; v1.4.0 加虚线外框增强浅色区分) */}
+            {/* 交叉单词网格(整个一张表格; v1.4.1: 未占用格保持浅色无边框,
+                待填空格外框加粗加深+背景加深以提升区分) */}
             <div className="mx-auto w-full max-w-[26rem] rounded-2xl border bg-card p-2 shadow-sm">
                 <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${game.W}, minmax(0, 1fr))` }}>
                     {game.occupied.flatMap((row, r) =>
@@ -254,13 +274,14 @@ export function WsPage() {
                                 return (
                                     <div
                                         key={`${r}-${c}`}
-                                        className="h-12 w-12 rounded-lg border border-dashed border-muted-foreground/40 bg-muted/60 sm:h-14 sm:w-14"
+                                        className="h-12 w-12 rounded-lg bg-muted/30 sm:h-14 sm:w-14"
                                         aria-hidden
                                     />
                                 );
                             }
                             const v = game.grid[r][c];
                             const isFixed = game.puzzle[r][c] !== null;
+                            const isBlank = !isFixed && v === null;          // 待填空格
                             const isSel = game.selected?.r === r && game.selected?.c === c;
                             // 词状态: 属于任一完成词 → 绿; 任一非法词 → 红
                             const wi = game.words.findIndex(w => {
@@ -271,6 +292,8 @@ export function WsPage() {
                             });
                             const isDone = wi >= 0 && game.wordDone[wi];
                             const isBad = wi >= 0 && game.wordBad[wi];
+                            // 含义提示蓝圈: 该格属于被提示的词 → 整词圈出
+                            const inTip = meaningTip !== null && game.wordCells(meaningTip.wi).some(([rr, cc]) => rr === r && cc === c);
                             return (
                                 <button
                                     key={`${r}-${c}`}
@@ -283,8 +306,11 @@ export function WsPage() {
                                                 ? "border-transparent bg-success/15 text-success"
                                                 : isBad
                                                     ? "border-transparent bg-destructive/15 text-destructive"
-                                                    : "border bg-card shadow-sm hover:bg-muted",
+                                                    : isBlank
+                                                        ? "border-2 border-muted-foreground/60 bg-muted/50 shadow-sm hover:bg-muted/70"
+                                                        : "border bg-card shadow-sm hover:bg-muted",
                                         isSel && "ring-2 ring-primary",
+                                        inTip && "ring-2 ring-blue-500",
                                     )}
                                 >
                                     {v ?? ""}
@@ -315,8 +341,8 @@ export function WsPage() {
                 </Button>
             </div>
             {meaningTip && (
-                <p className="mx-auto mt-2 max-w-md text-center text-xs leading-relaxed text-primary">
-                    含义提示: {meaningTip.word} [{meaningTip.meaning.pos}] {meaningTip.meaning.zh}
+                <p className="mx-auto mt-2 max-w-md text-center text-sm font-semibold leading-relaxed text-blue-600">
+                    含义提示: [{meaningTip.meaning.pos}] {meaningTip.meaning.zh}
                 </p>
             )}
 

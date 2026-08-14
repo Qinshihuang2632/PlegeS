@@ -397,16 +397,17 @@ export class WsGame {
         return true;
     }
 
-    /* 含义提示(v1.4.0): 提示随机一个未填完单词的随机一条释义(每局 MEANING_HINT_LIMIT 次) */
-    meaningHint(): { word: string; meaning: { pos: string; zh: string } } | null {
+    /* 含义提示(v1.4.1): 提示随机一个未填完单词的随机一条释义(每局 MEANING_HINT_LIMIT 次)。
+       不返回单词拼写 —— UI 用蓝圈圈出该词全部格子, 并在 7 秒/按键后消除 */
+    meaningHint(): { wi: number; meaning: { pos: string; zh: string } } | null {
         if (this.gameOver || this.win || this.meaningHints >= MEANING_HINT_LIMIT) return null;
-        const undone: PlacedWord[] = this.words.filter((_, i) => !this.wordDone[i] && !this.wordBad[i]);
+        const undone: number[] = this.words.map((_, i) => i).filter(i => !this.wordDone[i] && !this.wordBad[i]);
         if (!undone.length) return null;
-        const w = undone[Math.floor(Math.random() * undone.length)];
-        const ms = meaningOf(w.word);
+        const wi = undone[Math.floor(Math.random() * undone.length)];
+        const ms = meaningOf(this.words[wi].word);
         if (!ms || !ms.length) return null;
         this.meaningHints++;
-        return { word: w.word, meaning: ms[Math.floor(Math.random() * ms.length)] };
+        return { wi, meaning: ms[Math.floor(Math.random() * ms.length)] };
     }
 
     cellAnswer(r: number, c: number): string {
