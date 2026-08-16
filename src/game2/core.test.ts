@@ -170,19 +170,21 @@ describe("唯一解保证(无逻辑漏洞)", () => {
 });
 
 describe("游戏流程", () => {
-    it("难度参数: 4词/6词/8词, 挖空率递增, 简单首词提示", () => {
+    it("难度参数: 4词/6词/8词, 每词已知字母数配额", () => {
         expect(WS_DIFFICULTIES.easy.words).toBe(4);
         expect(WS_DIFFICULTIES.normal.words).toBe(6);
         expect(WS_DIFFICULTIES.hard.words).toBe(8);
         expect(WS_DIFFICULTIES.hard.dictKey).toBe("hard");
-        expect(WS_DIFFICULTIES.hard.blankRate).toBeGreaterThan(WS_DIFFICULTIES.normal.blankRate);
-        expect(WS_DIFFICULTIES.normal.blankRate).toBeGreaterThan(WS_DIFFICULTIES.easy.blankRate);
-        expect(WS_DIFFICULTIES.easy.hintWords).toBe(1);
-        expect(WS_DIFFICULTIES.normal.hintWords).toBe(2);
-        expect(WS_DIFFICULTIES.hard.hintWords).toBe(1);
+        // v1.4.5: 已知字母数配额 —— 简单 [4,2,2,2] / 标准 [5,5,3,3,2,2] / 困难 [5,3,3,2,2,2,2,2]
+        expect(WS_DIFFICULTIES.easy.known).toEqual([4, 2, 2, 2]);
+        expect(WS_DIFFICULTIES.normal.known).toEqual([5, 5, 3, 3, 2, 2]);
+        expect(WS_DIFFICULTIES.hard.known).toEqual([5, 3, 3, 2, 2, 2, 2, 2]);
+        // 所有词已知字母数 ≥2(不出现只有 1 个字母已知的词)
+        for (const mode of ["easy", "normal", "hard"] as const)
+            expect(WS_DIFFICULTIES[mode].known.every(k => k >= 2)).toBe(true);
     });
 
-    it("开局: 未占用格不可填/不可点, 预填格不可改, 简单首词全提示", () => {
+    it("开局: 未占用格不可填/不可点, 预填格不可改, 每词已知字母数 = 配额", () => {
         const g = new WsGame("easy");
         expect(g.words.length).toBe(4);
         // 未占用格不可填
@@ -196,10 +198,11 @@ describe("游戏流程", () => {
                     expect(g.fill(r, c, "z")).toBe(false);
                     expect(g.grid[r][c]).toBe(g.puzzle[r][c]);
                 }
-        // hintWords 个词全提示
-        const hintW = WS_DIFFICULTIES.easy.hintWords;
-        for (let wi = 0; wi < hintW; wi++)
-            expect(g.wordCells(wi).every(([r, c]) => g.puzzle[r][c] !== null)).toBe(true);
+        // 每词已知字母数 ≥ 配额 known[wi](全知词 known=len 全提示)
+        for (let wi = 0; wi < g.words.length; wi++) {
+            const known = g.wordCells(wi).filter(([r, c]) => g.puzzle[r][c] !== null).length;
+            expect(known, `词${wi} 已知字母数=${known}`).toBeGreaterThanOrEqual(WS_DIFFICULTIES.easy.known[wi]);
+        }
         expect(g.totalBlanks).toBeGreaterThanOrEqual(4);   // v1.4.0: 简单总空格 ≥4
         // v1.4.0: 至少一个交叉格(两个词的共用字母)被挖空
         const crossBlank = g.occupied.some((row, r) => row.some((occ, c) => {

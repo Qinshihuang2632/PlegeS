@@ -6,5 +6,5 @@
  * 升级规则: 各游戏与平台各自独立递增, 互不继承。
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
-export const APP_VERSION = "v2.3.5";       // 化了个学
-export const PLATFORM_VERSION = "v2.4.0";  // 平台 p了个s(第二款游戏上线)
+export const APP_VERSION = "v2.3.7";       // 化了个学(结算提交失败可见化 + 未参与排行提示)
+export const PLATFORM_VERSION = "v2.4.2";  // 平台 p了个s(排行榜 ?game 直达)

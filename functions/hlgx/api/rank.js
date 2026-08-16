@@ -79,8 +79,9 @@ export async function onRequestPost({ request, env }) {
     const clears = clampInt(body.clears, 0, 9999, 0);
     const version = String(body.version ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16) || "";
 
-    // 成绩合理性: 一局至少几十次点击, 10 秒以内不可能(防脚本刷 1~2 秒假成绩)
-    if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
+    // 成绩合理性: 一局至少几十次点击, 10 秒以内通关不可能(防脚本刷 1~2 秒假成绩);
+    // 失败局(hp=0)放宽 —— 真实玩家快速失败(运气差开局即槽满)应当能上榜, 刷失败记录无排名收益
+    if (secs < 10 && hp > 0) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
 
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);

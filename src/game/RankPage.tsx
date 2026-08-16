@@ -4,7 +4,7 @@
  * 管理功能(清榜/删除)已全部移入 /admin, 本页不提供任何管理入口
  */
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,9 @@ type GameKey = (typeof GAMES)[number]["key"];
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function RankPage() {
-    const [game, setGame] = useState<GameKey>("hlgx");
+    const [searchParams] = useSearchParams();
+    // v2.4.2: 支持 ?game=ws|hlgx 直达对应游戏榜单(英了个语结算页「查看排行榜」直达, 不再默认停在化了个学)
+    const [game, setGame] = useState<GameKey>(searchParams.get("game") === "ws" ? "ws" : "hlgx");
     const [curMode, setCurMode] = useState<string>("normal");
     const [curPlatform, setCurPlatform] = useState<Platform>(() => detectPlatform());
     const [entries, setEntries] = useState<RankEntry[] | null>(null);
@@ -72,7 +74,7 @@ export function RankPage() {
     };
 
     const rule = game === "ws"
-        ? "剩余血量多 → 填写字母数多 → 用时短 → 提示道具用得少;榜单按平台分开,成绩只与本平台比较;「版本」列为英了个语独立版本"
+        ? "剩余血量多 → 填写字母数多 → 用时短 → 技能使用次数少(失败记录也会上榜);榜单按平台分开,成绩只与本平台比较;「版本」列为英了个语独立版本"
         : "剩余血量多 → 成功消除组数多 → 用时短 → 技能使用次数少(失败记录也会上榜,0 心玩家中消除组数多者排前);榜单按平台分开,成绩只与本平台比较;「版本」列对应当局游戏版本,不同版本难度有别,便于横向比较";
 
     return (
@@ -200,7 +202,7 @@ export function RankPage() {
                                 </div>
                                 <div className="text-right text-xs leading-relaxed">
                                     <p>❤ {e.hp}({game === "ws" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")}) · ⏱ {fmtTime(e.time)}</p>
-                                    <p className="text-muted-foreground">{game === "ws" ? "提示余量" : "技能"} {e.tools} · 版本 {e.version || "旧版"}</p>
+                                    <p className="text-muted-foreground">技能使用次数 {e.tools} · 版本 {e.version || "旧版"}</p>
                                 </div>
                             </div>
                         ))}

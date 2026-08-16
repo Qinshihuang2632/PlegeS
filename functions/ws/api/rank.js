@@ -3,7 +3,7 @@
  * 路由: /ws/api/rank
  *   GET    ?mode=easy|normal|hard 查询该难度榜单(已排序)
  *   POST   请求体 JSON {mode, name, hp, time, tools, clears?, version?, platform?}
- *          提交成绩; 排序 hp↓ → clears↓ → time↑ → tools↑
+ *          提交成绩; 排序 hp↓ → clears↓ → time↑ → tools↑(tools=技能使用次数, 用得少排前, 与化了个学一致)
  * KV 键: ws:easy / ws:normal / ws:hard(与化了个学的键分离)
  * 防刷与校验规则与 /hlgx/api/rank 一致(60s/IP、昵称清洗、违禁词、≥10s、同名放开)。
  */
@@ -76,7 +76,9 @@ export async function onRequestPost({ request, env }) {
     const clears = clampInt(body.clears, 0, 9999, 0);
     const version = String(body.version ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16);
 
-    if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
+    // 成绩合理性: 10 秒以内通关不可能(防脚本刷假成绩); 失败局(hp=0)放宽 ——
+    // 真实玩家快速失败(乱填几个字母血量耗尽)应当能上榜, 刷失败记录无排名收益
+    if (secs < 10 && hp > 0) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
 
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);

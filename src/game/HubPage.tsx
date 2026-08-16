@@ -7,12 +7,15 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { GameRules } from "./GameRules";
+import { WsRules } from "@/game2/WsRules";
 import { PLATFORM_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ws">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 双子页
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
@@ -87,14 +90,31 @@ export function HubPage() {
                 p了个s · 平台 {PLATFORM_VERSION}(仅供个人娱乐)
             </footer>
 
-            {/* 玩法介绍弹窗(✕ 可关闭) */}
+            {/* 玩法介绍弹窗(✕ 可关闭; 化了个学 / 英了个语 按键切换子页面) */}
             <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
                 <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>玩法介绍</DialogTitle>
                         <DialogDescription>三分钟看懂怎么玩,新手不迷路</DialogDescription>
                     </DialogHeader>
-                    <GameRules />
+                    <div className="mb-3 flex gap-1 rounded-full bg-muted p-1">
+                        {([
+                            { key: "hlgx", label: "化了个学" },
+                            { key: "ws", label: "英了个语" },
+                        ] as const).map(({ key, label }) => (
+                            <button
+                                key={key}
+                                onClick={() => setRulesTab(key)}
+                                className={cn(
+                                    "flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition",
+                                    rulesTab === key ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground",
+                                )}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                    {rulesTab === "hlgx" ? <GameRules /> : <WsRules />}
                 </DialogContent>
             </Dialog>
 

@@ -59,6 +59,8 @@ interface ResultInfo {
     time: number;
     surpassed: number | null;
     failed: boolean;
+    failMsg?: string;      // 提交失败原因(后端 msg 或网络异常描述)
+    skipped?: boolean;     // 未参与排行(未填昵称/勾选了不参与排行榜)
 }
 
 export function HuaPage() {
@@ -79,7 +81,10 @@ export function HuaPage() {
     const [nameOpen, setNameOpen] = useState(false);
     const [nameDialogMode, setNameDialogMode] = useState<"first" | "change">("first");   // v2.2.7: 首次输入/更换昵称
     const [name, setName] = useState<string>(() => readStoredName());   // 预填上次输入
+    const [headerName, setHeaderName] = useState<string>(() => readStoredName());   // 局内实时输入框(v2.4.1)
+    const [headerNameTip, setHeaderNameTip] = useState("");
     const [skipRank, setSkipRank] = useState(false);
+    const [rankActive, setRankActive] = useState(false);   // v2.4.2: 局内是否参与排行(防「记住的勾选」静默不上榜)
     const [nameTip, setNameTip] = useState("");
     const playerNameRef = useRef<string | null>(null);
     const inRankRef = useRef(false);
@@ -124,6 +129,8 @@ export function HuaPage() {
             playerNameRef.current = saved || null;
             inRankRef.current = !!saved && !savedSkip;
             setSkipRank(savedSkip);
+            setRankActive(!!saved && !savedSkip);
+            setHeaderName(saved);   // v2.3.6: 局内输入框预填当前昵称
             if (!seen) setTutorialOpen(true);
             else beginPlay();
         } else {
@@ -178,6 +185,7 @@ export function HuaPage() {
         if (skipRank) {
             playerNameRef.current = null;
             inRankRef.current = false;
+            setRankActive(false);
             storeSkip(true);                 // v2.2.7: 记住选择, 下次直接开局
             finishNameDialog();
             return;
@@ -189,8 +197,11 @@ export function HuaPage() {
         // v2.1.6: 同名昵称放开(靠上榜时间区分玩家), 不再查重/自动加序列号
         playerNameRef.current = n;
         inRankRef.current = true;
+        setRankActive(true);
         storeName(n);
         storeSkip(false);
+        setHeaderName(n);      // v2.3.6: 同步局内实时输入框
+        setHeaderNameTip("");
         finishNameDialog();
     };
 
@@ -201,10 +212,32 @@ export function HuaPage() {
         nameChangeRestartRef.current = false;
     };
 
+    /* 局内实时改名(v2.3.6): 输入即生效, 不再弹窗确认; 与英了个语一致 */
+    const commitHeaderName = (v: string) => {
+        setHeaderName(v);
+        setHeaderNameTip("");
+        const n = v.trim();
+        if (!n) {
+            playerNameRef.current = null;
+            inRankRef.current = false;
+            setRankActive(false);
+            storeName("");
+            return;
+        }
+        if ([...n].length > 10) { setHeaderNameTip("昵称最多 10 个字"); return; }
+        if (hasBadWord(n)) { setHeaderNameTip("昵称包含违禁词,请更换"); return; }
+        playerNameRef.current = n;
+        inRankRef.current = true;
+        setRankActive(true);
+        storeName(n);
+        storeSkip(false);
+    };
+
     /* 局内/结算页「更换昵称」入口(v2.3.2): 预填当前默认昵称, 打开更换窗 */
     const openNameChange = () => {
         setNameTip("");
         setName(playerNameRef.current ?? readStoredName());
+        setHeaderName(playerNameRef.current ?? readStoredName());   // v2.3.6
         setSkipRank(!inRankRef.current);
         setNameDialogMode("change");
         setNameOpen(true);
@@ -247,7 +280,7 @@ export function HuaPage() {
         const r = game.result;
         if (!r) return;
         if (!inRankRef.current || !playerNameRef.current) {
-            setResultInfo({ win: r.win, remain: r.remain, tools: r.tools, time, surpassed: null, failed: false });
+            setResultInfo({ win: r.win, remain: r.remain, tools: r.tools, time, surpassed: null, failed: false, skipped: true });
             return;
         }
         try {
@@ -266,13 +299,22 @@ export function HuaPage() {
                 }),
             });
             const data = await res.json().catch(() => null);
+            // 非 2xx(限频 429 / 校验 400 等)也是失败: 显示后端原因, 便于重试
+            if (!res.ok) {
+                setResultInfo({
+                    win: r.win, remain: r.remain, tools: r.tools, time,
+                    surpassed: null, failed: true,
+                    failMsg: data && typeof data.msg === "string" ? data.msg : `提交失败(HTTP ${res.status})`,
+                });
+                return;
+            }
             setResultInfo({
                 win: r.win, remain: r.remain, tools: r.tools, time,
                 surpassed: data && typeof data.surpassed === "number" ? data.surpassed : null,
                 failed: false,
             });
         } catch {
-            setResultInfo({ win: r.win, remain: r.remain, tools: r.tools, time, surpassed: null, failed: true });
+            setResultInfo({ win: r.win, remain: r.remain, tools: r.tools, time, surpassed: null, failed: true, failMsg: "网络异常,请检查网络后重试" });
         }
     }, [game]);
 
@@ -298,6 +340,7 @@ export function HuaPage() {
         submittedRef.current = false;
         audioPlayedRef.current = false;
         setNameTip("");
+        setHeaderName(playerNameRef.current ?? name);   // v2.3.6: 同步局内输入框
         setName(playerNameRef.current ?? name);
     };
 
@@ -325,12 +368,23 @@ export function HuaPage() {
                         </TooltipTrigger>
                         <TooltipContent>玩法介绍</TooltipContent>
                     </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={openNameChange}>改名</Button>
-                        </TooltipTrigger>
-                        <TooltipContent>修改默认昵称(当前:{playerNameRef.current ?? "未设置"}),本局成绩按新昵称提交</TooltipContent>
-                    </Tooltip>
+                    <input
+                        value={headerName}
+                        maxLength={10}
+                        placeholder="昵称"
+                        onChange={(e) => commitHeaderName(e.target.value)}
+                        className="w-24 rounded-lg border bg-card px-2 py-1 text-sm outline-none focus:border-primary"
+                        aria-label="当前昵称,点击直接修改"
+                        title="当前昵称,点击直接修改(本局成绩按新昵称提交)"
+                    />
+                    {headerNameTip && (
+                        <span className="text-xs font-semibold text-destructive">{headerNameTip}</span>
+                    )}
+                    {!rankActive && !headerNameTip && (
+                        <span className="text-[10px] font-semibold text-muted-foreground" title="未填写昵称或勾选了「不参与排行榜」,本局成绩不上榜;输入昵称即可恢复">
+                            未参与排行
+                        </span>
+                    )}
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }} aria-label="静音开关">
@@ -593,7 +647,11 @@ export function HuaPage() {
                             </p>
                             {resultInfo.failed ? (
                                 <p className="mt-1.5 text-xs text-destructive">
-                                    成绩提交失败(网络异常),点下方「重试提交」再试一次
+                                    成绩提交失败: {resultInfo.failMsg ?? "未知原因"}。点下方「重试提交」再试一次
+                                </p>
+                            ) : resultInfo.skipped ? (
+                                <p className="mt-1.5 text-xs text-muted-foreground">
+                                    未填写昵称或勾选了「不参与排行榜」,本局成绩未上榜
                                 </p>
                             ) : (
                                 resultInfo.surpassed !== null && (

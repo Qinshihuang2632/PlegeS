@@ -11,18 +11,19 @@
  *   生成只用「有释义的词」, 保证对局内每个词都能在结算页查看词性与释义。
  * 道具: 填空提示(每局 2 次, 向随机空位填正确字母)/ 含义提示(每局 1 次,
  *       提示随机一个未填完单词的随机一条释义)。
- * 难度: 简单 4 词(4 字母, 挖40%, 首词全提示, 至少 1 交叉格被挖且总空 ≥4)/
- *       标准 6 词(5 字母, 挖55%, 前 2 词全提示)/
- *       困难 8 词(5 字母课标难词, 挖70%, 首词全提示); 均保证唯一解。
+ * 难度: 每词挖空受「已知字母数」配额控制(known 数组, 不挖出只有 1 个字母已知的词):
+ *       简单 4 词(4 字母, 首词全提示其余各留 2 字母, 至少 1 交叉格被挖且总空 ≥4)/
+ *       标准 6 词(5 字母, 2 全提示 + 2 留 3 字母 + 2 留 2 字母)/
+ *       困难 8 词(5 字母课标难词, 1 全提示 + 2 留 3 字母 + 5 留 2 字母); 均保证唯一解。
  */
 import { WS_WORDS, WS_WORDS_HARD } from "./words";
 import { WS_MEANINGS } from "./meanings";
 import { WS_MEANINGS_5 } from "./meanings5";
 
 export const WS_DIFFICULTIES = {
-    easy:   { label: "简单", words: 4, len: 4, dictKey: "basic", hintWords: 1, blankRate: 0.40, maxDim: 7 },
-    normal: { label: "标准", words: 6, len: 5, dictKey: "basic", hintWords: 2, blankRate: 0.55, maxDim: 9 },
-    hard:   { label: "困难", words: 8, len: 5, dictKey: "hard",  hintWords: 1, blankRate: 0.70, maxDim: 10 },
+    easy:   { label: "简单", words: 4, len: 4, dictKey: "basic", known: [4, 2, 2, 2], maxDim: 7 },
+    normal: { label: "标准", words: 6, len: 5, dictKey: "basic", known: [5, 5, 3, 3, 2, 2], maxDim: 9 },
+    hard:   { label: "困难", words: 8, len: 5, dictKey: "hard",  known: [5, 3, 3, 2, 2, 2, 2, 2], maxDim: 10 },
 } as const;
 export type WsMode = keyof typeof WS_DIFFICULTIES;
 
@@ -308,54 +309,68 @@ export class WsGame {
                 grid[r][c] = v;
                 cells.push([r, c]);
             }
-            // 候选挖空格: 前 hintWords 个词全提示(不挖其格子)
-            const hintCells: [number, number][] = [];
-            for (let wi = 0; wi < d.hintWords; wi++) hintCells.push(...this.wordCellsOf(words[wi]));
-            const cand = cells.filter(([r, c]) => !hintCells.some(([rr, cc]) => rr === r && cc === c));
-            shuffleArr(cand);
-            const target = Math.floor(cells.length * d.blankRate);
-            let dug = 0;
-            for (const [r, c] of cand) {
-                if (dug >= target) break;
-                const ans = map.get(`${r},${c}`) ?? "";
-                grid[r][c] = null;
-                if (solveCross(occupied, grid, words, dict, 2).length === 1) {
-                    dug++;
-                } else {
-                    grid[r][c] = ans;   // 挖掉会多解 → 保留提示
+            // 每词最大挖空数 = 词长 - 该词已知字母数(known=词长 的词全提示不挖)
+            const maxDugPerWord = words.map((_, wi) => d.len - d.known[wi]);
+            const dugPerWord = words.map(() => 0);
+            // 该格所属词(至多一横一竖)
+            const ownersOf = (r: number, c: number): number[] => {
+                const owners: number[] = [];
+                for (let wi = 0; wi < words.length; wi++) {
+                    const wc = this.wordCellsOf(words[wi]);
+                    if (wc.some(([rr, cc]) => rr === r && cc === c)) owners.push(wi);
                 }
-            }
-            // 简单难度额外保证: 至少一个「交叉格」(两个词的共用字母)被挖空, 且总空格 ≥4
-            if (this.mode === "easy") {
-                const crossCells = cells.filter(([r, c]) => {
-                    let n = 0;
-                    for (const w of words) {
-                        const cells2 = this.wordCellsOf(w);
-                        if (cells2.some(([rr, cc]) => rr === r && cc === c)) n++;
-                    }
-                    return n >= 2;
-                });
-                // 保证总空格 ≥4: 继续挖(保持唯一)
-                for (const [r, c] of cand) {
-                    if (dug >= 4) break;
-                    if (grid[r][c] !== null) continue;
+                return owners;
+            };
+            // 挖空: 按词轮询, 每词尽量挖满配额(挖掉保持唯一解, 交叉格同时扣两词配额)
+            const order = shuffleArr(words.map((_, i) => i));
+            let dug = 0;
+            for (const wi of order) {
+                const wCells = this.wordCellsOf(words[wi]);
+                shuffleArr(wCells);
+                for (const [r, c] of wCells) {
+                    if (dugPerWord[wi] >= maxDugPerWord[wi]) break;
+                    if (grid[r][c] === null) continue;
+                    const owners = ownersOf(r, c);
+                    if (owners.some(o => dugPerWord[o] >= maxDugPerWord[o])) continue;
                     const ans = map.get(`${r},${c}`) ?? "";
                     grid[r][c] = null;
-                    if (solveCross(occupied, grid, words, dict, 2).length === 1) dug++;
-                    else grid[r][c] = ans;
+                    if (solveCross(occupied, grid, words, dict, 2).length === 1) {
+                        dug++;
+                        for (const o of owners) dugPerWord[o]++;
+                    } else {
+                        grid[r][c] = ans;   // 挖掉会多解 → 保留提示
+                    }
                 }
-                // 保证至少一个交叉格被挖: 否则尝试挖一个交叉格
-                if (!cells.some(([r, c]) => grid[r][c] === null && crossCells.some(([rr, cc]) => rr === r && cc === c))) {
+            }
+            // 简单难度额外保证: 总空格 ≥4, 且至少一个「交叉格」(两个词的共用字母)被挖空
+            let crossBlankOk = true;
+            if (this.mode === "easy") {
+                const crossCells = cells.filter(([r, c]) => {
+                    const owners = ownersOf(r, c);
+                    return owners.length >= 2 && owners.every(o => maxDugPerWord[o] > 0);
+                });
+                if (dug < 4) continue;   // 总空格不足 → 重新生成
+                if (!crossCells.some(([r, c]) => grid[r][c] === null)) {
+                    crossBlankOk = false;
                     shuffleArr(crossCells);
                     for (const [r, c] of crossCells) {
                         if (grid[r][c] !== null) continue;
+                        const owners = ownersOf(r, c);
+                        if (owners.some(o => dugPerWord[o] >= maxDugPerWord[o])) continue;
                         const ans = map.get(`${r},${c}`) ?? "";
                         grid[r][c] = null;
-                        if (solveCross(occupied, grid, words, dict, 2).length === 1) { dug++; break; }
+                        if (solveCross(occupied, grid, words, dict, 2).length === 1) {
+                            dug++;
+                            for (const o of owners) dugPerWord[o]++;
+                            crossBlankOk = true;
+                            break;
+                        }
                         grid[r][c] = ans;
                     }
                 }
             }
+            // easy 保证未满足 → 重新生成(避免总空格 <4 或交叉格全提示的弱题)
+            if (this.mode === "easy" && (dug < 4 || !crossBlankOk)) continue;
             if (dug > 0) {
                 return { words, H, W, occupied, puzzle: grid.map(row => row.map(v => v)), grid };
             }
@@ -379,8 +394,14 @@ export class WsGame {
         return cells;
     }
 
+    /* 待填数 = 占用格(单词成分)中未填的格数。不把未占用(灰色)格计入,
+       否则总空格数虚高(灰色格在 grid 中也是 null) */
     get totalBlanks(): number {
-        return this.grid.flat().filter(x => x === null).length;
+        let n = 0;
+        for (let r = 0; r < this.H; r++)
+            for (let c = 0; c < this.W; c++)
+                if (this.occupied[r][c] && this.grid[r][c] === null) n++;
+        return n;
     }
 
     /* 填空提示(v1.4.0 更名): 向随机空位填一个正确字母(每局 HINT_LIMIT 次) */

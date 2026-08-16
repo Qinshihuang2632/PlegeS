@@ -16,6 +16,7 @@ import { MEANING_HINT_LIMIT, HINT_LIMIT, meaningOf, WsGame, type WsMode } from "
 import { fmtTime } from "@/game/core";
 import { detectPlatform } from "@/game/platform";
 import { WS_VERSION } from "./version";
+import { WsRules } from "./WsRules";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
 
@@ -39,6 +40,7 @@ export function WsPage() {
     const [curMode, setCurMode] = useState<WsMode>("easy");
     const [name, setName] = useState(readName());
     const [elapsed, setElapsed] = useState(0);
+    const [rulesOpen, setRulesOpen] = useState(false);
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
     const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -46,7 +48,7 @@ export function WsPage() {
         if (tipTimerRef.current) clearTimeout(tipTimerRef.current);
         setMeaningTip(null);
     };
-    const [result, setResult] = useState<{ win: boolean; hp: number; time: number; surpassed: number | null } | null>(null);
+    const [result, setResult] = useState<{ win: boolean; hp: number; time: number; surpassed: number | null; failed: boolean; failMsg?: string } | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const refresh = () => setGame(g => Object.assign(Object.create(Object.getPrototypeOf(g)), g));
@@ -74,24 +76,41 @@ export function WsPage() {
         if (timerRef.current) clearInterval(timerRef.current);
         const time = Math.floor((Date.now() - game.startAt) / 1000);
         setElapsed(time);
-        setResult({ win: game.win, hp: game.hp, time, surpassed: null });
+        setResult({ win: game.win, hp: game.hp, time, surpassed: null, failed: false });
         const n = name.trim();
         if (n) {
-            fetch("/ws/api/rank", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    mode: game.mode, name: n, hp: game.hp, time,
-                    tools: (HINT_LIMIT - game.hints) + (MEANING_HINT_LIMIT - game.meaningHints),
-                    clears: game.fills, version: WS_VERSION,
-                    platform: detectPlatform(),
-                }),
-            }).then(r => r.json()).then(d => {
-                setResult(prev => prev && { ...prev, surpassed: typeof d.surpassed === "number" ? d.surpassed : null });
-            }).catch(() => { /* 提交失败忽略 */ });
+            void submitScore(game, time);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game.gameOver]);
+
+    /* 提交成绩(独立函数, 结算窗「重试提交」复用) */
+    const submitScore = async (g: WsGame, time: number) => {
+        const nm = name.trim();
+        if (!nm) return;
+        try {
+            const res = await fetch("/ws/api/rank", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mode: g.mode, name: nm, hp: g.hp, time,
+                    tools: g.hints + g.meaningHints,   // 使用次数(与化了个学一致, 用得少排名靠前)
+                    clears: g.fills, version: WS_VERSION,
+                    platform: detectPlatform(),
+                }),
+            });
+            const d = await res.json().catch(() => null);
+            // 非 2xx(限频 429 / 校验 400 等)也是失败: 显示后端原因, 便于重试
+            setResult(prev => prev && {
+                ...prev,
+                surpassed: res.ok && typeof d?.surpassed === "number" ? d.surpassed : null,
+                failed: !res.ok,
+                failMsg: !res.ok ? (d?.msg ?? `提交失败(HTTP ${res.status})`) : undefined,
+            });
+        } catch {
+            setResult(prev => prev && { ...prev, failed: true, failMsg: "网络异常,请检查网络后重试" });
+        }
+    };
 
     const onCell = (r: number, c: number) => {
         if (game.gameOver || game.win || !game.occupied[r][c] || game.puzzle[r][c] !== null) return;
@@ -228,7 +247,7 @@ export function WsPage() {
                 <div className="w-16" aria-hidden />
             </header>
 
-            {/* 难度 + 昵称 */}
+            {/* 难度 + 玩法 + 昵称(玩法入口在改名栏左侧) */}
             <div className="mb-2 flex items-center gap-2">
                 <div className="flex flex-1 justify-center gap-1 rounded-full bg-muted p-1">
                     {MODE_TABS.map(({ mode, label }) => (
@@ -239,12 +258,15 @@ export function WsPage() {
                         </button>
                     ))}
                 </div>
+                <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)} className="shrink-0">
+                    玩法
+                </Button>
                 <input
                     value={name}
                     maxLength={10}
                     placeholder="昵称"
                     onChange={(e) => { setName(e.target.value); storeName(e.target.value); }}
-                    className="w-24 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
+                    className="w-24 shrink-0 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
                 />
             </div>
 
@@ -274,7 +296,7 @@ export function WsPage() {
                                 return (
                                     <div
                                         key={`${r}-${c}`}
-                                        className="h-12 w-12 rounded-lg bg-muted/30 sm:h-14 sm:w-14"
+                                        className="aspect-square w-full rounded-lg bg-muted/30"
                                         aria-hidden
                                     />
                                 );
@@ -299,7 +321,7 @@ export function WsPage() {
                                     key={`${r}-${c}`}
                                     onClick={() => onCell(r, c)}
                                     className={cn(
-                                        "flex aspect-square w-full items-center justify-center rounded-lg border text-base font-bold uppercase transition sm:text-lg",
+                                        "flex aspect-square w-full items-center justify-center rounded-lg border text-base font-bold transition sm:text-lg",
                                         isFixed
                                             ? "border-transparent bg-muted text-muted-foreground"
                                             : isDone
@@ -350,7 +372,7 @@ export function WsPage() {
             <div className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-1">
                 {LETTERS.map(ch => (
                     <button key={ch} onClick={() => typeChar(ch)}
-                        className="h-9 min-w-8 rounded-md border bg-card px-1.5 text-sm font-semibold uppercase shadow-sm transition hover:bg-muted">
+                        className="h-9 min-w-8 rounded-md border bg-card px-1.5 text-sm font-semibold shadow-sm transition hover:bg-muted">
                         {ch}
                     </button>
                 ))}
@@ -378,8 +400,14 @@ export function WsPage() {
                         </DialogHeader>
                         <div className="rounded-xl bg-muted p-3 text-center text-sm leading-relaxed">
                             <p>用时 {fmtTime(result.time)} · 剩余血量 {result.hp} · 填写 {game.fills} 字母</p>
-                            {result.surpassed !== null && (
-                                <p className="mt-1.5 font-semibold text-primary">超越 {result.surpassed} 名玩家</p>
+                            {result.failed ? (
+                                <p className="mt-1.5 text-xs text-destructive">
+                                    成绩提交失败: {result.failMsg ?? "未知原因"}。点下方「重试提交」再试一次
+                                </p>
+                            ) : (
+                                result.surpassed !== null && (
+                                    <p className="mt-1.5 font-semibold text-primary">超越 {result.surpassed} 名玩家</p>
+                                )
                             )}
                             {!name.trim() && <p className="mt-1.5 text-xs text-destructive">未填写昵称,成绩未上榜</p>}
                         </div>
@@ -394,7 +422,7 @@ export function WsPage() {
                                             <div
                                                 key={`${r}-${c}`}
                                                 className={cn(
-                                                    "flex h-8 w-8 items-center justify-center rounded text-base font-bold uppercase sm:h-9 sm:w-9",
+                                                    "flex h-8 w-8 items-center justify-center rounded text-base font-bold sm:h-9 sm:w-9",
                                                     occ ? "bg-success/15 text-success" : "bg-muted/50",
                                                 )}
                                             >
@@ -412,7 +440,7 @@ export function WsPage() {
                             <ul className="space-y-2">
                                 {game.words.map((w, i) => (
                                     <li key={i} className="rounded-lg bg-muted/40 px-3 py-2">
-                                        <p className="font-bold uppercase">{w.word} <span className="font-normal normal-case text-muted-foreground">{w.dir === "h" ? "横" : "竖"}</span></p>
+                                        <p className="font-bold">{w.word} <span className="font-normal normal-case text-muted-foreground">{w.dir === "h" ? "横" : "竖"}</span></p>
                                         {(meaningOf(w.word) ?? []).map((m, j) => (
                                             <p key={j} className="text-xs leading-relaxed text-muted-foreground">
                                                 <span className="font-semibold text-foreground">{m.pos}</span> {m.zh}
@@ -426,14 +454,28 @@ export function WsPage() {
                         <div className="flex justify-between gap-2">
                             <Button variant="ghost" onClick={() => { setResult(null); }}>关闭</Button>
                             <div className="flex gap-2">
+                                {result.failed && (
+                                    <Button variant="secondary" onClick={() => void submitScore(game, result.time)}>重试提交</Button>
+                                )}
                                 <Button asChild variant="outline" onClick={() => setResult(null)}>
-                                    <Link to="/hlgx/rank">查看排行榜</Link>
+                                    <Link to="/hlgx/rank?game=ws">查看排行榜</Link>
                                 </Button>
                                 <Button onClick={() => newGame(curMode)}>再来一局</Button>
                             </div>
                         </div>
                     </DialogContent>
                 )}
+            </Dialog>
+
+            {/* 玩法介绍(局内随时可回看) */}
+            <Dialog open={rulesOpen} onOpenChange={setRulesOpen}>
+                <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>玩法介绍</DialogTitle>
+                        <DialogDescription>三分钟看懂怎么玩,新手不迷路</DialogDescription>
+                    </DialogHeader>
+                    <WsRules />
+                </DialogContent>
             </Dialog>
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">p了个s · 英了个语 · {WS_VERSION}</footer>
