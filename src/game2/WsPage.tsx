@@ -478,7 +478,7 @@ export function WsPage() {
                 </DialogContent>
             </Dialog>
 
-            <footer className="mt-8 text-center text-xs text-muted-foreground">p了个s · 英了个语 · {WS_VERSION}</footer>
+            <footer className="mt-8 text-center text-xs text-muted-foreground">英了个语 · {WS_VERSION}(仅供个人娱乐)</footer>
         </div>
     );
 }

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { fmtTime } from "./core";
 import { detectPlatform, PLATFORM_LABEL, type Platform } from "./platform";
 import { APP_VERSION } from "@/version";
+import { WS_VERSION } from "@/game2/version";
 
 interface RankEntry {
     name: string;
@@ -210,7 +211,9 @@ export function RankPage() {
                 </>
             )}
 
-            <footer className="mt-8 text-center text-xs text-muted-foreground">化了个学 · {APP_VERSION}(仅供个人娱乐)</footer>
+            <footer className="mt-8 text-center text-xs text-muted-foreground">
+                {game === "ws" ? `英了个语 · ${WS_VERSION}(仅供个人娱乐)` : `化了个学 · ${APP_VERSION}(仅供个人娱乐)`}
+            </footer>
         </div>
     );
 }

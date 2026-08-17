@@ -4,4 +4,4 @@
  * 第二款游戏「英了个语」自 v1.0.0 独立演进, 不继承「化了个学」的版本号。
  * 界面版本号必须跟随发布更新。
  */
-export const WS_VERSION = "v1.4.6";
+export const WS_VERSION = "v1.4.7";

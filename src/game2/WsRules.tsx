@@ -2,6 +2,7 @@
  * 英了个语 · 玩法介绍(人性化文案)
  * 大厅「玩法介绍」弹窗与局内「玩法」入口共用同一份内容, 保证文案一致
  */
+import { WS_VERSION } from "./version";
 
 export const WS_RULE_SECTIONS = [
     {
@@ -73,6 +74,8 @@ export function WsRules({ compact = false }: { compact?: boolean }) {
                     </ul>
                 </section>
             ))}
+            {/* 玩法介绍也显示对应游戏版本号(约定: 任意游戏任意界面下方都显示该游戏版本) */}
+            <p className="pt-2 text-center text-[11px] text-muted-foreground">英了个语 · {WS_VERSION}(仅供个人娱乐)</p>
         </div>
     );
 }
