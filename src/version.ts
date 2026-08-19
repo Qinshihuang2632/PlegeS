@@ -7,4 +7,4 @@
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
 export const APP_VERSION = "v2.3.8";       // 化了个学(玩法介绍弹窗显示版本号)
-export const PLATFORM_VERSION = "v2.5.1";  // 平台 p了个s(特别鸣谢按游戏+版本重写)
+export const PLATFORM_VERSION = "v2.5.2";  // 平台 p了个s(管理后台三游戏独立榜单)

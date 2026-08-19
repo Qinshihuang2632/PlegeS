@@ -325,9 +325,9 @@ check("单条删除 索引越界 → 404", r.status === 404, JSON.stringify(r.da
 
 // 清空单难度 + 清空全部 + 审计
 r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy", "DELETE"));
-check("清空 easy → 200", r.status === 200 && r.data.msg === "已清空 easy 榜单", JSON.stringify(r.data));
+check("清空 easy → 200", r.status === 200 && r.data.msg === "已清空 化了个学 easy 榜单", JSON.stringify(r.data));
 r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=all", "DELETE"));
-check("清空全部 → 200", r.status === 200 && r.data.msg === "已清空全部榜单", JSON.stringify(r.data));
+check("清空全部 → 200", r.status === 200 && r.data.msg === "已清空 化了个学 全部榜单", JSON.stringify(r.data));
 r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=challenge"));
 check("清空全部后 challenge 为空", r.data.total === 0, JSON.stringify(r.data));
 
@@ -360,6 +360,40 @@ r = await call(adminSessions.onRequestDelete, adminReq("/admin/api/sessions?id="
 check("强制下线 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=" + sid2 }));
 check("下线后会话失效 → 401", r.status === 401, JSON.stringify(r.data));
+
+/* ---------- 12.5 管理端三游戏独立榜单 ---------- */
+reset();
+// 三个游戏各提交一条(用户 API)
+const wsRank = await import(BASE + "functions/ws/api/rank.js");
+const clgzRank = await import(BASE + "functions/clgz/api/rank.js");
+const postWs = (body, headers = {}) => call(wsRank.onRequestPost, { request: mockReq("http://x/ws/api/rank", body, headers), env });
+const postClgz = (body, headers = {}) => call(clgzRank.onRequestPost, { request: mockReq("http://x/clgz/api/rank", body, headers), env });
+await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "甲", hp: 3, time: 30, tools: 0, clears: 10, platform: "desktop" }), env });
+await postWs({ mode: "easy", name: "乙", hp: 3, time: 40, tools: 0, clears: 8, platform: "desktop" });
+await postClgz({ mode: "all", name: "丙", score: 7, time: 50, platform: "desktop" });
+// 管理端登录
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "mg-ip-3g" }), env });
+const sid3g = (r.headers.get("set-cookie") || "").match(/hlgx_admin=([^;]+)/)[1];
+const adminReq3g = (path, method = "GET", headers = {}) => ({ request: mockReq("http://x" + path, null, { cookie: "hlgx_admin=" + sid3g, ...headers }), env });
+// 三游戏各自可见自己的榜单(互不串)
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
+check("管理端 hlgx 榜单仅含化了个学记录", r.status === 200 && r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=ws&mode=easy"));
+check("管理端 ws 榜单仅含英了个语记录", r.status === 200 && r.data.rank.length === 1 && r.data.rank[0].name === "乙", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=clgz&mode=all"));
+check("管理端 clgz 榜单仅含错了个字记录(含得分)", r.status === 200 && r.data.rank.length === 1 && r.data.rank[0].name === "丙" && r.data.rank[0].score === 7, JSON.stringify(r.data));
+// 独立删除: 删 ws 的不影响 hlgx / clgz
+r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=ws&mode=easy&key=0", "DELETE"));
+check("管理端 删除 ws 单条 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
+check("删除 ws 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=clgz&mode=all"));
+check("删除 ws 后 clgz 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "丙", JSON.stringify(r.data));
+// 独立清空: 清空 clgz 全部不影响 hlgx
+r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=clgz&mode=all", "DELETE"));
+check("管理端 清空 clgz 全部 → 200", r.status === 200 && r.data.msg === "已清空 错了个字 全部榜单", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
+check("清空 clgz 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
 
 /* ---------- 13. 审计环形上限 500 ---------- */
 reset();

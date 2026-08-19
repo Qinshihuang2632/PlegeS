@@ -1,24 +1,24 @@
 /*
- * 化了个学 · 管理后台数据看板
- * 各难度条目数 / 总条目 / 活跃会话 / 最近审计事件
+ * p了个s · 管理后台数据看板
+ * 三款游戏榜单条目统计 / 总条目 / 活跃会话 / 最近审计事件
  */
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "../AuthContext";
-import { apiLogs, apiRanks, apiSessions } from "../api";
+import { apiLogs, apiRanks } from "../api";
 import { actionLabel, fmtTs, type AuditEntry } from "../types";
 
-const MODES = [
-    { mode: "easy", label: "简单" },
-    { mode: "normal", label: "标准" },
-    { mode: "challenge", label: "挑战" },
-];
+/** 三款游戏及其难度(用于看板统计) */
+const GAME_STATS = [
+    { game: "hlgx", label: "化了个学", modes: ["easy", "normal", "challenge", "extreme"] },
+    { game: "ws", label: "英了个语", modes: ["easy", "normal", "hard"] },
+    { game: "clgz", label: "错了个字", modes: ["all"] },
+] as const;
 
 export function DashboardPage() {
     const { me } = useAuth();
     const [counts, setCounts] = useState<Record<string, number>>({});
-    const [sessionCount, setSessionCount] = useState<number | null>(null);
     const [recent, setRecent] = useState<AuditEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,24 +26,28 @@ export function DashboardPage() {
         let alive = true;
         (async () => {
             setLoading(true);
-            const [a, b, c, sessions, logs] = await Promise.all([
-                apiRanks("easy"), apiRanks("normal"), apiRanks("challenge"),
-                apiSessions(), apiLogs({ limit: 5 }),
-            ]);
+            const calls = GAME_STATS.flatMap((g) => g.modes.map((m) => apiRanks(g.game, m)));
+            const results = await Promise.all([...calls, apiLogs({ limit: 5 })]);
             if (!alive) return;
-            setCounts({
-                easy: a?.total ?? 0,
-                normal: b?.total ?? 0,
-                challenge: c?.total ?? 0,
-            });
-            setSessionCount(sessions.length);
+            const rankResults = results.slice(0, calls.length) as ({ total?: number } | null)[];
+            const logs = results[calls.length] as { entries?: AuditEntry[] } | null;
+            const c: Record<string, number> = {};
+            let i = 0;
+            for (const g of GAME_STATS) {
+                for (const m of g.modes) {
+                    c[`${g.game}:${m}`] = rankResults[i]?.total ?? 0;
+                    i++;
+                }
+            }
+            setCounts(c);
             setRecent(logs?.entries ?? []);
             setLoading(false);
         })();
         return () => { alive = false; };
     }, []);
 
-    const total = (counts.easy ?? 0) + (counts.normal ?? 0) + (counts.challenge ?? 0);
+    const total = GAME_STATS.reduce(
+        (sum, g) => sum + g.modes.reduce((s, m) => s + (counts[`${g.game}:${m}`] ?? 0), 0), 0);
 
     return (
         <div className="mx-auto max-w-4xl space-y-6">
@@ -54,34 +58,23 @@ export function DashboardPage() {
                 </p>
             </header>
 
-            {/* 统计卡片 */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {MODES.map(({ mode, label }) => (
-                    <Card key={mode}>
+            {/* 三游戏统计卡片 */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {GAME_STATS.map((g) => (
+                    <Card key={g.game}>
                         <CardHeader className="pb-1">
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                {label}榜单
-                            </CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">{g.label}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {loading ? <Skeleton className="h-8 w-12" /> : (
-                                <p className="text-3xl font-extrabold tabular-nums">{counts[mode] ?? 0}</p>
+                                <p className="text-3xl font-extrabold tabular-nums">
+                                    {g.modes.reduce((s, m) => s + (counts[`${g.game}:${m}`] ?? 0), 0)}
+                                </p>
                             )}
-                            <p className="text-xs text-muted-foreground">条记录</p>
+                            <p className="text-xs text-muted-foreground">条记录({g.modes.map((m) => m).join("/")})</p>
                         </CardContent>
                     </Card>
                 ))}
-                <Card>
-                    <CardHeader className="pb-1">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">活跃会话</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? <Skeleton className="h-8 w-12" /> : (
-                            <p className="text-3xl font-extrabold tabular-nums">{sessionCount}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground">在线管理员</p>
-                    </CardContent>
-                </Card>
             </div>
 
             {/* 汇总条 */}
@@ -92,7 +85,7 @@ export function DashboardPage() {
                         <p className="text-xs text-muted-foreground">全部榜单累计记录</p>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
-                        <p>🎮 游戏: 化了个学(消除玩法)</p>
+                        <p>🎮 游戏: 化了个学 / 英了个语 / 错了个字</p>
                         <p>🕑 管理会话有效期: 24 小时</p>
                         <p>🗂 审计日志上限: 500 条(自动滚动)</p>
                     </div>

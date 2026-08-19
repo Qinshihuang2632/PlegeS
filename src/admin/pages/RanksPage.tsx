@@ -1,6 +1,7 @@
 /*
- * 化了个学 · 管理后台榜单管理
- * 难度切换 / 昵称搜索 / 单条删除 / 清空当前难度 / 清空全部(均需确认弹窗, ✕ 可关)
+ * p了个s · 管理后台榜单管理
+ * 游戏切换(化了个学/英了个语/错了个字, 各自独立)/ 难度切换 / 昵称搜索 /
+ * 单条删除 / 清空当前难度 / 清空该游戏全部(均需确认弹窗, ✕ 可关)
  */
 import { useCallback, useEffect, useState } from "react";
 import { Search, Trash2 } from "lucide-react";
@@ -13,12 +14,24 @@ import { apiClearRank, apiDeleteRankEntry, apiRanks } from "../api";
 import { ConfirmDialog } from "../ConfirmDialog";
 import type { RankEntry } from "../types";
 import { fmtTime } from "@/game/core";
-const MODES = [
-    { mode: "easy", label: "简单" },
-    { mode: "normal", label: "标准" },
-    { mode: "challenge", label: "困难" },
-    { mode: "extreme", label: "挑战" },
-];
+
+const GAMES = [
+    { key: "hlgx", label: "化了个学", modes: [
+        { mode: "easy", label: "简单" },
+        { mode: "normal", label: "标准" },
+        { mode: "challenge", label: "困难" },
+        { mode: "extreme", label: "挑战" },
+    ] },
+    { key: "ws", label: "英了个语", modes: [
+        { mode: "easy", label: "简单" },
+        { mode: "normal", label: "标准" },
+        { mode: "hard", label: "困难" },
+    ] },
+    { key: "clgz", label: "错了个字", modes: [
+        { mode: "all", label: "综合" },
+    ] },
+] as const;
+type GameKey = (typeof GAMES)[number]["key"];
 
 type ConfirmState =
     | { type: "delete"; entry: RankEntry }
@@ -27,6 +40,8 @@ type ConfirmState =
     | null;
 
 export function RanksPage() {
+    const [curGame, setCurGame] = useState<GameKey>("hlgx");
+    const game = GAMES.find((g) => g.key === curGame)!;
     const [curMode, setCurMode] = useState("easy");
     const [q, setQ] = useState("");
     const [search, setSearch] = useState("");
@@ -34,13 +49,19 @@ export function RanksPage() {
     const [confirm, setConfirm] = useState<ConfirmState>(null);
     const [busy, setBusy] = useState(false);
 
-    const load = useCallback(async (mode: string, keyword: string) => {
+    const load = useCallback(async (g: string, mode: string, keyword: string) => {
         setEntries(null);
-        const data = await apiRanks(mode, keyword);
+        const data = await apiRanks(g, mode, keyword);
         setEntries(data?.rank ?? []);
     }, []);
 
-    useEffect(() => { void load(curMode, search); }, [curMode, search, load]);
+    useEffect(() => { void load(curGame, curMode, search); }, [curGame, curMode, search, load]);
+
+    const switchGame = (g: GameKey) => {
+        setCurGame(g);
+        setCurMode(GAMES.find((x) => x.key === g)!.modes[0].mode);
+        setSearch(""); setQ("");
+    };
 
     const doAction = async (fn: () => Promise<{ ok: boolean; msg?: string }>, okMsg?: string) => {
         setBusy(true);
@@ -48,7 +69,7 @@ export function RanksPage() {
             const r = await fn();
             if (r.ok) {
                 toast.success(okMsg ?? "操作成功");
-                void load(curMode, search);
+                void load(curGame, curMode, search);
             } else {
                 toast.error(r.msg ?? "操作失败");
             }
@@ -60,26 +81,44 @@ export function RanksPage() {
         }
     };
 
+    const isClgz = curGame === "clgz";
+
     return (
         <div className="mx-auto max-w-4xl space-y-4">
             <header className="flex flex-wrap items-end justify-between gap-2">
                 <div>
                     <h1 className="text-xl font-extrabold">榜单管理</h1>
-                    <p className="mt-0.5 text-sm text-muted-foreground">查看/搜索/删除记录,清榜操作全程留痕</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">三款游戏榜单独立管理:查看/搜索/删除记录,清榜操作全程留痕</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => setConfirm({ type: "clearMode" })}>
                         清空当前榜单
                     </Button>
                     <Button variant="destructive" size="sm" onClick={() => setConfirm({ type: "clearAll" })}>
-                        清空全部
+                        清空该游戏全部
                     </Button>
                 </div>
             </header>
 
+            {/* 游戏切换(三款游戏独立榜单) */}
+            <div className="flex justify-center gap-1 rounded-full bg-secondary/60 p-1 sm:justify-start sm:rounded-lg sm:bg-transparent sm:p-0">
+                {GAMES.map(({ key, label }) => (
+                    <button
+                        key={key}
+                        onClick={() => switchGame(key)}
+                        className={cn(
+                            "flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition sm:flex-none",
+                            curGame === key ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground",
+                        )}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+
             {/* 难度切换 */}
             <div className="flex justify-center gap-1 rounded-full bg-muted p-1 sm:justify-start sm:rounded-lg sm:bg-transparent sm:p-0">
-                {MODES.map(({ mode, label }) => (
+                {game.modes.map(({ mode, label }) => (
                     <button
                         key={mode}
                         onClick={() => { setCurMode(mode); setSearch(""); setQ(""); }}
@@ -130,10 +169,14 @@ export function RanksPage() {
                                     <th className="px-4 py-2.5 font-semibold">#</th>
                                     <th className="px-4 py-2.5 font-semibold">昵称</th>
                                     <th className="px-4 py-2.5 font-semibold">平台</th>
-                                    <th className="px-4 py-2.5 font-semibold">血量(消除组数)</th>
+                                    {isClgz ? (
+                                        <th className="px-4 py-2.5 font-semibold">得分</th>
+                                    ) : (
+                                        <th className="px-4 py-2.5 font-semibold">{curGame === "ws" ? "血量(填写字母)" : "血量(消除组数)"}</th>
+                                    )}
                                     <th className="px-4 py-2.5 font-semibold">用时</th>
                                     <th className="px-4 py-2.5 font-semibold">版本</th>
-                                    <th className="px-4 py-2.5 font-semibold">技能</th>
+                                    {!isClgz && <th className="px-4 py-2.5 font-semibold">技能</th>}
                                     <th className="px-4 py-2.5 font-semibold">上榜时间</th>
                                     <th className="px-4 py-2.5 text-right font-semibold">操作</th>
                                 </tr>
@@ -148,10 +191,14 @@ export function RanksPage() {
                                                 ? <span className="rounded-full bg-secondary px-2 py-0.5">手游</span>
                                                 : <span className="rounded-full bg-secondary px-2 py-0.5">端游</span>}
                                         </td>
-                                        <td className="px-4 py-2.5">❤ {e.hp}({e.clears !== undefined ? e.clears + "组" : "—"})</td>
+                                        <td className="px-4 py-2.5">
+                                            {isClgz
+                                                ? `${e.score ?? 0} 分`
+                                                : `❤ ${e.hp}(${curGame === "ws" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")})`}
+                                        </td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>
-                                        <td className="px-4 py-2.5">{e.tools}</td>
+                                        {!isClgz && <td className="px-4 py-2.5">{e.tools}</td>}
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.date}</td>
                                         <td className="px-4 py-2.5 text-right">
                                             <Button
@@ -181,25 +228,25 @@ export function RanksPage() {
                 onOpenChange={(v) => { if (!v) setConfirm(null); }}
                 title={
                     confirm?.type === "delete" ? "删除该记录?"
-                        : confirm?.type === "clearMode" ? `清空「${MODES.find((m) => m.mode === curMode)?.label}」榜单?`
-                        : "清空全部榜单?"
+                        : confirm?.type === "clearMode" ? `清空「${game.label} · ${game.modes.find((m) => m.mode === curMode)?.label}」榜单?`
+                        : `清空「${game.label}」全部榜单?`
                 }
                 description={
                     confirm?.type === "delete"
-                        ? `将删除 ${confirm.entry.name} 的记录(血量 ${confirm.entry.hp} / 用时 ${fmtTime(confirm.entry.time)}),此操作不可撤销`
+                        ? `将删除 ${confirm.entry.name} 的记录(${isClgz ? `得分 ${confirm.entry.score ?? 0}` : `血量 ${confirm.entry.hp}`} / 用时 ${fmtTime(confirm.entry.time)}),此操作不可撤销`
                         : confirm?.type === "clearMode"
                             ? "该难度的全部记录将被清空,此操作不可撤销"
-                            : "三个难度的全部记录将被清空,此操作不可撤销"
+                            : `该游戏(${game.label})的全部难度记录将被清空,此操作不可撤销`
                 }
                 confirmText={confirm?.type === "delete" ? "删除" : "清空"}
                 destructive
                 onConfirm={() => {
                     if (confirm?.type === "delete") {
-                        void doAction(() => apiDeleteRankEntry(curMode, confirm.entry.key), "记录已删除");
+                        void doAction(() => apiDeleteRankEntry(curGame, curMode, confirm.entry.key), "记录已删除");
                     } else if (confirm?.type === "clearMode") {
-                        void doAction(() => apiClearRank(curMode), "榜单已清空");
+                        void doAction(() => apiClearRank(curGame, curMode), "榜单已清空");
                     } else if (confirm?.type === "clearAll") {
-                        void doAction(() => apiClearRank("all"), "全部榜单已清空");
+                        void doAction(() => apiClearRank(curGame, "all"), "全部榜单已清空");
                     }
                 }}
             />

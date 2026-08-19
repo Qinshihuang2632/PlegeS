@@ -11,9 +11,11 @@ export interface RankEntry {
     date: string;
     key: number; // 管理用索引(存储数组下标)
     platform?: Platform; // 手游/端游; 旧条目无此字段 = 端游
+    score?: number; // v1.0.0: 错了个字得分(手写正确字数)
 }
 
 export interface RankList {
+    game: string;
     mode: string;
     total: number;
     rank: RankEntry[];

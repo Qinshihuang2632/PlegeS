@@ -29,18 +29,18 @@ export async function apiMe(): Promise<AdminMe | null> {
     return data.ok ? data : null;
 }
 
-export async function apiRanks(mode: string, q = ""): Promise<RankList | null> {
-    const res = await fetch(`/admin/api/rank?mode=${encodeURIComponent(mode)}&q=${encodeURIComponent(q)}`);
+export async function apiRanks(game: string, mode: string, q = ""): Promise<RankList | null> {
+    const res = await fetch(`/admin/api/rank?game=${encodeURIComponent(game)}&mode=${encodeURIComponent(mode)}&q=${encodeURIComponent(q)}`);
     return res.ok ? j<RankList>(res) : null;
 }
 
-export async function apiDeleteRankEntry(mode: string, key: number): Promise<{ ok: boolean; msg?: string }> {
-    const res = await fetch(`/admin/api/rank?mode=${encodeURIComponent(mode)}&key=${key}`, { method: "DELETE" });
+export async function apiDeleteRankEntry(game: string, mode: string, key: number): Promise<{ ok: boolean; msg?: string }> {
+    const res = await fetch(`/admin/api/rank?game=${encodeURIComponent(game)}&mode=${encodeURIComponent(mode)}&key=${key}`, { method: "DELETE" });
     return j<{ ok: boolean; msg?: string }>(res);
 }
 
-export async function apiClearRank(mode: string): Promise<{ ok: boolean; msg?: string }> {
-    const res = await fetch(`/admin/api/rank?mode=${encodeURIComponent(mode)}`, { method: "DELETE" });
+export async function apiClearRank(game: string, mode: string): Promise<{ ok: boolean; msg?: string }> {
+    const res = await fetch(`/admin/api/rank?game=${encodeURIComponent(game)}&mode=${encodeURIComponent(mode)}`, { method: "DELETE" });
     return j<{ ok: boolean; msg?: string }>(res);
 }
 
