@@ -5,6 +5,7 @@ import { HubPage } from "./game/HubPage";
 import { HuaPage } from "./game/HuaPage";
 import { RankPage } from "./game/RankPage";
 import { WsPage } from "./game2/WsPage";
+import { ClgxPage } from "./game3/ClgxPage";
 import { NotFoundPage } from "./game/NotFoundPage";
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
                 <Route path="/hlgx/hua" element={<HuaPage />} />
                 <Route path="/hlgx/rank" element={<RankPage />} />
                 <Route path="/ws" element={<WsPage />} />
+                <Route path="/clgx" element={<ClgxPage />} />
                 <Route path="/admin" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>

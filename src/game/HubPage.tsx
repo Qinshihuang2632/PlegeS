@@ -10,12 +10,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GameRules } from "./GameRules";
 import { WsRules } from "@/game2/WsRules";
+import { ClgxRules } from "@/game3/ClgxRules";
 import { PLATFORM_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
-    const [rulesTab, setRulesTab] = useState<"hlgx" | "ws">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 双子页
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ws" | "clgx">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 三子页
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
@@ -57,16 +58,20 @@ export function HubPage() {
                     </span>
                 </Link>
 
-                <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
-                    <div className="mb-3 text-4xl" aria-hidden>待</div>
-                    <h2 className="text-lg font-bold">敬请期待</h2>
+                {/* 错了个字(v1.0.0 可玩) */}
+                <Link
+                    to="/clgx"
+                    className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                    <div className="mb-3 text-4xl" aria-hidden>字</div>
+                    <h2 className="text-lg font-bold">错了个字</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        更多高考知识小游戏正在开发中……
+                        手写考察高中各科易写错的字(锥形瓶的锥、睾丸的睾……)。像你画我猜一样在画框里手写,不经过键盘。
                     </p>
-                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
-                        开发中
+                    <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+                        ● 可玩
                     </span>
-                </div>
+                </Link>
             </main>
 
             {/* 导航: 排行榜 + 玩法介绍 */}
@@ -101,6 +106,7 @@ export function HubPage() {
                         {([
                             { key: "hlgx", label: "化了个学" },
                             { key: "ws", label: "英了个语" },
+                            { key: "clgx", label: "错了个字" },
                         ] as const).map(({ key, label }) => (
                             <button
                                 key={key}
@@ -114,7 +120,7 @@ export function HubPage() {
                             </button>
                         ))}
                     </div>
-                    {rulesTab === "hlgx" ? <GameRules /> : <WsRules />}
+                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ws" ? <WsRules /> : <ClgxRules />}
                 </DialogContent>
             </Dialog>
 
