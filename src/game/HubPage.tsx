@@ -10,13 +10,13 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GameRules } from "./GameRules";
 import { WsRules } from "@/game2/WsRules";
-import { ClgxRules } from "@/game3/ClgxRules";
+import { ClgzRules } from "@/game3/ClgzRules";
 import { PLATFORM_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
-    const [rulesTab, setRulesTab] = useState<"hlgx" | "ws" | "clgx">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 三子页
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ws" | "clgz">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 三子页
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
@@ -60,7 +60,7 @@ export function HubPage() {
 
                 {/* 错了个字(v1.0.0 可玩) */}
                 <Link
-                    to="/clgx"
+                    to="/clgz"
                     className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                     <div className="mb-3 text-4xl" aria-hidden>字</div>
@@ -106,7 +106,7 @@ export function HubPage() {
                         {([
                             { key: "hlgx", label: "化了个学" },
                             { key: "ws", label: "英了个语" },
-                            { key: "clgx", label: "错了个字" },
+                            { key: "clgz", label: "错了个字" },
                         ] as const).map(({ key, label }) => (
                             <button
                                 key={key}
@@ -120,7 +120,7 @@ export function HubPage() {
                             </button>
                         ))}
                     </div>
-                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ws" ? <WsRules /> : <ClgxRules />}
+                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ws" ? <WsRules /> : <ClgzRules />}
                 </DialogContent>
             </Dialog>
 

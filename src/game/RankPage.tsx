@@ -12,7 +12,7 @@ import { fmtTime } from "./core";
 import { detectPlatform, PLATFORM_LABEL, type Platform } from "./platform";
 import { APP_VERSION } from "@/version";
 import { WS_VERSION } from "@/game2/version";
-import { CLGX_VERSION } from "@/game3/version";
+import { CLGZ_VERSION } from "@/game3/version";
 
 interface RankEntry {
     name: string;
@@ -42,11 +42,11 @@ const WS_MODES = [
 const GAMES = [
     { key: "hlgx", label: "化了个学" },
     { key: "ws", label: "英了个语" },
-    { key: "clgx", label: "错了个字" },
+    { key: "clgz", label: "错了个字" },
 ] as const;
 type GameKey = (typeof GAMES)[number]["key"];
 
-const CLGX_MODES = [
+const CLGZ_MODES = [
     { mode: "all", label: "综合" },
 ] as const;
 
@@ -54,10 +54,10 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function RankPage() {
     const [searchParams] = useSearchParams();
-    // v2.4.2+: 支持 ?game=ws|hlgx|clgx 直达对应游戏榜单(英了个语/错了个字结算页「查看排行榜」直达)
+    // v2.4.2+: 支持 ?game=ws|hlgx|clgz 直达对应游戏榜单(英了个语/错了个字结算页「查看排行榜」直达)
     const [game, setGame] = useState<GameKey>(() => {
         const g = searchParams.get("game");
-        return g === "ws" || g === "clgx" ? g : "hlgx";
+        return g === "ws" || g === "clgz" ? g : "hlgx";
     });
     const [curMode, setCurMode] = useState<string>("normal");
     const [curPlatform, setCurPlatform] = useState<Platform>(() => detectPlatform());
@@ -69,7 +69,7 @@ export function RankPage() {
         let cancelled = false;
         setEntries(null);
         setError(false);
-        const api = game === "ws" ? "/ws/api/rank" : game === "clgx" ? "/clgx/api/rank" : "/hlgx/api/rank";
+        const api = game === "ws" ? "/ws/api/rank" : game === "clgz" ? "/clgz/api/rank" : "/hlgx/api/rank";
         fetch(`${api}?mode=${curMode}&platform=${curPlatform}`)
             .then((res) => res.json())
             .then((data: { rank?: RankEntry[] }) => {
@@ -81,12 +81,12 @@ export function RankPage() {
 
     const switchGame = (g: GameKey) => {
         setGame(g);
-        setCurMode(g === "ws" ? "normal" : g === "clgx" ? "all" : "normal");
+        setCurMode(g === "ws" ? "normal" : g === "clgz" ? "all" : "normal");
     };
 
     const rule = game === "ws"
         ? "剩余血量多 → 填写字母数多 → 用时短 → 技能使用次数少(失败记录也会上榜);榜单按平台分开,成绩只与本平台比较;「版本」列为英了个语独立版本"
-        : game === "clgx"
+        : game === "clgz"
             ? "得分多 → 用时短(同分用时短者靠前);榜单按平台分开,成绩只与本平台比较;「版本」列为错了个字独立版本"
             : "剩余血量多 → 成功消除组数多 → 用时短 → 技能使用次数少(失败记录也会上榜,0 心玩家中消除组数多者排前);榜单按平台分开,成绩只与本平台比较;「版本」列对应当局游戏版本,不同版本难度有别,便于横向比较";
 
@@ -118,7 +118,7 @@ export function RankPage() {
 
             {/* 难度切换 */}
             <div className="mb-2 flex justify-center gap-1 rounded-full bg-muted p-1">
-                {(game === "ws" ? WS_MODES : game === "clgx" ? CLGX_MODES : MODES).map(({ mode, label }) => (
+                {(game === "ws" ? WS_MODES : game === "clgz" ? CLGZ_MODES : MODES).map(({ mode, label }) => (
                     <button
                         key={mode}
                         onClick={() => setCurMode(mode)}
@@ -182,14 +182,14 @@ export function RankPage() {
                                 <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
                                     <th className="px-4 py-2.5 font-semibold">#</th>
                                     <th className="px-4 py-2.5 font-semibold">昵称</th>
-                                    {game === "clgx" ? (
+                                    {game === "clgz" ? (
                                         <th className="px-4 py-2.5 font-semibold">得分</th>
                                     ) : (
                                         <th className="px-4 py-2.5 font-semibold">{game === "ws" ? "血量(填写)" : "血量(消除组数)"}</th>
                                     )}
                                     <th className="px-4 py-2.5 font-semibold">用时</th>
                                     <th className="px-4 py-2.5 font-semibold">版本</th>
-                                    {game !== "clgx" && <th className="px-4 py-2.5 font-semibold">技能</th>}
+                                    {game !== "clgz" && <th className="px-4 py-2.5 font-semibold">技能</th>}
                                     <th className="px-4 py-2.5 font-semibold">上榜时间</th>
                                 </tr>
                             </thead>
@@ -199,13 +199,13 @@ export function RankPage() {
                                         <td className="px-4 py-2.5">{MEDALS[i] ?? i + 1}</td>
                                         <td className="px-4 py-2.5 font-semibold">{e.name}</td>
                                         <td className="px-4 py-2.5">
-                                            {game === "clgx"
+                                            {game === "clgz"
                                                 ? `${e.score ?? 0} 分`
                                                 : `❤ ${e.hp}(${game === "ws" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")})`}
                                         </td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>
-                                        {game !== "clgx" && <td className="px-4 py-2.5">{e.tools}</td>}
+                                        {game !== "clgz" && <td className="px-4 py-2.5">{e.tools}</td>}
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.date}</td>
                                     </tr>
                                 ))}
@@ -223,13 +223,13 @@ export function RankPage() {
                                     <p className="text-xs text-muted-foreground">{e.date}</p>
                                 </div>
                                 <div className="text-right text-xs leading-relaxed">
-                                    {game === "clgx" ? (
+                                    {game === "clgz" ? (
                                         <p className="font-semibold">{e.score ?? 0} 分 · ⏱ {fmtTime(e.time)}</p>
                                     ) : (
                                         <p>❤ {e.hp}({game === "ws" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")}) · ⏱ {fmtTime(e.time)}</p>
                                     )}
                                     <p className="text-muted-foreground">
-                                        {game !== "clgx" && <>技能使用次数 {e.tools} · </>}版本 {e.version || "旧版"}
+                                        {game !== "clgz" && <>技能使用次数 {e.tools} · </>}版本 {e.version || "旧版"}
                                     </p>
                                 </div>
                             </div>
@@ -239,7 +239,7 @@ export function RankPage() {
             )}
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">
-                {game === "ws" ? `英了个语 · ${WS_VERSION}(仅供个人娱乐)` : game === "clgx" ? `错了个字 · ${CLGX_VERSION}(仅供个人娱乐)` : `化了个学 · ${APP_VERSION}(仅供个人娱乐)`}
+                {game === "ws" ? `英了个语 · ${WS_VERSION}(仅供个人娱乐)` : game === "clgz" ? `错了个字 · ${CLGZ_VERSION}(仅供个人娱乐)` : `化了个学 · ${APP_VERSION}(仅供个人娱乐)`}
             </footer>
         </div>
     );

@@ -4,4 +4,4 @@
  * 第三款游戏「错了个字」自 v1.0.0 独立演进, 不继承其他游戏/平台版本号。
  * 界面版本号必须跟随发布更新。
  */
-export const CLGX_VERSION = "v1.0.0";
+export const CLGZ_VERSION = "v1.0.2";

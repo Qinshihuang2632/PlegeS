@@ -2,22 +2,22 @@
  * 错了个字 · 字库(科目分组)
  * ========================
  * 每字: { ch: 目标字, word: 提示词(考察语境), note?: 易错点 }
- * 来源: docs/clgx_characters.md(待审查清单, 2026-08-19)
+ * 来源: docs/clgz_characters.md(待审查清单, 2026-08-19)
  * 科目可在局内多选。
  */
-export interface ClgxChar {
+export interface ClgzChar {
     ch: string;
     word: string;
 }
 
-export interface ClgxSubject {
+export interface ClgzSubject {
     key: string;
     label: string;
     desc: string;
-    chars: ClgxChar[];
+    chars: ClgzChar[];
 }
 
-export const CLGX_SUBJECTS: ClgxSubject[] = [
+export const CLGZ_SUBJECTS: ClgzSubject[] = [
     {
         key: "chem",
         label: "化学",
@@ -121,7 +121,7 @@ export const CLGX_SUBJECTS: ClgxSubject[] = [
 ];
 
 /** 局内选择科目(多选) */
-export function charsOfSubjects(keys: string[]): ClgxChar[] {
+export function charsOfSubjects(keys: string[]): ClgzChar[] {
     const set = new Set(keys);
-    return CLGX_SUBJECTS.filter((s) => set.has(s.key)).flatMap((s) => s.chars);
+    return CLGZ_SUBJECTS.filter((s) => set.has(s.key)).flatMap((s) => s.chars);
 }

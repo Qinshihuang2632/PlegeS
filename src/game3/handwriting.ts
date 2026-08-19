@@ -1,18 +1,19 @@
 /*
- * 错了个字 · 手写识别核心(无键盘, 类似「你画我猜」画框)
- * =====================================================
- * 思路: 玩家在画框内手写目标字 → 系统把该字的「标准字形」渲染到同一
- * 画布网格 → 计算玩家墨迹与标准字形的像素重叠度。
- * 判定原则: 写对了且写在框内(与标准字形重叠度高)才得分,
- *           写字潦草 / 写错字 / 笔画乱飞 → 重叠度低 → 不得分。
+ * 错了个字 · 手写识别核心(手写输入法式, 仅核对字形)
+ * =================================================
+ * 与 v1.0.0 的差异: 不再用「SVG 字形渲染 + 像素重叠」比对(正确书写
+ * 覆盖率仅 ~0.2, 因为手写笔画粗细/位置与印刷字形差异大)。
  *
- * 判定公式:
- *   cover  = 玩家墨迹覆盖标准字形像素的比例(越高越「写到该字上」)
- *   stray  = 玩家墨迹落在标准字形之外的像素比例(越高越「乱画」)
- *   得分  = cover - 0.5 * stray   (写对+不潦草 → 接近 1; 乱画 → 负值)
- *   判过  = cover >= 0.45 && stray <= 0.5   (可调阈值)
+ * 新方案(模仿手写输入法):
+ *   1. 归一化 —— 取墨迹包围盒, 缩放平移填满标准网格(玩家写大/写小/
+ *      写偏都容忍, 与输入法自动缩放一致);
+ *   2. 形态学膨胀 —— 墨迹与标准字形都膨胀 r 像素, 抹平笔画粗细、
+ *      连笔/断笔差异(输入法同样对距离做容差);
+ *   3. 仅字形覆盖判定 —— 墨迹覆盖标准字形比例(cover)与墨迹落在
+ *      字形外比例(stray), 不比较笔画数/方向/SVG 路径。
  *
- * 本模块只做像素计算, 与 React/Canvas 解耦, 便于单测。
+ * 判定: 写对且写规范 → cover 高 & stray 低 → 得分;
+ *       潦草/乱画 → stray 高; 写错字/漏笔画 → cover 低。
  */
 
 export interface Stroke {
@@ -20,15 +21,14 @@ export interface Stroke {
 }
 
 export interface MatchResult {
-    cover: number;    // 墨迹覆盖标准字形比例 0~1
+    cover: number;    // 墨迹覆盖标准字形像素比例 0~1
     stray: number;    // 墨迹落在字形外比例 0~1
     score: number;    // cover - 0.5*stray
     pass: boolean;
-    /** 判定失败原因(用于提示玩家) */
     reason: "ok" | "too_faint" | "too_messy" | "wrong_char" | "empty";
 }
 
-/** 判定阈值(常量, 便于调整) */
+/** 判定阈值(常量, 便于按实测调整) */
 export const THRESHOLDS = {
     /** 标准字形像素的最小墨迹覆盖率: 低于此 = 没写到该字(写错/漏笔画) */
     minCover: 0.45,
@@ -36,13 +36,79 @@ export const THRESHOLDS = {
     maxStray: 0.5,
 } as const;
 
+/** 归一化网格边长(识别精度与性能平衡) */
+export const GRID = 56;
+/** 墨迹膨胀半径(像素): 抹平笔画粗细差异 */
+export const DILATE_R = 2;
+/** 模板膨胀半径(像素): 与墨迹对称容差 —— 模板不膨胀时手写粗笔画
+ *  边缘会大量落在细印刷字形外导致 stray 超标(实测写「焰」cover 0.96
+ *  却因 stray 不通过), 模板膨胀 3 使模板笔画宽度接近手写粗笔画,
+ *  判定退化为纯字形结构比对。 */
+export const TEMPLATE_DILATE_R = 3;
+
 /**
- * 把「标准字形」渲染到像素网格(由调用方用 Canvas fillText 生成字形后传入)。
- * 此处输入: 字形位图 data(0/1) 与 墨迹位图 ink(0/1), 尺寸需一致。
+ * 形态学膨胀: 每个墨迹像素向外扩展 r 像素。
+ * 作用: 手写笔画粗/细、连笔/断笔差异在此被抹平, 只保留字形骨架区域。
+ */
+export function dilate(bitmap: Uint8Array, size: number, r = DILATE_R): Uint8Array {
+    const out = new Uint8Array(size * size);
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            if (!bitmap[y * size + x]) continue;
+            const x0 = Math.max(0, x - r), x1 = Math.min(size - 1, x + r);
+            const y0 = Math.max(0, y - r), y1 = Math.min(size - 1, y + r);
+            for (let yy = y0; yy <= y1; yy++)
+                for (let xx = x0; xx <= x1; xx++) out[yy * size + xx] = 1;
+        }
+    }
+    return out;
+}
+
+/**
+ * 归一化: 把 srcSize 位图中的墨迹(包围盒)缩放平移填满 gridSize 网格。
+ * 无墨迹时返回空图。这一步让「写小/写偏」不再影响判定。
+ */
+export function normalizeBitmap(
+    bitmap: Uint8Array,
+    srcSize: number,
+    gridSize = GRID,
+): Uint8Array {
+    let minX = srcSize, minY = srcSize, maxX = -1, maxY = -1;
+    for (let y = 0; y < srcSize; y++) {
+        for (let x = 0; x < srcSize; x++) {
+            if (bitmap[y * srcSize + x]) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+    }
+    if (maxX < 0) return new Uint8Array(gridSize * gridSize);
+    const bw = maxX - minX + 1, bh = maxY - minY + 1;
+    // 等比缩放(取宽高比更宽松的), 留 8% 边距避免顶格
+    const scale = (gridSize * 0.84) / Math.max(bw, bh);
+    const out = new Uint8Array(gridSize * gridSize);
+    const offX = (gridSize - bw * scale) / 2;
+    const offY = (gridSize - bh * scale) / 2;
+    for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+            if (!bitmap[y * srcSize + x]) continue;
+            const gx = Math.round(offX + (x - minX) * scale);
+            const gy = Math.round(offY + (y - minY) * scale);
+            if (gx >= 0 && gx < gridSize && gy >= 0 && gy < gridSize) out[gy * gridSize + gx] = 1;
+        }
+    }
+    return out;
+}
+
+/**
+ * 核心判定: 归一化后的模板字形 与 归一化+膨胀后的墨迹 做覆盖比对。
+ * 注意: 调用方应传入已归一化(且墨迹已膨胀)的两张同尺寸位图。
  */
 export function matchInk(
-    template: Uint8Array,   // 标准字形像素(1=字形)
-    ink: Uint8Array,        // 玩家墨迹像素(1=墨迹)
+    template: Uint8Array,   // 标准字形位图(归一化, 未膨胀)
+    ink: Uint8Array,        // 玩家墨迹位图(归一化, 已膨胀)
     size: number,           // 边长(正方形)
 ): MatchResult {
     const total = size * size;
@@ -54,7 +120,6 @@ export function matchInk(
             if (template[i]) overlapPx++;
         }
     }
-    // 空手/全空
     if (inkPx < 5) return { cover: 0, stray: 1, score: -1, pass: false, reason: "empty" };
     if (templatePx === 0) return { cover: 0, stray: 1, score: -1, pass: false, reason: "wrong_char" };
 
@@ -85,15 +150,13 @@ export function bitmapFromImageData(
         const a = data[i * 4 + 3];
         const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
         const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        // 墨迹: 不透明 且 不是白色/浅色
         if (a >= threshold && lum < 230) out[i] = 1;
     }
     return out;
 }
 
 /**
- * 从墨迹笔画序列渲染 0/1 像素图(用于测试, 不依赖 Canvas)。
- * 每段笔画按点连线, 线宽 lineWidth 像素。
+ * 从墨迹笔画序列渲染 0/1 像素图(测试与组件共用, 不依赖 Canvas)。
  */
 export function renderStrokesToBitmap(
     strokes: Stroke[],
@@ -129,16 +192,53 @@ export function renderStrokesToBitmap(
     return out;
 }
 
-/**
- * 生成目标字的标准字形像素图(用于测试: 简单地把字形画成实心方块占位,
- * 生产环境由 Canvas fillText 真实渲染)。
- * NOTE: 仅测试用占位实现, 生产使用 drawTemplate 渲染真实字体字形。
- */
+/** 测试用占位模板: 中心 60% 方块 */
 export function renderTemplatePlaceholder(size: number): Uint8Array {
-    // 中心 60% 区域为字形(近似汉字方块)
     const out = new Uint8Array(size * size);
     const m = Math.floor(size * 0.2), M = Math.floor(size * 0.8);
     for (let y = m; y < M; y++)
         for (let x = m; x < M; x++) out[y * size + x] = 1;
     return out;
 }
+
+/* ==================== 调试快照(控制台) ====================
+ * 在浏览器控制台执行 `__clgzSnapshot()` 可查看最近一次判定的
+ * 墨迹/模板位图快照与判定详情, 用于调识别阈值与排障。
+ */
+
+export interface DebugSnapshot {
+    target: string;
+    size: number;
+    ink: Uint8Array;      // 归一化后的墨迹位图(未膨胀)
+    tpl: Uint8Array;      // 归一化后的模板位图(未膨胀)
+    result: MatchResult;
+}
+
+let lastDebug: DebugSnapshot | null = null;
+
+export function setLastDebug(s: DebugSnapshot | null) {
+    lastDebug = s;
+}
+export function getLastDebug(): DebugSnapshot | null {
+    return lastDebug;
+}
+
+/** 把 0/1 位图渲染成 ASCII 字符画(█ 为 1, · 为 0), 缩放到 maxW 宽 */
+export function bitmapToAscii(bmp: Uint8Array, size: number, maxW = 40): string {
+    const scale = Math.max(1, Math.ceil(size / maxW));
+    const rows: string[] = [];
+    for (let y = 0; y < size; y += scale) {
+        let line = "";
+        for (let x = 0; x < size; x += scale) {
+            let on = false;
+            for (let dy = 0; dy < scale && !on; dy++)
+                for (let dx = 0; dx < scale; dx++) {
+                    if (bmp[(y + dy) * size + (x + dx)]) { on = true; break; }
+                }
+            line += on ? "█" : "·";
+        }
+        rows.push(line);
+    }
+    return rows.join("\n");
+}
+

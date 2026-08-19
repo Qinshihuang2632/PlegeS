@@ -2,9 +2,9 @@
  * 错了个字 · 玩法介绍(人性化文案)
  * 大厅「玩法介绍」弹窗与局内「玩法」入口共用同一份内容, 保证文案一致
  */
-import { CLGX_VERSION } from "./version";
+import { CLGZ_VERSION } from "./version";
 
-export const CLGX_RULE_SECTIONS = [
+export const CLGZ_RULE_SECTIONS = [
     {
         icon: "✍️",
         title: "怎么玩",
@@ -32,7 +32,7 @@ export const CLGX_RULE_SECTIONS = [
         points: [
             "覆盖高中各科易写错的字: 化学仪器与物质名(锥形瓶/坩埚/羧基)、生物术语(睾丸/吞噬/哺乳)、语文高频易错字(羸弱/窠臼/斡旋)、数学(菱形/椭圆/幂函数)、物理(砝码/衍射/惯性)、史地(嬴政/张骞/莫高窟);",
             "每局 8 题, 写对 1 字得 1 分;",
-            "字库清单可在项目 docs/clgx_characters.md 查看。",
+            "字库清单可在项目 docs/clgz_characters.md 查看。",
         ],
     },
     {
@@ -46,10 +46,10 @@ export const CLGX_RULE_SECTIONS = [
     },
 ];
 
-export function ClgxRules({ compact = false }: { compact?: boolean }) {
+export function ClgzRules({ compact = false }: { compact?: boolean }) {
     return (
         <div className={compact ? "space-y-3" : "space-y-5"}>
-            {CLGX_RULE_SECTIONS.map((s) => (
+            {CLGZ_RULE_SECTIONS.map((s) => (
                 <section key={s.title}>
                     <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-foreground">
                         <span aria-hidden>{s.icon}</span>
@@ -66,7 +66,7 @@ export function ClgxRules({ compact = false }: { compact?: boolean }) {
                 </section>
             ))}
             {/* 玩法介绍也显示对应游戏版本号(约定: 任意游戏任意界面下方都显示该游戏版本) */}
-            <p className="pt-2 text-center text-[11px] text-muted-foreground">错了个字 · {CLGX_VERSION}(仅供个人娱乐)</p>
+            <p className="pt-2 text-center text-[11px] text-muted-foreground">错了个字 · {CLGZ_VERSION}(仅供个人娱乐)</p>
         </div>
     );
 }

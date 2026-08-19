@@ -1,10 +1,10 @@
 /*
  * p了个s · 错了个字 排行榜 API (Cloudflare Pages Function)
- * 路由: /clgx/api/rank
+ * 路由: /clgz/api/rank
  *   GET    ?mode=all 查询榜单(已排序)
  *   POST   请求体 JSON {mode, name, score, time, version?, platform?}
  *          提交成绩; 排序 score↓ → time↑(得分多者靠前, 同分用时短者靠前)
- * KV 键: clgx:all(与化了个学/英了个语榜单分离)
+ * KV 键: clgz:all(与化了个学/英了个语榜单分离)
  * 防刷与校验规则与 /hlgx/api/rank 一致(60s/IP、昵称清洗、违禁词、≥10s、同名放开)。
  */
 import { fmtDate, clampInt, json } from "../../_lib/ranklib.js";
@@ -14,7 +14,7 @@ import { hasBadWord } from "../../_lib/badwords.js";
 export const MODES = ["all"];
 const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒)
 const RANK_LIMIT = 200;     // 单难度榜单条目上限
-const KEY_PREFIX = "clgx:"; // KV 键前缀(与化了个学/英了个语榜单分离)
+const KEY_PREFIX = "clgz:"; // KV 键前缀(与化了个学/英了个语榜单分离)
 
 async function loadMode(env, mode) {
     const raw = await env.RANKINGS.get(KEY_PREFIX + mode);
@@ -75,7 +75,7 @@ export async function onRequestPost({ request, env }) {
 
     const platform = resolvePlatform(body, request);
     const ip = clientIp(request);
-    const n = await countIncr(env, `clgx:rl:${ip}`, SUBMIT_TTL, 1);
+    const n = await countIncr(env, `clgz:rl:${ip}`, SUBMIT_TTL, 1);
     if (n > 1) return json({ ok: false, msg: "提交过于频繁,请稍后再试" }, 429);
 
     let name = String(body.name ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "");

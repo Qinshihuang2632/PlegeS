@@ -1,21 +1,21 @@
 /*
- * 错了个字 · 游戏页 (/clgx)
+ * 错了个字 · 游戏页 (/clgz)
  * ========================
  * 玩法: 局内选择科目(可单选/多选) → 随机抽取该科目范围内的字 →
  *       玩家在画框内手写该字(不经过键盘) → 字形匹配判定对错。
  * 计分: 每字 1 分; 手写正确(与标准字形匹配)得 1 分, 潦草/写错不得分。
- * 榜单: 独立 API /clgx/api/rank, 排序 得分↓ → 用时↑ → 提交早者优先。
+ * 榜单: 独立 API /clgz/api/rank, 排序 得分↓ → 用时↑ → 提交早者优先。
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { CLGX_SUBJECTS, charsOfSubjects, type ClgxChar } from "./chars";
+import { CLGZ_SUBJECTS, charsOfSubjects, type ClgzChar } from "./chars";
 import { HandwritingPad } from "./HandwritingPad";
-import { ClgxRules } from "./ClgxRules";
+import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
-import { CLGX_VERSION } from "./version";
+import { CLGZ_VERSION } from "./version";
 
 const ROUNDS = 8;   // 每局题数
 
@@ -27,10 +27,10 @@ interface ResultInfo {
     failMsg?: string;
 }
 
-export function ClgxPage() {
+export function ClgzPage() {
     const [subjects, setSubjects] = useState<string[]>(["chem"]);
     const [phase, setPhase] = useState<"select" | "play" | "result">("select");
-    const [queue, setQueue] = useState<ClgxChar[]>([]);
+    const [queue, setQueue] = useState<ClgzChar[]>([]);
     const [idx, setIdx] = useState(0);
     const [score, setScore] = useState(0);
     const [wrong, setWrong] = useState<string[]>([]);
@@ -84,7 +84,7 @@ export function ClgxPage() {
             return;
         }
         try {
-            const res = await fetch("/clgx/api/rank", {
+            const res = await fetch("/clgz/api/rank", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -92,7 +92,7 @@ export function ClgxPage() {
                     name,
                     score: finalScore,
                     time,
-                    version: CLGX_VERSION,
+                    version: CLGZ_VERSION,
                     platform: detectPlatform(),
                 }),
             });
@@ -124,7 +124,7 @@ export function ClgxPage() {
                         <h2 className="mb-1 text-lg font-bold">选择考察科目</h2>
                         <p className="mb-4 text-sm text-muted-foreground">可单选或多选,所选科目共 {total} 字,每局随机抽 {Math.min(ROUNDS, total)} 字。</p>
                         <div className="grid gap-2 sm:grid-cols-2">
-                            {CLGX_SUBJECTS.map((s) => {
+                            {CLGZ_SUBJECTS.map((s) => {
                                 const on = subjects.includes(s.key);
                                 return (
                                     <button
@@ -147,7 +147,7 @@ export function ClgxPage() {
                     </div>
                     <div className="flex items-center justify-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => setRulesOpen(true)}>玩法介绍</Button>
-                        <Button asChild variant="ghost" size="sm"><Link to="/hlgx/rank?game=clgx">查看排行榜</Link></Button>
+                        <Button asChild variant="ghost" size="sm"><Link to="/hlgx/rank?game=clgz">查看排行榜</Link></Button>
                     </div>
                 </div>
             )}
@@ -192,7 +192,7 @@ export function ClgxPage() {
                         )}
                     </div>
                     <div className="mt-5 flex justify-center gap-2">
-                        <Button asChild variant="outline"><Link to="/hlgx/rank?game=clgx">查看排行榜</Link></Button>
+                        <Button asChild variant="outline"><Link to="/hlgx/rank?game=clgz">查看排行榜</Link></Button>
                         <Button onClick={() => setPhase("select")}>再来一局</Button>
                     </div>
                 </div>
@@ -204,11 +204,11 @@ export function ClgxPage() {
                         <DialogTitle>玩法介绍</DialogTitle>
                         <DialogDescription>三分钟看懂怎么玩,新手不迷路</DialogDescription>
                     </DialogHeader>
-                    <ClgxRules />
+                    <ClgzRules />
                 </DialogContent>
             </Dialog>
 
-            <footer className="mt-8 text-center text-xs text-muted-foreground">错了个字 · {CLGX_VERSION}(仅供个人娱乐)</footer>
+            <footer className="mt-8 text-center text-xs text-muted-foreground">错了个字 · {CLGZ_VERSION}(仅供个人娱乐)</footer>
         </div>
     );
 }
