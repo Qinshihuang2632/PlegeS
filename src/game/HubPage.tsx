@@ -124,41 +124,55 @@ export function HubPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* 特别鸣谢弹窗(✕ 可关闭; 名单按贡献次数从多到少) */}
+            {/* 特别鸣谢弹窗(✕ 可关闭; 按贡献版本数从多到少, 标注游戏与版本) */}
             <Dialog open={thanksOpen} onOpenChange={setThanksOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>特别鸣谢</DialogTitle>
-                        <DialogDescription>感谢以下成员的建议与操作帮助</DialogDescription>
+                        <DialogDescription>感谢以下成员在各游戏版本中的建议与操作帮助(标注对应游戏与版本)</DialogDescription>
                     </DialogHeader>
                     <ul className="space-y-2">
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@在下雨</span>
-                            <span className="block text-xs text-muted-foreground">感谢多轮版本的建议与云端迁移支持</span>
-                        </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
-                            <span className="font-semibold">@Skjusty</span>
-                            <span className="block text-xs text-muted-foreground">感谢 v2.1.5 扩容与 v2.1.8 更新支持</span>
-                        </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
-                            <span className="font-semibold">@安比</span>
-                            <span className="block text-xs text-muted-foreground">感谢 v2.1.6、v2.1.7 更新支持</span>
-                        </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
-                            <span className="font-semibold">@绝艺如君</span>
-                            <span className="block text-xs text-muted-foreground">感谢 v2.1.6 更新支持</span>
-                        </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
-                            <span className="font-semibold">@壹棵小玖菜</span>
-                            <span className="block text-xs text-muted-foreground">感谢 v2.1.8 更新支持</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.0.0-cloudflare~v2.1.2(云端迁移 / 工程化重构 / 安全处置);错了个字 v1.0.1、v1.0.2(识别算法与判定修复)
+                            </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@鹜秋</span>
-                            <span className="block text-xs text-muted-foreground">感谢 v2.1.9 与 v2.2.1 更新支持</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.1.9(手牌槽两行 / 混合物类别)、v2.2.1(违禁品名录扩充)
+                            </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@鼠鼠鼠了</span>
-                            <span className="block text-xs text-muted-foreground">感谢 v2.2.2 更新支持</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.1.9(手牌槽两行 / 混合物类别)、v2.2.2(挑战难度布局)
+                            </span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@Skjusty</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.1.5(物质库扩容)、v2.1.8(移动端棋盘放大)
+                            </span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@安比</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.1.6(放开同名昵称)、v2.1.7(数据安全修复)
+                            </span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@壹棵小玖菜</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.1.8(移动端棋盘放大)
+                            </span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@绝艺如君</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.1.6(放开同名昵称)
+                            </span>
                         </li>
                     </ul>
                 </DialogContent>
