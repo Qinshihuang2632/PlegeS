@@ -164,7 +164,8 @@ export function ClgzPage() {
                         <p className="my-2 text-6xl font-bold tracking-widest text-primary">{cur.ch}</p>
                         <p className="text-xs text-muted-foreground">在下方画框内手写(请写规范,潦草不得分)</p>
                     </div>
-                    <HandwritingPad target={cur.ch} onResult={(r) => { if (r.pass) setTimeout(() => next(true), 300); }} />
+                    {/* key=idx 强制重挂载: 切换下一题时自动清空画布(与在下雨共同更新) */}
+                    <HandwritingPad key={idx} target={cur.ch} onResult={(r) => { if (r.pass) setTimeout(() => next(true), 300); }} />
                     <Button variant="outline" className="w-full" onClick={() => next(false)}>
                         认不出/写不出,下一题
                     </Button>

@@ -147,7 +147,7 @@ export function HubPage() {
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@鼠鼠鼠了</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.1.9(手牌槽两行 / 混合物类别)、v2.2.2(挑战难度布局)
+                                化了个学 v2.1.9(手牌槽两行 / 混合物类别)、v2.2.2(挑战难度布局);英了个语 v1.0.0(单词数独上线)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
