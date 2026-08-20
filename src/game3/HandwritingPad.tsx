@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
-    bitmapFromImageData, dilate, matchInk, normalizeBitmap,
+    bitmapFromImageData, dilate, matchInk, normalizeBitmap, resizeBitmap,
     GRID, TEMPLATE_DILATE_R, setLastDebug, getLastDebug, bitmapToAscii,
     type Stroke, type MatchResult,
 } from "./handwriting";
@@ -160,7 +160,9 @@ export function HandwritingPad({ target, size = 280, onResult }: HandwritingPadP
         //    边缘落在细印刷字形外导致 stray 超标, 仅保留字形结构比对)
         const inkDil = dilate(inkNorm, GRID);
         const tplDil = dilate(tplNorm, GRID, TEMPLATE_DILATE_R);
-        const r = matchInk(tplDil, inkDil, GRID, areaRatio);
+        const r = matchInk(tplDil, inkDil, GRID, areaRatio,
+            resizeBitmap(tplRaw, tplSide, GRID),   // 等比缩放(分区覆盖用, 不居中)
+            resizeBitmap(inkRaw, size, GRID));
         setLastDebug({ target, size: GRID, ink: inkNorm, tpl: tplNorm, result: r });
         setResult(r);
         onResult?.(r);

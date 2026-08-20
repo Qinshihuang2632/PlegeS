@@ -17,6 +17,7 @@ import { fmtTime } from "@/game/core";
 import { detectPlatform } from "@/game/platform";
 import { WS_VERSION } from "./version";
 import { WsRules } from "./WsRules";
+import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
 
@@ -38,7 +39,10 @@ const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 export function WsPage() {
     const [game, setGame] = useState(() => new WsGame("easy"));
     const [curMode, setCurMode] = useState<WsMode>("easy");
-    const [name, setName] = useState(readName());
+    const [name, setName] = useState(readName());   // 当前生效昵称
+    const [nameDraft, setNameDraft] = useState(readName());   // 输入框编辑值(未确认)
+    const [nameTip, setNameTip] = useState("");
+    const [nameConfirmOpen, setNameConfirmOpen] = useState(false);
     const [elapsed, setElapsed] = useState(0);
     const [rulesOpen, setRulesOpen] = useState(false);
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
@@ -67,6 +71,26 @@ export function WsPage() {
         setGame(g);
         setElapsed(0);
         startTimer();
+    };
+
+    /* 局内改昵称(v1.4.8): 输入框编辑(实时校验) → ✓ 二次确认弹窗 → 保存并重启本局 */
+    const onNameDraftChange = (v: string) => {
+        setNameDraft(v);
+        setNameTip(validateNickname(v));
+    };
+    const requestNameConfirm = () => {
+        const tip = validateNickname(nameDraft);
+        if (tip) { setNameTip(tip); return; }
+        if (nameDraft.trim() === name.trim()) { setNameTip("昵称未变化"); return; }
+        setNameConfirmOpen(true);
+    };
+    const confirmName = () => {
+        const n = nameDraft.trim();
+        setName(n);
+        storeName(n);
+        setNameConfirmOpen(false);
+        setNameTip("");
+        newGame(curMode);   // 重启本局(同难度重新生成)
     };
 
     useEffect(() => { startTimer(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
@@ -261,14 +285,23 @@ export function WsPage() {
                 <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)} className="shrink-0">
                     玩法
                 </Button>
-                <input
-                    value={name}
-                    maxLength={10}
-                    placeholder="昵称"
-                    onChange={(e) => { setName(e.target.value); storeName(e.target.value); }}
-                    className="w-24 shrink-0 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
-                />
+                <div className="flex shrink-0 items-center gap-1">
+                    <input
+                        value={nameDraft}
+                        maxLength={10}
+                        placeholder="昵称"
+                        onChange={(e) => onNameDraftChange(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") requestNameConfirm(); }}
+                        className="w-24 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        aria-label="当前昵称,点击直接修改"
+                        title="当前昵称,修改后需二次确认并重开本局"
+                    />
+                    <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
+                </div>
             </div>
+            {nameTip && (
+                <p className="mb-2 text-center text-xs font-semibold text-destructive">{nameTip}</p>
+            )}
 
             {/* 状态栏: 爱心血量 + 用时 + 待填 */}
             <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
@@ -477,6 +510,15 @@ export function WsPage() {
                     <WsRules />
                 </DialogContent>
             </Dialog>
+
+            {/* 改名二次确认(确认后保存并重开本局) */}
+            <NameConfirmDialog
+                open={nameConfirmOpen}
+                pending={nameDraft}
+                current={name}
+                onOpenChange={setNameConfirmOpen}
+                onConfirm={confirmName}
+            />
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">英了个语 · {WS_VERSION}(仅供个人娱乐)</footer>
         </div>

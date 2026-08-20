@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import { HLGX_Audio } from "./audio";
 import { hasBadWord } from "./badwords";
+import { NameConfirmDialog } from "./NameConfirmDialog";
 import { fmtTime, TOOL_LIMIT, type Mode, type Tile } from "./core";
 import { detectPlatform, PLATFORM_LABEL } from "./platform";
 import { APP_VERSION } from "@/version";
@@ -81,8 +82,9 @@ export function HuaPage() {
     const [nameOpen, setNameOpen] = useState(false);
     const [nameDialogMode, setNameDialogMode] = useState<"first" | "change">("first");   // v2.2.7: 首次输入/更换昵称
     const [name, setName] = useState<string>(() => readStoredName());   // 预填上次输入
-    const [headerName, setHeaderName] = useState<string>(() => readStoredName());   // 局内实时输入框(v2.4.1)
+    const [headerName, setHeaderName] = useState<string>(() => readStoredName());   // 局内昵称输入框(编辑值)
     const [headerNameTip, setHeaderNameTip] = useState("");
+    const [nameConfirmOpen, setNameConfirmOpen] = useState(false);   // v2.3.9: 局内改昵称二次确认
     const [skipRank, setSkipRank] = useState(false);
     const [rankActive, setRankActive] = useState(false);   // v2.4.2: 局内是否参与排行(防「记住的勾选」静默不上榜)
     const [nameTip, setNameTip] = useState("");
@@ -212,25 +214,33 @@ export function HuaPage() {
         nameChangeRestartRef.current = false;
     };
 
-    /* 局内实时改名(v2.3.6): 输入即生效, 不再弹窗确认; 与英了个语一致 */
+    /* 局内改名(v2.3.9): 输入框编辑(实时校验) → ✓ 二次确认弹窗 → 保存并重启本局 */
     const commitHeaderName = (v: string) => {
         setHeaderName(v);
         setHeaderNameTip("");
         const n = v.trim();
-        if (!n) {
-            playerNameRef.current = null;
-            inRankRef.current = false;
-            setRankActive(false);
-            storeName("");
-            return;
-        }
+        if (!n) return;   // 空输入不生效(需通过确认流程清空)
         if ([...n].length > 10) { setHeaderNameTip("昵称最多 10 个字"); return; }
         if (hasBadWord(n)) { setHeaderNameTip("昵称包含违禁词,请更换"); return; }
+    };
+    const requestNameConfirm = () => {
+        const n = headerName.trim();
+        if (!n) { setHeaderNameTip("昵称不能为空"); return; }
+        if ([...n].length > 10) { setHeaderNameTip("昵称最多 10 个字"); return; }
+        if (hasBadWord(n)) { setHeaderNameTip("昵称包含违禁词,请更换"); return; }
+        if (n === (playerNameRef.current ?? readStoredName() ?? "")) { setHeaderNameTip("昵称未变化"); return; }
+        setNameConfirmOpen(true);
+    };
+    const confirmHeaderName = () => {
+        const n = headerName.trim();
         playerNameRef.current = n;
         inRankRef.current = true;
         setRankActive(true);
         storeName(n);
         storeSkip(false);
+        setNameConfirmOpen(false);
+        setHeaderNameTip("");
+        restart();   // 重启本局(同难度重新生成)
     };
 
     /* 局内/结算页「更换昵称」入口(v2.3.2): 预填当前默认昵称, 打开更换窗 */
@@ -373,10 +383,12 @@ export function HuaPage() {
                         maxLength={10}
                         placeholder="昵称"
                         onChange={(e) => commitHeaderName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") requestNameConfirm(); }}
                         className="w-24 rounded-lg border bg-card px-2 py-1 text-sm outline-none focus:border-primary"
                         aria-label="当前昵称,点击直接修改"
-                        title="当前昵称,点击直接修改(本局成绩按新昵称提交)"
+                        title="当前昵称,修改后需二次确认并重开本局"
                     />
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
                     {headerNameTip && (
                         <span className="text-xs font-semibold text-destructive">{headerNameTip}</span>
                     )}
@@ -688,6 +700,15 @@ export function HuaPage() {
                     <GameRules />
                 </DialogContent>
             </Dialog>
+
+            {/* 改名二次确认(确认后保存并重开本局) */}
+            <NameConfirmDialog
+                open={nameConfirmOpen}
+                pending={headerName}
+                current={playerNameRef.current ?? readStoredName() ?? ""}
+                onOpenChange={setNameConfirmOpen}
+                onConfirm={confirmHeaderName}
+            />
         </div>
     );
 }

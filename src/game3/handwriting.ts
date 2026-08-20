@@ -30,12 +30,15 @@ export interface MatchResult {
 
 /** 判定阈值(常量, 便于按实测调整) */
 export const THRESHOLDS = {
-    /** 标准字形像素的最小墨迹覆盖率: 低于此 = 没写到该字(写错/漏笔画/只写部分) */
+    /** 标准字形像素的最小墨迹覆盖率(归一化网格):
+     *  残缺半字(如「锥」只写金字旁+单立人)cover≈0.50 被拦;
+     *  写小字(完整但小)cover≈0.25 被拦;
+     *  认真书写实测 cover 0.6~0.8 通过。 */
     minCover: 0.55,
-    /** 墨迹落在字形外的最大比例: 高于此 = 太潦草/乱画 */
-    maxStray: 0.5,
-    /** 原始墨迹面积与原始字形面积的最大比值: 高于此 = 潦草涂鸦/笔画乱飞(面积膨胀过大) */
-    maxAreaRatio: 2.2,
+    /** 墨迹落在字形外的最大比例(等比缩放位图, 保留画框位置):
+     *  潦草涂鸦盖满画框(0.05~0.95)超出字形(0.2~0.8) → stray≈0.56 被拦;
+     *  认真书写笔画都在字形附近 → stray 低。 */
+    maxStray: 0.55,
 } as const;
 
 /** 归一化网格边长(识别精度与性能平衡) */
@@ -105,16 +108,38 @@ export function normalizeBitmap(
 }
 
 /**
+ * 位图等比缩放(不居中): 按画框比例直接缩放, 保持相对位置。
+ * 用于「潦草检测」——模板字形与墨迹都按画框等比缩到同一网格,
+ * 在保留画框位置的前提下计算墨迹落在字形外的比例。
+ */
+export function resizeBitmap(bmp: Uint8Array, fromSize: number, toSize: number): Uint8Array {
+    const out = new Uint8Array(toSize * toSize);
+    const scale = toSize / fromSize;
+    for (let y = 0; y < fromSize; y++) {
+        for (let x = 0; x < fromSize; x++) {
+            if (!bmp[y * fromSize + x]) continue;
+            const gx = Math.min(toSize - 1, Math.floor(x * scale));
+            const gy = Math.min(toSize - 1, Math.floor(y * scale));
+            out[gy * toSize + gx] = 1;
+        }
+    }
+    return out;
+}
+
+/**
  * 核心判定: 归一化后的模板字形 与 归一化+膨胀后的墨迹 做覆盖比对。
- * areaRatio: 原始(归一化前)墨迹像素数 / 原始模板像素数 —— 必须在
- * 归一化前计算: 归一化会把墨迹包围盒填满网格, 潦草涂鸦(包围盒大)归一化后
- * 面积比反而接近 1, 失去残缺/潦草区分度。
+ * 指标:
+ *   - cover: 归一化网格上墨迹覆盖字形比例(抓残缺/写小/写错)
+ *   - stray: 等比缩放位图(保留画框位置)上墨迹落在字形外比例(抓潦草涂鸦)
+ * 归一化网格上算 stray 会因墨迹包围盒填满网格而失真, 故用等比缩放位图。
  */
 export function matchInk(
     template: Uint8Array,   // 标准字形位图(归一化, 已膨胀)
     ink: Uint8Array,        // 玩家墨迹位图(归一化, 已膨胀)
-    size: number,           // 边长(正方形)
-    areaRatio = 1,          // 原始墨迹面积/原始模板面积(默认 1 = 不约束)
+    size: number,           // 归一化网格边长
+    _areaRatio = 1,         // 保留参数(历史兼容, 不再参与判定)
+    tplScaled?: Uint8Array, // 等比缩放模板(位置检查用)
+    inkScaled?: Uint8Array, // 等比缩放墨迹(位置检查用)
 ): MatchResult {
     const total = size * size;
     let templatePx = 0, inkPx = 0, overlapPx = 0;
@@ -128,22 +153,30 @@ export function matchInk(
     if (inkPx < 5) return { cover: 0, stray: 1, score: -1, pass: false, reason: "empty" };
     if (templatePx === 0) return { cover: 0, stray: 1, score: -1, pass: false, reason: "wrong_char" };
 
-    const cover = overlapPx / templatePx;     // 写到字形上的比例
-    const stray = (inkPx - overlapPx) / inkPx; // 写在字形外的比例
+    const cover = overlapPx / templatePx;     // 写到字形上的比例(归一化网格)
+    // 潦草检测: 用等比缩放位图算「墨迹落在字形外比例」(保留画框位置)
+    let stray = (inkPx - overlapPx) / inkPx;
+    if (tplScaled && inkScaled && tplScaled.length === inkScaled.length) {
+        let t2 = 0, i2 = 0, o2 = 0;
+        for (let i = 0; i < tplScaled.length; i++) {
+            if (tplScaled[i]) t2++;
+            if (inkScaled[i]) {
+                i2++;
+                if (tplScaled[i]) o2++;
+            }
+        }
+        if (i2 > 0) stray = (i2 - o2) / i2;
+    }
     const score = cover - 0.5 * stray;
 
     let pass = false, reason: MatchResult["reason"] = "wrong_char";
-    if (
-        cover >= THRESHOLDS.minCover &&
-        stray <= THRESHOLDS.maxStray &&
-        areaRatio <= THRESHOLDS.maxAreaRatio
-    ) {
+    if (cover >= THRESHOLDS.minCover && stray <= THRESHOLDS.maxStray) {
         pass = true;
         reason = "ok";
-    } else if (areaRatio > THRESHOLDS.maxAreaRatio) {
-        reason = "too_messy";   // 墨迹面积膨胀过大: 潦草涂鸦
+    } else if (stray > THRESHOLDS.maxStray) {
+        reason = "too_messy";   // 墨迹大量在字形外: 潦草乱涂
     } else if (cover < THRESHOLDS.minCover) {
-        reason = cover < 0.2 ? "wrong_char" : "too_faint";
+        reason = cover < 0.2 ? "wrong_char" : "too_faint";   // 残缺/写小/写错
     } else {
         reason = "too_messy";
     }

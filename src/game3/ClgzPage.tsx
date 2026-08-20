@@ -15,6 +15,7 @@ import { CLGZ_SUBJECTS, charsOfSubjects, type ClgzChar } from "./chars";
 import { HandwritingPad } from "./HandwritingPad";
 import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
+import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { CLGZ_VERSION } from "./version";
 
 const ROUNDS = 8;   // 每局题数
@@ -31,7 +32,10 @@ interface ResultInfo {
 export function ClgzPage() {
     const [subjects, setSubjects] = useState<string[]>(["chem"]);
     const [phase, setPhase] = useState<"select" | "play" | "result">("select");
-    const [name, setName] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");
+    const [name, setName] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");   // 当前生效昵称
+    const [nameDraft, setNameDraft] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");   // 输入框编辑值(未确认)
+    const [nameTip, setNameTip] = useState("");
+    const [nameConfirmOpen, setNameConfirmOpen] = useState(false);
     const [queue, setQueue] = useState<ClgzChar[]>([]);
     const [idx, setIdx] = useState(0);
     const [score, setScore] = useState(0);
@@ -112,21 +116,48 @@ export function ClgzPage() {
 
     const total = useMemo(() => charsOfSubjects(subjects).length, [subjects]);
 
+    /* 局内改昵称(v1.0.5): 输入框编辑(实时校验) → ✓ 二次确认弹窗 → 保存并重启本局 */
+    const onNameDraftChange = (v: string) => {
+        setNameDraft(v);
+        setNameTip(validateNickname(v));
+    };
+    const requestNameConfirm = () => {
+        const tip = validateNickname(nameDraft);
+        if (tip) { setNameTip(tip); return; }
+        if (nameDraft.trim() === name.trim()) { setNameTip("昵称未变化"); return; }
+        setNameConfirmOpen(true);
+    };
+    const confirmName = () => {
+        const n = nameDraft.trim();
+        setName(n);
+        localStorage.setItem(NAME_KEY, n);
+        setNameConfirmOpen(false);
+        setNameTip("");
+        startGame();   // 重启本局(重新抽题)
+    };
+
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
             <header className="mb-6 flex items-center justify-between gap-2">
                 <Link to="/" className="shrink-0 text-sm text-muted-foreground hover:text-foreground">← 返回大厅</Link>
                 <h1 className="flex-1 text-center text-xl font-bold">错了个字</h1>
-                <input
-                    value={name}
-                    maxLength={10}
-                    placeholder="昵称"
-                    onChange={(e) => { const v = e.target.value; setName(v); localStorage.setItem(NAME_KEY, v); }}
-                    className="w-24 shrink-0 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
-                    aria-label="当前昵称,点击直接修改"
-                    title="当前昵称,点击直接修改(本局成绩按新昵称提交)"
-                />
+                <div className="flex shrink-0 items-center gap-1">
+                    <input
+                        value={nameDraft}
+                        maxLength={10}
+                        placeholder="昵称"
+                        onChange={(e) => onNameDraftChange(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") requestNameConfirm(); }}
+                        className="w-24 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        aria-label="当前昵称,点击直接修改"
+                        title="当前昵称,修改后需二次确认并重开本局"
+                    />
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
+                </div>
             </header>
+            {nameTip && (
+                <p className="mb-2 text-center text-xs font-semibold text-destructive">{nameTip}</p>
+            )}
 
             {phase === "select" && (
                 <div className="space-y-5">
@@ -219,6 +250,15 @@ export function ClgzPage() {
                     <ClgzRules />
                 </DialogContent>
             </Dialog>
+
+            {/* 改名二次确认(确认后保存并重开本局) */}
+            <NameConfirmDialog
+                open={nameConfirmOpen}
+                pending={nameDraft}
+                current={name}
+                onOpenChange={setNameConfirmOpen}
+                onConfirm={confirmName}
+            />
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">错了个字 · {CLGZ_VERSION}(仅供个人娱乐)</footer>
         </div>
