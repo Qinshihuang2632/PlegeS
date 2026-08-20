@@ -72,6 +72,38 @@ export function HubPage() {
                         ● 可玩
                     </span>
                 </Link>
+
+                {/* 开发中占位(下一批游戏) */}
+                <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
+                    <div className="mb-3 text-4xl" aria-hidden>待</div>
+                    <h2 className="text-lg font-bold">敬请期待</h2>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                        更多高考知识小游戏正在开发中……
+                    </p>
+                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+                        开发中
+                    </span>
+                </div>
+                <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
+                    <div className="mb-3 text-4xl" aria-hidden>待</div>
+                    <h2 className="text-lg font-bold">敬请期待</h2>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                        更多高考知识小游戏正在开发中……
+                    </p>
+                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+                        开发中
+                    </span>
+                </div>
+                <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
+                    <div className="mb-3 text-4xl" aria-hidden>待</div>
+                    <h2 className="text-lg font-bold">敬请期待</h2>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                        更多高考知识小游戏正在开发中……
+                    </p>
+                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+                        开发中
+                    </span>
+                </div>
             </main>
 
             {/* 导航: 排行榜 + 玩法介绍 */}

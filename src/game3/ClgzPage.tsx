@@ -18,6 +18,7 @@ import { detectPlatform } from "@/game/platform";
 import { CLGZ_VERSION } from "./version";
 
 const ROUNDS = 8;   // 每局题数
+const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学/英了个语共享)
 
 interface ResultInfo {
     score: number;
@@ -30,6 +31,7 @@ interface ResultInfo {
 export function ClgzPage() {
     const [subjects, setSubjects] = useState<string[]>(["chem"]);
     const [phase, setPhase] = useState<"select" | "play" | "result">("select");
+    const [name, setName] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");
     const [queue, setQueue] = useState<ClgzChar[]>([]);
     const [idx, setIdx] = useState(0);
     const [score, setScore] = useState(0);
@@ -78,8 +80,8 @@ export function ClgzPage() {
         setPhase("result");
         const finalScore = score + (idx + 1 >= queue.length ? 0 : 0);   // 分数已累计
         setScore(finalScore);
-        const name = localStorage.getItem("hlgx_name")?.trim() || "";
-        if (!name) {
+        const nm = name.trim();
+        if (!nm) {
             setResult({ score: finalScore, time, surpassed: null, failed: false });
             return;
         }
@@ -112,10 +114,18 @@ export function ClgzPage() {
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
-            <header className="mb-6 flex items-center justify-between">
-                <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">← 返回大厅</Link>
-                <h1 className="text-xl font-bold">错了个字</h1>
-                <div className="w-16 text-right" aria-hidden />
+            <header className="mb-6 flex items-center justify-between gap-2">
+                <Link to="/" className="shrink-0 text-sm text-muted-foreground hover:text-foreground">← 返回大厅</Link>
+                <h1 className="flex-1 text-center text-xl font-bold">错了个字</h1>
+                <input
+                    value={name}
+                    maxLength={10}
+                    placeholder="昵称"
+                    onChange={(e) => { const v = e.target.value; setName(v); localStorage.setItem(NAME_KEY, v); }}
+                    className="w-24 shrink-0 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
+                    aria-label="当前昵称,点击直接修改"
+                    title="当前昵称,点击直接修改(本局成绩按新昵称提交)"
+                />
             </header>
 
             {phase === "select" && (
@@ -194,7 +204,8 @@ export function ClgzPage() {
                     </div>
                     <div className="mt-5 flex justify-center gap-2">
                         <Button asChild variant="outline"><Link to="/hlgx/rank?game=clgz">查看排行榜</Link></Button>
-                        <Button onClick={() => setPhase("select")}>再来一局</Button>
+                        <Button variant="secondary" onClick={() => setPhase("select")}>更换昵称,重新开始</Button>
+                        <Button onClick={() => startGame()}>再来一局</Button>
                     </div>
                 </div>
             )}

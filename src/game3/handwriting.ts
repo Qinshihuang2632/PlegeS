@@ -30,10 +30,12 @@ export interface MatchResult {
 
 /** 判定阈值(常量, 便于按实测调整) */
 export const THRESHOLDS = {
-    /** 标准字形像素的最小墨迹覆盖率: 低于此 = 没写到该字(写错/漏笔画) */
-    minCover: 0.45,
+    /** 标准字形像素的最小墨迹覆盖率: 低于此 = 没写到该字(写错/漏笔画/只写部分) */
+    minCover: 0.55,
     /** 墨迹落在字形外的最大比例: 高于此 = 太潦草/乱画 */
     maxStray: 0.5,
+    /** 原始墨迹面积与原始字形面积的最大比值: 高于此 = 潦草涂鸦/笔画乱飞(面积膨胀过大) */
+    maxAreaRatio: 2.2,
 } as const;
 
 /** 归一化网格边长(识别精度与性能平衡) */
@@ -104,12 +106,15 @@ export function normalizeBitmap(
 
 /**
  * 核心判定: 归一化后的模板字形 与 归一化+膨胀后的墨迹 做覆盖比对。
- * 注意: 调用方应传入已归一化(且墨迹已膨胀)的两张同尺寸位图。
+ * areaRatio: 原始(归一化前)墨迹像素数 / 原始模板像素数 —— 必须在
+ * 归一化前计算: 归一化会把墨迹包围盒填满网格, 潦草涂鸦(包围盒大)归一化后
+ * 面积比反而接近 1, 失去残缺/潦草区分度。
  */
 export function matchInk(
-    template: Uint8Array,   // 标准字形位图(归一化, 未膨胀)
+    template: Uint8Array,   // 标准字形位图(归一化, 已膨胀)
     ink: Uint8Array,        // 玩家墨迹位图(归一化, 已膨胀)
     size: number,           // 边长(正方形)
+    areaRatio = 1,          // 原始墨迹面积/原始模板面积(默认 1 = 不约束)
 ): MatchResult {
     const total = size * size;
     let templatePx = 0, inkPx = 0, overlapPx = 0;
@@ -128,9 +133,15 @@ export function matchInk(
     const score = cover - 0.5 * stray;
 
     let pass = false, reason: MatchResult["reason"] = "wrong_char";
-    if (cover >= THRESHOLDS.minCover && stray <= THRESHOLDS.maxStray) {
+    if (
+        cover >= THRESHOLDS.minCover &&
+        stray <= THRESHOLDS.maxStray &&
+        areaRatio <= THRESHOLDS.maxAreaRatio
+    ) {
         pass = true;
         reason = "ok";
+    } else if (areaRatio > THRESHOLDS.maxAreaRatio) {
+        reason = "too_messy";   // 墨迹面积膨胀过大: 潦草涂鸦
     } else if (cover < THRESHOLDS.minCover) {
         reason = cover < 0.2 ? "wrong_char" : "too_faint";
     } else {

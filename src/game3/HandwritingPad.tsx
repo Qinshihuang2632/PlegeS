@@ -151,11 +151,16 @@ export function HandwritingPad({ target, size = 280, onResult }: HandwritingPadP
         // 3) 归一化: 墨迹与模板字形都填满标准网格(同语义比较)
         const inkNorm = normalizeBitmap(inkRaw, size, GRID);
         const tplNorm = normalizeBitmap(tplRaw, tplSide, GRID);
+        // 3.5) 原始面积比(归一化前): 残缺半字/潦草涂鸦检测 —— 归一化会把
+        //      墨迹包围盒填满网格导致面积比失真, 必须在原始坐标计算
+        const inkPxRaw = inkRaw.reduce((s, v) => s + v, 0);
+        const tplPxRaw = tplRaw.reduce((s, v) => s + v, 0);
+        const areaRatio = inkPxRaw / Math.max(1, tplPxRaw);
         // 4) 对称膨胀: 墨迹膨胀(抹平笔画粗细) + 模板也膨胀(避免手写粗笔画
         //    边缘落在细印刷字形外导致 stray 超标, 仅保留字形结构比对)
         const inkDil = dilate(inkNorm, GRID);
         const tplDil = dilate(tplNorm, GRID, TEMPLATE_DILATE_R);
-        const r = matchInk(tplDil, inkDil, GRID);
+        const r = matchInk(tplDil, inkDil, GRID, areaRatio);
         setLastDebug({ target, size: GRID, ink: inkNorm, tpl: tplNorm, result: r });
         setResult(r);
         onResult?.(r);
@@ -207,7 +212,7 @@ export function HandwritingPad({ target, size = 280, onResult }: HandwritingPadP
                     }
                 >
                     {REASON_TEXT[result.reason]}
-                    {!result.pass && result.reason !== "empty" && (
+                    {result.reason !== "empty" && (
                         <span className="ml-1 font-normal text-muted-foreground">
                             (字形重合度 {result.cover.toFixed(2)})
                         </span>

@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 import {
     matchInk, renderStrokesToBitmap, renderTemplatePlaceholder,
-    normalizeBitmap, dilate, GRID, TEMPLATE_DILATE_R,
+    normalizeBitmap, dilate, GRID, TEMPLATE_DILATE_R, THRESHOLDS,
     type Stroke,
 } from "./handwriting";
 
@@ -96,7 +96,11 @@ function judge(ink: Uint8Array) {
     const tplNorm = normalizeBitmap(tpl, N, GRID);
     const inkDil = dilate(inkNorm, GRID);
     const tplDil = dilate(tplNorm, GRID, TEMPLATE_DILATE_R);
-    return matchInk(tplDil, inkDil, GRID);
+    // 原始面积比(归一化前)
+    const inkPxRaw = ink.reduce((s, v) => s + v, 0);
+    const tplPxRaw = tpl.reduce((s, v) => s + v, 0);
+    const areaRatio = inkPxRaw / Math.max(1, tplPxRaw);
+    return matchInk(tplDil, inkDil, GRID, areaRatio);
 }
 
 describe("归一化(normalizeBitmap)", () => {
@@ -179,6 +183,51 @@ describe("matchInk 判定(手写输入法式)", () => {
         expect(r.pass).toBe(false);
         expect(r.reason).toBe("too_faint");
         expect(r.cover).toBeLessThan(0.45);
+    });
+
+    it("回归: 残缺半字(只写左半, 模拟「锥」只写金字旁+单立人) → 不通过", () => {
+        // 模板: 中心方块; 墨迹: 只覆盖左半 —— 归一化后 cover≈0.5 < minCover 0.55
+        const half = new Uint8Array(N * N);
+        for (let y = Math.floor(N * 0.2); y < N * 0.8; y++)
+            for (let x = Math.floor(N * 0.2); x < N * 0.5; x++) half[y * N + x] = 1;
+        const r = judge(half);
+        expect(r.pass).toBe(false);
+        expect(r.reason).toBe("too_faint");
+        expect(r.cover).toBeLessThan(THRESHOLDS.minCover);
+    });
+
+    it("回归: 潦草涂鸦(墨迹面积膨胀过大, 模拟「汞」笔画弯曲乱画) → 不通过, reason=too_messy", () => {
+        // 在模板区域附近用粗线来回乱涂, 墨迹密集覆盖大片区域(面积远超模板)
+        const strokes: Stroke[] = [];
+        // 水平来回扫
+        for (let y = N * 0.15; y <= N * 0.85; y += 4) {
+            strokes.push({ points: [{ x: N * 0.1, y }, { x: N * 0.9, y }] });
+        }
+        // 垂直来回扫
+        for (let x = N * 0.15; x <= N * 0.85; x += 4) {
+            strokes.push({ points: [{ x, y: N * 0.1 }, { x, y: N * 0.9 }] });
+        }
+        // 随机弯曲短线
+        let seed = 42;
+        const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648 / 2147483648; return seed; };
+        for (let i = 0; i < 20; i++) {
+            const cx = N * (0.2 + rnd() * 0.6);
+            const cy = N * (0.2 + rnd() * 0.6);
+            strokes.push({
+                points: [
+                    { x: cx, y: cy },
+                    { x: cx + (rnd() - 0.5) * N * 0.4, y: cy + (rnd() - 0.5) * N * 0.4 },
+                ],
+            });
+        }
+        const ink = renderStrokesToBitmap(strokes, N, 10);
+        const inkPx = ink.reduce((s, v) => s + v, 0);
+        const tplPx = tpl.reduce((s, v) => s + v, 0);
+        // 前置: 涂鸦面积应显著大于模板(否则不是「面积膨胀」场景)
+        expect(inkPx / tplPx).toBeGreaterThan(THRESHOLDS.maxAreaRatio);
+        const r = judge(ink);
+        expect(r.pass).toBe(false);
+        expect(r.reason).toBe("too_messy");
     });
 });
 
