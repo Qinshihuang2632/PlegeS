@@ -44,6 +44,20 @@ export interface SessionInfo {
     expiresAt: number;
 }
 
+export interface FeedbackEntry {
+    name: string;
+    content: string;
+    ip: string;
+    date: string;
+    ts: number;
+    key: number; // 管理用索引(存储数组下标)
+}
+
+export interface FeedbackList {
+    total: number;
+    feedback: FeedbackEntry[];
+}
+
 /* 审计动作 → 中文标签(文案统一, 展示用) */
 export const ACTION_LABELS: Record<string, string> = {
     login_success: "登录成功",

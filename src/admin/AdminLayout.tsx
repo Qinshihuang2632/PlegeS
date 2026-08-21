@@ -4,7 +4,7 @@
  * 移动端: 顶栏 + 底部导航(微信小程序风格), 内容区留出底部空间
  */
 import { NavLink, Outlet } from "react-router";
-import { LayoutDashboard, LogOut, ScrollText, Trophy, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, MessageSquare, ScrollText, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./AuthContext";
@@ -13,6 +13,7 @@ import { fmtTs } from "./types";
 const NAV = [
     { to: "/dashboard", label: "数据看板", icon: LayoutDashboard },
     { to: "/ranks", label: "榜单管理", icon: Trophy },
+    { to: "/feedback", label: "建议反馈", icon: MessageSquare },
     { to: "/logs", label: "审计日志", icon: ScrollText },
     { to: "/sessions", label: "会话管理", icon: Users },
 ];
@@ -69,7 +70,7 @@ export function AdminLayout() {
             </main>
 
             {/* 移动端底部导航 */}
-            <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-card/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+            <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-card/95 backdrop-blur md:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
                 {NAV.map(({ to, label, icon: Icon }) => (
                     <NavLink key={to} to={to} className={({ isActive }) =>
                         cn(

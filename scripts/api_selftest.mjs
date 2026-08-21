@@ -14,6 +14,8 @@ const adminAuth = await import(BASE + "functions/admin/api/auth.js");
 const adminRank = await import(BASE + "functions/admin/api/rank.js");
 const adminLogs = await import(BASE + "functions/admin/api/logs.js");
 const adminSessions = await import(BASE + "functions/admin/api/sessions.js");
+const feedbackApi = await import(BASE + "functions/api/feedback.js");
+const adminFeedback = await import(BASE + "functions/admin/api/feedback.js");
 const auditLib = await import(BASE + "functions/_lib/audit.js");
 
 /* ---------- 内存 KV mock ---------- */
@@ -394,6 +396,45 @@ r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=clgz&
 check("管理端 清空 clgz 全部 → 200", r.status === 200 && r.data.msg === "已清空 错了个字 全部榜单", JSON.stringify(r.data));
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
 check("清空 clgz 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
+
+/* ---------- 12.6 建议反馈: 玩家提交 / 限频 / 违禁词 / 管理端查看删除 ---------- */
+reset();
+// 玩家提交
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家甲", content: "建议加个数学主题" }, { "X-Forwarded-For": "fb-ip-1" }), env });
+check("反馈 玩家提交 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+// 60s 限频(同 IP 立即再提交)
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家甲", content: "再来一条" }, { "X-Forwarded-For": "fb-ip-1" }), env });
+check("反馈 60s 限频 → 429", r.status === 429, JSON.stringify(r.data));
+// 违禁词拦截
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "f**k 内容" }, { "X-Forwarded-For": "fb-ip-2" }), env });
+check("反馈 违禁词 → 400", r.status === 400, JSON.stringify(r.data));
+// 空内容
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "  " }, { "X-Forwarded-For": "fb-ip-3" }), env });
+check("反馈 空内容 → 400", r.status === 400, JSON.stringify(r.data));
+// 另一玩家提交成功
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "界面很好看" }, { "X-Forwarded-For": "fb-ip-4" }), env });
+check("反馈 另一玩家提交 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+// 管理端查看
+r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "fb-mg-ip" }), env });
+const fbSid = (r.headers.get("set-cookie") || "").match(/hlgx_admin=([^;]+)/)[1];
+const fbReq = (path, method = "GET") => ({ request: mockReq("http://x" + path, null, { cookie: "hlgx_admin=" + fbSid }), env });
+r = await call(adminFeedback.onRequestGet, { request: mockReq("http://x/admin/api/feedback"), env });
+check("管理端反馈 未登录 → 401", r.status === 401, JSON.stringify(r.data));
+r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback"));
+check("管理端反馈 已登录 → 2 条(新在前)", r.status === 200 && r.data.total === 2 && r.data.feedback[0].name === "玩家乙", JSON.stringify(r.data));
+r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback?q=%E7%94%B2"));
+check("管理端反馈 搜索昵称「甲」", r.data.feedback.length === 1 && r.data.feedback[0].name === "玩家甲", JSON.stringify(r.data));
+// 删除 + 审计
+r = await call(adminFeedback.onRequestDelete, fbReq("/admin/api/feedback?key=1", "DELETE"));
+check("管理端反馈 单条删除 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback"));
+check("删除后剩 1 条", r.data.total === 1, JSON.stringify(r.data));
+r = await call(adminLogs.onRequestGet, fbReq("/admin/api/logs?action=feedback_delete_one"));
+check("反馈删除写审计", r.data.total >= 1, JSON.stringify(r.data));
+r = await call(adminFeedback.onRequestDelete, fbReq("/admin/api/feedback?clear=1", "DELETE"));
+check("管理端反馈 清空全部 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback"));
+check("清空后为 0 条", r.data.total === 0, JSON.stringify(r.data));
 
 /* ---------- 13. 审计环形上限 500 ---------- */
 reset();

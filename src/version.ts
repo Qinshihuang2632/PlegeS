@@ -7,4 +7,4 @@
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
 export const APP_VERSION = "v2.3.9";       // 化了个学(局内改名二次确认+重开本局)
-export const PLATFORM_VERSION = "v2.5.3";  // 平台 p了个s(主页面新增三个开发中占位)
+export const PLATFORM_VERSION = "v2.5.4";  // 平台 p了个s(建议反馈功能上线)

@@ -4,6 +4,7 @@ import { AuthProvider } from "./AuthContext";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { RanksPage } from "./pages/RanksPage";
+import { FeedbackPage } from "./pages/FeedbackPage";
 import { LogsPage } from "./pages/LogsPage";
 import { SessionsPage } from "./pages/SessionsPage";
 import { AdminLayout } from "./AdminLayout";
@@ -19,6 +20,7 @@ export default function AdminApp() {
                     <Route element={<AdminLayout />}>
                         <Route path="/dashboard" element={<DashboardPage />} />
                         <Route path="/ranks" element={<RanksPage />} />
+                        <Route path="/feedback" element={<FeedbackPage />} />
                         <Route path="/logs" element={<LogsPage />} />
                         <Route path="/sessions" element={<SessionsPage />} />
                     </Route>

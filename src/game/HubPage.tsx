@@ -7,16 +7,58 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { GameRules } from "./GameRules";
 import { WsRules } from "@/game2/WsRules";
 import { ClgzRules } from "@/game3/ClgzRules";
+import { validateNickname } from "./NameConfirmDialog";
 import { PLATFORM_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
     const [rulesTab, setRulesTab] = useState<"hlgx" | "ws" | "clgz">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 三子页
+    const [feedbackOpen, setFeedbackOpen] = useState(false);
+    const [fbName, setFbName] = useState(() => localStorage.getItem("hlgx_name")?.trim() || "");
+    const [fbContent, setFbContent] = useState("");
+    const [fbTip, setFbTip] = useState("");
+    const [fbSending, setFbSending] = useState(false);
+    const [fbOk, setFbOk] = useState(false);
+
+    /* 提交建议反馈(v2.5.4): 昵称 + 内容, 违禁词校验, 60s/IP 限频由后端强制 */
+    const submitFeedback = async () => {
+        const tip = validateNickname(fbName);
+        if (tip) { setFbTip(tip); return; }
+        if (!fbContent.trim()) { setFbTip("请填写反馈内容"); return; }
+        if ([...fbContent.trim()].length > 500) { setFbTip("反馈内容不能超过 500 个字"); return; }
+        setFbSending(true);
+        setFbTip("");
+        try {
+            const res = await fetch("/api/feedback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: fbName.trim(), content: fbContent.trim() }),
+            });
+            const d = await res.json().catch(() => null);
+            if (res.ok && d?.ok) {
+                localStorage.setItem("hlgx_name", fbName.trim());
+                setFbOk(true);
+            } else {
+                setFbTip(d?.msg ?? `提交失败(HTTP ${res.status})`);
+            }
+        } catch {
+            setFbTip("网络异常,请检查网络后重试");
+        } finally {
+            setFbSending(false);
+        }
+    };
+    const closeFeedback = () => {
+        setFeedbackOpen(false);
+        setFbOk(false);
+        setFbTip("");
+        setFbContent("");
+    };
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
@@ -106,13 +148,16 @@ export function HubPage() {
                 </div>
             </main>
 
-            {/* 导航: 排行榜 + 玩法介绍 */}
+            {/* 导航: 排行榜 + 玩法介绍 + 建议反馈 */}
             <nav className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Button asChild variant="secondary" size="lg" className="flex-1">
                     <Link to="/hlgx/rank">查看排行榜</Link>
                 </Button>
                 <Button variant="outline" size="lg" className="flex-1" onClick={() => setRulesOpen(true)}>
                     玩法介绍
+                </Button>
+                <Button variant="outline" size="lg" className="flex-1" onClick={() => { setFeedbackOpen(true); setFbOk(false); }}>
+                    建议反馈
                 </Button>
             </nav>
 
@@ -207,6 +252,50 @@ export function HubPage() {
                             </span>
                         </li>
                     </ul>
+                </DialogContent>
+            </Dialog>
+
+            {/* 建议反馈弹窗(✕ 可关闭; 昵称 + 反馈内容) */}
+            <Dialog open={feedbackOpen} onOpenChange={(v) => { if (!v) closeFeedback(); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>建议反馈</DialogTitle>
+                        <DialogDescription>你的每一条建议都会被认真查看,感谢支持!</DialogDescription>
+                    </DialogHeader>
+                    {fbOk ? (
+                        <div className="py-6 text-center">
+                            <p className="text-2xl" aria-hidden>🎉</p>
+                            <p className="mt-2 font-semibold text-success">反馈已提交,感谢你的建议!</p>
+                            <Button className="mt-4" onClick={closeFeedback}>关闭</Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">昵称(≤10 字)</label>
+                                <Input
+                                    value={fbName}
+                                    maxLength={10}
+                                    placeholder="你的昵称"
+                                    onChange={(e) => setFbName(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">反馈内容(≤500 字)</label>
+                                <textarea
+                                    value={fbContent}
+                                    maxLength={500}
+                                    rows={5}
+                                    placeholder="想说什么都可以:玩法建议、bug 反馈、期望的新游戏……"
+                                    onChange={(e) => setFbContent(e.target.value)}
+                                    className="w-full resize-none rounded-lg border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
+                                />
+                            </div>
+                            {fbTip && <p className="text-xs font-semibold text-destructive">{fbTip}</p>}
+                            <Button className="w-full" size="lg" onClick={() => void submitFeedback()} disabled={fbSending}>
+                                {fbSending ? "提交中…" : "提交反馈"}
+                            </Button>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>

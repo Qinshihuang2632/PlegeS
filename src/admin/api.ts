@@ -1,7 +1,7 @@
 /*
  * 化了个学 · 管理后台 API 客户端
  */
-import type { AuditPage, RankList, SessionInfo } from "./types";
+import type { AuditPage, FeedbackList, RankList, SessionInfo } from "./types";
 
 async function j<T>(res: Response): Promise<T> {
     try { return (await res.json()) as T; } catch { return {} as T; }
@@ -63,6 +63,21 @@ export async function apiSessions(): Promise<SessionInfo[]> {
 
 export async function apiRevokeSession(id: string): Promise<{ ok: boolean; msg?: string }> {
     const res = await fetch(`/admin/api/sessions?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    return j<{ ok: boolean; msg?: string }>(res);
+}
+
+export async function apiFeedback(q = ""): Promise<FeedbackList | null> {
+    const res = await fetch(`/admin/api/feedback?q=${encodeURIComponent(q)}`);
+    return res.ok ? j<FeedbackList>(res) : null;
+}
+
+export async function apiDeleteFeedback(key: number): Promise<{ ok: boolean; msg?: string }> {
+    const res = await fetch(`/admin/api/feedback?key=${key}`, { method: "DELETE" });
+    return j<{ ok: boolean; msg?: string }>(res);
+}
+
+export async function apiClearFeedback(): Promise<{ ok: boolean; msg?: string }> {
+    const res = await fetch(`/admin/api/feedback?clear=1`, { method: "DELETE" });
     return j<{ ok: boolean; msg?: string }>(res);
 }
 
