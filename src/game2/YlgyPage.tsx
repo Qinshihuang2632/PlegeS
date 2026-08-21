@@ -1,5 +1,5 @@
 /*
- * p了个s · 英了个语 页面 (src/game2/WsPage.tsx)
+ * p了个s · 英了个语 页面 (src/game2/YlgyPage.tsx)
  * =============================================
  * 交叉单词网格: 横竖单词交叉成自由图形, 相交处共享字母;
  * 挖空部分格形成关卡, 玩家补全; 每个词(横/竖)填满时校验是否词库单词, 非法扣血。
@@ -12,11 +12,11 @@ import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { MEANING_HINT_LIMIT, HINT_LIMIT, meaningOf, WsGame, type WsMode } from "./core";
+import { MEANING_HINT_LIMIT, HINT_LIMIT, meaningOf, YlgyGame, type YlgyMode } from "./core";
 import { fmtTime } from "@/game/core";
 import { detectPlatform } from "@/game/platform";
-import { WS_VERSION } from "./version";
-import { WsRules } from "./WsRules";
+import { YLGY_VERSION } from "./version";
+import { YlgyRules } from "./YlgyRules";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
@@ -28,7 +28,7 @@ function storeName(v: string) {
     try { localStorage.setItem(NAME_KEY, v); } catch { /* 隐私模式忽略 */ }
 }
 
-const MODE_TABS: { mode: WsMode; label: string }[] = [
+const MODE_TABS: { mode: YlgyMode; label: string }[] = [
     { mode: "easy", label: "简单" },
     { mode: "normal", label: "标准" },
     { mode: "hard", label: "困难" },
@@ -36,9 +36,9 @@ const MODE_TABS: { mode: WsMode; label: string }[] = [
 
 const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
 
-export function WsPage() {
-    const [game, setGame] = useState(() => new WsGame("easy"));
-    const [curMode, setCurMode] = useState<WsMode>("easy");
+export function YlgyPage() {
+    const [game, setGame] = useState(() => new YlgyGame("easy"));
+    const [curMode, setCurMode] = useState<YlgyMode>("easy");
     const [name, setName] = useState(readName());   // 当前生效昵称
     const [nameDraft, setNameDraft] = useState(readName());   // 输入框编辑值(未确认)
     const [nameTip, setNameTip] = useState("");
@@ -64,10 +64,10 @@ export function WsPage() {
 
     useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, []);
 
-    const newGame = (m: WsMode) => {
+    const newGame = (m: YlgyMode) => {
         setCurMode(m);
         setResult(null);
-        const g = new WsGame(m);
+        const g = new YlgyGame(m);
         setGame(g);
         setElapsed(0);
         startTimer();
@@ -109,17 +109,17 @@ export function WsPage() {
     }, [game.gameOver]);
 
     /* 提交成绩(独立函数, 结算窗「重试提交」复用) */
-    const submitScore = async (g: WsGame, time: number) => {
+    const submitScore = async (g: YlgyGame, time: number) => {
         const nm = name.trim();
         if (!nm) return;
         try {
-            const res = await fetch("/ws/api/rank", {
+            const res = await fetch("/ylgy/api/rank", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     mode: g.mode, name: nm, hp: g.hp, time,
                     tools: g.hints + g.meaningHints,   // 使用次数(与化了个学一致, 用得少排名靠前)
-                    clears: g.fills, version: WS_VERSION,
+                    clears: g.fills, version: YLGY_VERSION,
                     platform: detectPlatform(),
                 }),
             });
@@ -256,9 +256,9 @@ export function WsPage() {
         };
         const w = window as unknown as Record<string, unknown>;
         w.hlgxDebug = dump;
-        w.__WS_DEBUG__ = dump;
+        w.__YLGY_DEBUG__ = dump;
         w.hlgxAnswer = dumpAnswer;
-        w.__WS_ANSWER__ = dumpAnswer;
+        w.__YLGY_ANSWER__ = dumpAnswer;
     }, [game]);
 
     return (
@@ -491,7 +491,7 @@ export function WsPage() {
                                     <Button variant="secondary" onClick={() => void submitScore(game, result.time)}>重试提交</Button>
                                 )}
                                 <Button asChild variant="outline" onClick={() => setResult(null)}>
-                                    <Link to="/hlgx/rank?game=ws">查看排行榜</Link>
+                                    <Link to="/hlgx/rank?game=ylgy">查看排行榜</Link>
                                 </Button>
                                 <Button onClick={() => newGame(curMode)}>再来一局</Button>
                             </div>
@@ -507,7 +507,7 @@ export function WsPage() {
                         <DialogTitle>玩法介绍</DialogTitle>
                         <DialogDescription>三分钟看懂怎么玩,新手不迷路</DialogDescription>
                     </DialogHeader>
-                    <WsRules />
+                    <YlgyRules />
                 </DialogContent>
             </Dialog>
 
@@ -520,7 +520,7 @@ export function WsPage() {
                 onConfirm={confirmName}
             />
 
-            <footer className="mt-8 text-center text-xs text-muted-foreground">英了个语 · {WS_VERSION}(仅供个人娱乐)</footer>
+            <footer className="mt-8 text-center text-xs text-muted-foreground">英了个语 · {YLGY_VERSION}(仅供个人娱乐)</footer>
         </div>
     );
 }

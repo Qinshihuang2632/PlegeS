@@ -4,4 +4,4 @@
  * 第二款游戏「英了个语」自 v1.0.0 独立演进, 不继承「化了个学」的版本号。
  * 界面版本号必须跟随发布更新。
  */
-export const WS_VERSION = "v1.4.8";
+export const YLGY_VERSION = "v1.4.9";   // v1.4.9: 缩写 ws→ylgy 全量改名(路由/API/KV 前缀/组件常量), 玩法无变化

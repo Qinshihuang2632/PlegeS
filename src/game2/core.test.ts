@@ -6,8 +6,8 @@
  * 运行: npx vitest run --pool=forks
  */
 import { describe, expect, it } from "vitest";
-import { HINT_LIMIT, MEANING_HINT_LIMIT, WsGame, WS_DIFFICULTIES, buildCross, dictFor, meaningOf, solveCross, type PlacedWord } from "./core";
-import { WS_WORDS, WS_WORDS_HARD } from "./words";
+import { HINT_LIMIT, MEANING_HINT_LIMIT, YlgyGame, YLGY_DIFFICULTIES, buildCross, dictFor, meaningOf, solveCross, type PlacedWord } from "./core";
+import { YLGY_WORDS, YLGY_WORDS_HARD } from "./words";
 
 /* 词所占格子 */
 function cellsOf(w: PlacedWord): [number, number][] {
@@ -39,25 +39,25 @@ function isConnected(words: PlacedWord[]): boolean {
 describe("词库(课标及衍生)", () => {
     it("4/5/6 字母词库均 ≥100 且全部小写、无重复", () => {
         for (const n of [4, 5, 6]) {
-            const ws = WS_WORDS[n];
-            expect(ws.length).toBeGreaterThanOrEqual(100);
-            expect(new Set(ws).size).toBe(ws.length);
-            expect(ws.every(w => /^[a-z]+$/.test(w) && w.length === n)).toBe(true);
+            const ylgy = YLGY_WORDS[n];
+            expect(ylgy.length).toBeGreaterThanOrEqual(100);
+            expect(new Set(ylgy).size).toBe(ylgy.length);
+            expect(ylgy.every(w => /^[a-z]+$/.test(w) && w.length === n)).toBe(true);
         }
     });
 
     it("难词表全部取自课标 5 字母主词库(课标及衍生占比 100%)", () => {
-        const base = new Set(WS_WORDS[5]);
-        expect(WS_WORDS_HARD.length).toBeGreaterThanOrEqual(100);
-        expect(WS_WORDS_HARD.every(w => w.length === 5)).toBe(true);
-        expect(WS_WORDS_HARD.every(w => base.has(w))).toBe(true);
+        const base = new Set(YLGY_WORDS[5]);
+        expect(YLGY_WORDS_HARD.length).toBeGreaterThanOrEqual(100);
+        expect(YLGY_WORDS_HARD.every(w => w.length === 5)).toBe(true);
+        expect(YLGY_WORDS_HARD.every(w => base.has(w))).toBe(true);
     });
 });
 
 describe("交叉单词网格生成(自由图形)", () => {
     it("三种难度均可生成指定词数网格: 词不重复、全部在词库、交叉点字母一致", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {
-            const d = WS_DIFFICULTIES[mode];
+            const d = YLGY_DIFFICULTIES[mode];
             const dict = dictFor(mode);
             const set = new Set(dict);
             const built = buildCross(d.words, dict);
@@ -94,7 +94,7 @@ describe("交叉单词网格生成(自由图形)", () => {
 describe("单词连通成图(回归: 修前 ~96% 网格是断开的)", () => {
     it("buildCross 生成的所有词共享格子、连成单一连通图形", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {
-            const d = WS_DIFFICULTIES[mode];
+            const d = YLGY_DIFFICULTIES[mode];
             const dict = dictFor(mode);
             for (let t = 0; t < 40; t++) {
                 const built = buildCross(d.words, dict, d.maxDim);
@@ -106,7 +106,7 @@ describe("单词连通成图(回归: 修前 ~96% 网格是断开的)", () => {
 
     it("网格尺寸受 maxDim 约束: H、W 均不超上限(图形紧凑)", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {
-            const d = WS_DIFFICULTIES[mode];
+            const d = YLGY_DIFFICULTIES[mode];
             const dict = dictFor(mode);
             for (let t = 0; t < 40; t++) {
                 const built = buildCross(d.words, dict, d.maxDim);
@@ -122,7 +122,7 @@ describe("棋盘良构性(无不成词假词: 每段≥2连字必须是已定义
     it("三难度生成的网格中, 任意横/纵≥2连字段都恰是某个已定义词", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {
             for (let t = 0; t < 40; t++) {
-                const g = new WsGame(mode);
+                const g = new YlgyGame(mode);
                 const hWords = new Set<string>(), vWords = new Set<string>();
                 for (const w of g.words) (w.dir === "h" ? hWords : vWords).add(`${w.r},${w.c},${w.word.length}`);
                 // 横向段: 任意≥2连字必须对应某横词
@@ -156,7 +156,7 @@ describe("唯一解保证(无逻辑漏洞)", () => {
     it("三种难度生成的题面均恰有 1 个解", () => {
         for (const mode of ["easy", "normal", "hard"] as const) {
             for (let t = 0; t < 6; t++) {
-                const g = new WsGame(mode);
+                const g = new YlgyGame(mode);
                 const dict = dictFor(mode);
                 const sols = solveCross(g.occupied, g.puzzle, g.words, dict);
                 expect(sols.length, `${mode} 第${t}局解数=${sols.length}`).toBe(1);
@@ -171,21 +171,21 @@ describe("唯一解保证(无逻辑漏洞)", () => {
 
 describe("游戏流程", () => {
     it("难度参数: 4词/6词/8词, 每词已知字母数配额", () => {
-        expect(WS_DIFFICULTIES.easy.words).toBe(4);
-        expect(WS_DIFFICULTIES.normal.words).toBe(6);
-        expect(WS_DIFFICULTIES.hard.words).toBe(8);
-        expect(WS_DIFFICULTIES.hard.dictKey).toBe("hard");
+        expect(YLGY_DIFFICULTIES.easy.words).toBe(4);
+        expect(YLGY_DIFFICULTIES.normal.words).toBe(6);
+        expect(YLGY_DIFFICULTIES.hard.words).toBe(8);
+        expect(YLGY_DIFFICULTIES.hard.dictKey).toBe("hard");
         // v1.4.5: 已知字母数配额 —— 简单 [4,2,2,2] / 标准 [5,5,3,3,2,2] / 困难 [5,3,3,2,2,2,2,2]
-        expect(WS_DIFFICULTIES.easy.known).toEqual([4, 2, 2, 2]);
-        expect(WS_DIFFICULTIES.normal.known).toEqual([5, 5, 3, 3, 2, 2]);
-        expect(WS_DIFFICULTIES.hard.known).toEqual([5, 3, 3, 2, 2, 2, 2, 2]);
+        expect(YLGY_DIFFICULTIES.easy.known).toEqual([4, 2, 2, 2]);
+        expect(YLGY_DIFFICULTIES.normal.known).toEqual([5, 5, 3, 3, 2, 2]);
+        expect(YLGY_DIFFICULTIES.hard.known).toEqual([5, 3, 3, 2, 2, 2, 2, 2]);
         // 所有词已知字母数 ≥2(不出现只有 1 个字母已知的词)
         for (const mode of ["easy", "normal", "hard"] as const)
-            expect(WS_DIFFICULTIES[mode].known.every(k => k >= 2)).toBe(true);
+            expect(YLGY_DIFFICULTIES[mode].known.every(k => k >= 2)).toBe(true);
     });
 
     it("开局: 未占用格不可填/不可点, 预填格不可改, 每词已知字母数 = 配额", () => {
-        const g = new WsGame("easy");
+        const g = new YlgyGame("easy");
         expect(g.words.length).toBe(4);
         // 未占用格不可填
         for (let r = 0; r < g.H; r++)
@@ -201,7 +201,7 @@ describe("游戏流程", () => {
         // 每词已知字母数 ≥ 配额 known[wi](全知词 known=len 全提示)
         for (let wi = 0; wi < g.words.length; wi++) {
             const known = g.wordCells(wi).filter(([r, c]) => g.puzzle[r][c] !== null).length;
-            expect(known, `词${wi} 已知字母数=${known}`).toBeGreaterThanOrEqual(WS_DIFFICULTIES.easy.known[wi]);
+            expect(known, `词${wi} 已知字母数=${known}`).toBeGreaterThanOrEqual(YLGY_DIFFICULTIES.easy.known[wi]);
         }
         expect(g.totalBlanks).toBeGreaterThanOrEqual(4);   // v1.4.0: 简单总空格 ≥4
         // v1.4.0: 至少一个交叉格(两个词的共用字母)被挖空
@@ -216,13 +216,13 @@ describe("游戏流程", () => {
     });
 
     it("按答案填写全部空格 → 通关; 填错使词非法 → 扣血", () => {
-        const g = new WsGame("easy");
+        const g = new YlgyGame("easy");
         for (let r = 0; r < g.H; r++)
             for (let c = 0; c < g.W; c++)
                 if (g.occupied[r][c] && g.grid[r][c] === null) g.fill(r, c, g.cellAnswer(r, c));
         expect(g.win).toBe(true);
 
-        const g2 = new WsGame("easy");
+        const g2 = new YlgyGame("easy");
         // 找一个只属于单一词的占用空格(非交叉点): 填错后只让这 1 个词变非法 → 恰好扣 1 血
         const pickBlank = (): [number, number] => {
             const single: [number, number][] = [];
@@ -250,7 +250,7 @@ describe("游戏流程", () => {
     });
 
     it("提示道具: 每局最多 2 次, 向占用空位填正确字母", () => {
-        const g = new WsGame("normal");
+        const g = new YlgyGame("normal");
         expect(HINT_LIMIT).toBe(2);
         const blanksBefore = g.totalBlanks;
         expect(g.hint()).toBe(true);
@@ -263,7 +263,7 @@ describe("游戏流程", () => {
     });
 
     it("含义提示: 每局 1 次, 返回未填完词的词索引与单条释义(不暴露拼写)", () => {
-        const g = new WsGame("normal");
+        const g = new YlgyGame("normal");
         expect(MEANING_HINT_LIMIT).toBe(1);
         const t1 = g.meaningHint();
         expect(t1).not.toBeNull();

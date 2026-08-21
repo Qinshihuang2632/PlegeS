@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { apiClearFeedback, apiDeleteFeedback, apiFeedback } from "../api";
 import { ConfirmDialog } from "../ConfirmDialog";
 import type { FeedbackEntry } from "../types";
@@ -94,6 +95,17 @@ export function FeedbackPage() {
                                         <span className="font-semibold">{e.name}</span>
                                         <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{e.ip}</span>
                                         <span className="text-xs text-muted-foreground tabular-nums">{e.date}</span>
+                                        {e.credit !== undefined && (
+                                            <span
+                                                className={cn(
+                                                    "rounded-full px-2 py-0.5 text-xs font-semibold",
+                                                    e.credit ? "bg-success/15 text-success" : "bg-secondary text-secondary-foreground",
+                                                )}
+                                                title="建议被采纳后是否愿以该昵称进入特别鸣谢榜"
+                                            >
+                                                {e.credit ? "🏆 愿入鸣谢" : "不入鸣谢"}
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{e.content}</p>
                                 </div>

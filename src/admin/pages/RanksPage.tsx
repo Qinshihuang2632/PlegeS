@@ -22,7 +22,7 @@ const GAMES = [
         { mode: "challenge", label: "困难" },
         { mode: "extreme", label: "挑战" },
     ] },
-    { key: "ws", label: "英了个语", modes: [
+    { key: "ylgy", label: "英了个语", modes: [
         { mode: "easy", label: "简单" },
         { mode: "normal", label: "标准" },
         { mode: "hard", label: "困难" },
@@ -172,7 +172,7 @@ export function RanksPage() {
                                     {isClgz ? (
                                         <th className="px-4 py-2.5 font-semibold">得分</th>
                                     ) : (
-                                        <th className="px-4 py-2.5 font-semibold">{curGame === "ws" ? "血量(填写字母)" : "血量(消除组数)"}</th>
+                                        <th className="px-4 py-2.5 font-semibold">{curGame === "ylgy" ? "血量(填写字母)" : "血量(消除组数)"}</th>
                                     )}
                                     <th className="px-4 py-2.5 font-semibold">用时</th>
                                     <th className="px-4 py-2.5 font-semibold">版本</th>
@@ -194,7 +194,7 @@ export function RanksPage() {
                                         <td className="px-4 py-2.5">
                                             {isClgz
                                                 ? `${e.score ?? 0} 分`
-                                                : `❤ ${e.hp}(${curGame === "ws" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")})`}
+                                                : `❤ ${e.hp}(${curGame === "ylgy" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")})`}
                                         </td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>

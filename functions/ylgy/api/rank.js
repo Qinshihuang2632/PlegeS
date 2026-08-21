@@ -1,10 +1,10 @@
 /*
  * p了个s · 英语单词数独 排行榜 API (Cloudflare Pages Function)
- * 路由: /ws/api/rank
+ * 路由: /ylgy/api/rank
  *   GET    ?mode=easy|normal|hard 查询该难度榜单(已排序)
  *   POST   请求体 JSON {mode, name, hp, time, tools, clears?, version?, platform?}
  *          提交成绩; 排序 hp↓ → clears↓ → time↑ → tools↑(tools=技能使用次数, 用得少排前, 与化了个学一致)
- * KV 键: ws:easy / ws:normal / ws:hard(与化了个学的键分离)
+ * KV 键: ylgy:easy / ylgy:normal / ylgy:hard(与化了个学的键分离)
  * 防刷与校验规则与 /hlgx/api/rank 一致(60s/IP、昵称清洗、违禁词、≥10s、同名放开)。
  */
 import { MODES as _MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, json } from "../../_lib/ranklib.js";
@@ -14,7 +14,7 @@ import { hasBadWord } from "../../_lib/badwords.js";
 export const MODES = ["easy", "normal", "hard"];
 const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒)
 const RANK_LIMIT = 200;     // 单难度榜单条目上限
-const KEY_PREFIX = "ws:";   // KV 键前缀(与化了个学榜单分离)
+const KEY_PREFIX = "ylgy:";   // KV 键前缀(与化了个学榜单分离)
 
 async function loadMode(env, mode) {
     const raw = await env.RANKINGS.get(KEY_PREFIX + mode);
@@ -61,7 +61,7 @@ export async function onRequestPost({ request, env }) {
     const platform = resolvePlatform(body, request);
 
     const ip = clientIp(request);
-    const n = await countIncr(env, `ws:rl:${ip}`, SUBMIT_TTL, 1);
+    const n = await countIncr(env, `ylgy:rl:${ip}`, SUBMIT_TTL, 1);
     if (n > 1) return json({ ok: false, msg: "提交过于频繁,请稍后再试" }, 429);
 
     let name = String(body.name ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "");

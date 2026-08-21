@@ -1,7 +1,9 @@
 /*
  * p了个s · 建议反馈 API (Cloudflare Pages Function)
  * 路由: /api/feedback
- *   POST  {name, content} → 提交反馈(玩家公开, 60s/IP 限频)
+ *   POST  {name, content, credit?} → 提交反馈(玩家公开, 60s/IP 限频)
+ *         credit(v2.5.5): 布尔, 建议被采纳后是否愿以当前昵称进入特别鸣谢榜;
+ *         旧客户端不传该字段则不存储(管理端显示「—」)
  *   GET   需管理会话(见 /admin/api/feedback)
  * KV 键: feedback(数组 JSON, 上限 500 条, 新提交在前)
  * 校验: 昵称清洗(同榜单规则: ≤10 字/违禁词/< >过滤) + 内容 1~500 字 + 违禁词。
@@ -51,6 +53,7 @@ export async function onRequestPost({ request, env }) {
     list.unshift({
         name,
         content,
+        ...(body.credit === undefined ? {} : { credit: body.credit === true }),
         ip: String(ip ?? "").slice(0, 45),
         date: fmtDate(),
         ts: Date.now(),

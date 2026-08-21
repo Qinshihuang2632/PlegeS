@@ -5,7 +5,7 @@
  * 生成器只从「有释义的词」中取词, 保证对局内每个词都能在结算页
  * 逐条查看词性与释义。词性标记: n.名词 v.动词 adj.形容词 adv.副词 prep.介词 conj.连词 num.数词 pron.代词 art.冠词 int.感叹词 aux.助动词
  */
-export const WS_MEANINGS: Record<string, { pos: string; zh: string }[]> = {
+export const YLGY_MEANINGS: Record<string, { pos: string; zh: string }[]> = {
     // ==================== 4 字母 ====================
     "able": [{ pos: "adj.", zh: "能够的;有能力的" }],
     "acid": [{ pos: "n.", zh: "酸" }, { pos: "adj.", zh: "酸的" }],

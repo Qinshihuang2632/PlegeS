@@ -3,6 +3,8 @@
  * =================================================
  * 由 public/_routes.json 限定只处理:
  *   /hlgx/api/*(未知子路径 404) /hlgx/hua /hlgx/rank(游戏 SPA 路由) /admin/*(管理 SPA)
+ *   /ylgy/api/*(英了个语, 旧缩写 ws 于 v1.4.9 改名) /ws(旧链接, SPA 重定向兼容)
+ *   /clgz/api/*(错了个字)
  * 具体 API 路由(如 /hlgx/api/rank)由更具体的 Function 优先命中, 不会走到这里。
  *
  * 流程: 未知 API 路径 → 404 JSON(保持 API 404 契约);
@@ -16,7 +18,8 @@ export async function onRequest({ env, request }) {
     const path = url.pathname;
 
     // 未知 API 路径保持 404 契约(不要回退成 SPA 页面)
-    if (path.startsWith("/hlgx/api/") || path.startsWith("/admin/api/")) {
+    if (path.startsWith("/hlgx/api/") || path.startsWith("/ylgy/api/")
+        || path.startsWith("/clgz/api/") || path.startsWith("/admin/api/")) {
         return json({ ok: false, msg: "接口不存在" }, 404);
     }
 

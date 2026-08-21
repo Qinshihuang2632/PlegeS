@@ -17,11 +17,12 @@
 |------|-----------|------|
 | 化了个学 | `src/version.ts` | `APP_VERSION` |
 | 平台 | `src/version.ts` | `PLATFORM_VERSION` |
-| 英了个语 | `src/game2/version.ts` | `WS_VERSION` |
+| 英了个语 | `src/game2/version.ts` | `YLGY_VERSION` |
 | 错了个字 | `src/game3/version.ts` | `CLGZ_VERSION` |
 
 4. **版本号显示约定**(v2.3.8/v2.4.3 确立):任意游戏任意界面下方都显示**该游戏自己**的版本号(排行榜、玩法介绍弹窗底部、局内 footer 均按当前游戏显示,不得误显其他游戏版本)。
-5. 缩写固定:化了个学=hlgx、英了个语=内部缩写 `ws`(历史遗留,**勿改**路由/KV 键/前端参数)、错了个字=clgz。
+5. 缩写固定:化了个学=hlgx、英了个语=**ylgy**(v1.4.9 起,由历史遗留的 `ws` 改名;旧链接 `/ws`、旧参数 `?game=ws` 重定向兼容)、错了个字=clgz。
+6. **新建游戏的文件缩写必须先问用户**(v2.5.5 起):命名前弹窗让用户给出缩写,用户确认后才建 `src/gameN/`、`functions/<缩写>/`、路由、KV 键——不得自行拟定。
 
 ## 二、开发 / 测试 / 构建 / 部署流程
 
@@ -56,7 +57,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 
 1. **日志双份同步**:每个版本更新都要写两处:
    - 对应游戏 `docs/xxx_summary_report.md`——版本历史**正序追加在文件末尾**(最早的版本在最前);
-   - 平台 `docs/platform_log.md`——「历史进程」表格末尾**追加一行**(日期、小游戏、版本、概要)。
+   - 平台 `docs/platform_log.md`——「历史进程」表格末尾**追加一行**(日期、小游戏、版本、概要、**贡献人**;平台行一律 ps,游戏行未提及他人默认 ps,有人参与照实列全如「ps、在下雨」)。
 2. 每次更新 md 日志后运行 `python scripts/make_docx.py docs/xxx.md` 同步生成 .docx(md + docx 双份)。
 3. docs/ 下文档编码一律 UTF-8;不要用会触发编码转换的工具反复另存(历史乱码事故根源)。
 4. **接手模型纪律**:接手后先读 `docs/platform_log.md`(历史+约定)与本文档再动手;高风险操作(清榜/删数据/改密钥/重部署)必须先向用户确认,宁可多确认,不擅自推线上或改数据。
@@ -73,7 +74,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 1. 防刷与校验:60s/IP 限频(超限 429);昵称清洗(trim / 去控制字符 / ≤10 字 / 含违禁词 400 / 过滤 `< >`);成绩用时 ≥10s(失败局 hp=0 放宽);同名放开(靠上榜时间区分);单榜上限 200 条。
 2. KV 键分布(勿改):
    - 化了个学:裸键 `easy` / `normal` / `challenge` / `extreme`
-   - 英了个语:`ws:easy` / `ws:normal` / `ws:hard`
+   - 英了个语:`ylgy:easy` / `ylgy:normal` / `ylgy:hard`(v1.4.9 由 `ws:` 改名,线上旧键 `ws:*` 已复制迁移、保留未删)
    - 错了个字:`clgz:all`
    - 建议反馈:`feedback`(上限 500 条,超出丢最旧)
 3. 平台分离:mobile / desktop 榜单分开,排名仅同平台比较。
@@ -95,7 +96,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 2. **本地验证**:`npx wrangler pages dev dist --kv=RANKINGS --persist-to .wrangler/state --port 8799`,用完必须杀掉进程树(端口 8799 常被占用)。
 3. **CDN 缓存**:部署后线上可能延迟生效,验证用 `?t=时间戳` 破缓存;压缩后 JS 变量名/字符串会变(minCover 变 `.55`、函数名被内联),检测功能用**行为特征码**而非名称。
 4. **curl 中文乱码**:git-bash 下 curl 中文输出乱码,线上验证用 Node fetch。
-5. **路由白名单 `public/_routes.json`**:新增任何路径必须加进去(现有:/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ws/api/*、/ws、/clgz/api/*、/clgz、/api/feedback、/admin/*),漏加则线上 404。
+5. **路由白名单 `public/_routes.json`**:新增任何路径必须加进去(现有:/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ylgy/api/*、/ylgy、/ws(旧链接,SPA 重定向兼容)、/clgz/api/*、/clgz、/api/feedback、/admin/*),漏加则线上 404。
 6. **git 代理是临时的**:推完必须 `git config --unset http.proxy`(及 https.proxy),不留全局配置。
 7. **日志日期时区**:fmtDate 固定 Asia/Shanghai。
 8. 错了个字判定调参:用控制台 `__clgzSnapshot()` 查看墨迹/字形 ASCII 快照与 cover/stray 详情;**不要加面积比上限**(v1.0.5 教训,误伤认真写粗笔画的玩家)。
@@ -104,6 +105,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 
 新增一款游戏需同步完成:
 
+0. **先问用户要文件缩写**(v2.5.5 起,见「版本号约定」第 6 条),用户给出后再动手命名;
 1. `src/gameN/` 游戏目录(含 `version.ts` 独立版本常量、core 纯逻辑、页面、玩法介绍组件);
 2. `functions/xxx/api/rank.js` 独立榜单 API(复用 `_lib/` 的 ranklib/ratelimit/badwords/auth/audit);
 3. `public/_routes.json` 白名单加新路径;
@@ -119,3 +121,6 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 | 2026-08-17 | 提交前弹窗问代理 + 实际检查;部署与验证先行 | v2.3.8 先提交未部署教训 |
 | 2026-08-17 | 版本号显示约定(任意界面显示该游戏版本) | v2.3.8 / v2.4.3 确立 |
 | 2026-08-21 | 本文档建立,全部约定集中持久化 | 整理自 HANDOFF_PROMPT.md + platform_log.md |
+| 2026-08-21 | 英了个语缩写 ws→ylgy 全量改名;新建游戏缩写必须先问用户 | v1.4.9 / 平台 v2.5.5 |
+| 2026-08-21 | 建议反馈新增「鸣谢意愿」问询,随建议提交后台展示 | 平台 v2.5.5 |
+| 2026-08-21 | 平台日志历史进程表新增「贡献人」列(补全 64 行历史) | 平台 v2.5.5 |

@@ -47,6 +47,7 @@ export interface SessionInfo {
 export interface FeedbackEntry {
     name: string;
     content: string;
+    credit?: boolean; // v2.5.5: 鸣谢意愿(建议被采纳后是否愿入特别鸣谢榜); 旧条目无此字段
     ip: string;
     date: string;
     ts: number;

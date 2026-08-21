@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { GameRules } from "./GameRules";
-import { WsRules } from "@/game2/WsRules";
+import { YlgyRules } from "@/game2/YlgyRules";
 import { ClgzRules } from "@/game3/ClgzRules";
 import { validateNickname } from "./NameConfirmDialog";
 import { PLATFORM_VERSION } from "@/version";
@@ -18,15 +18,17 @@ import { PLATFORM_VERSION } from "@/version";
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
-    const [rulesTab, setRulesTab] = useState<"hlgx" | "ws" | "clgz">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 三子页
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 三子页
     const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [fbName, setFbName] = useState(() => localStorage.getItem("hlgx_name")?.trim() || "");
     const [fbContent, setFbContent] = useState("");
+    const [fbCredit, setFbCredit] = useState(true);   // v2.5.5: 鸣谢意愿(建议被采纳后是否愿以当前昵称进入特别鸣谢)
     const [fbTip, setFbTip] = useState("");
     const [fbSending, setFbSending] = useState(false);
     const [fbOk, setFbOk] = useState(false);
 
-    /* 提交建议反馈(v2.5.4): 昵称 + 内容, 违禁词校验, 60s/IP 限频由后端强制 */
+    /* 提交建议反馈(v2.5.4): 昵称 + 内容, 违禁词校验, 60s/IP 限频由后端强制
+       (v2.5.5: 附带鸣谢意愿 credit, 与内容一并提交供后台查看) */
     const submitFeedback = async () => {
         const tip = validateNickname(fbName);
         if (tip) { setFbTip(tip); return; }
@@ -38,7 +40,7 @@ export function HubPage() {
             const res = await fetch("/api/feedback", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: fbName.trim(), content: fbContent.trim() }),
+                body: JSON.stringify({ name: fbName.trim(), content: fbContent.trim(), credit: fbCredit }),
             });
             const d = await res.json().catch(() => null);
             if (res.ok && d?.ok) {
@@ -58,6 +60,7 @@ export function HubPage() {
         setFbOk(false);
         setFbTip("");
         setFbContent("");
+        setFbCredit(true);
     };
 
     return (
@@ -87,7 +90,7 @@ export function HubPage() {
 
                 {/* 敬请期待 → 单词数独(v2.4.0 可玩) */}
                 <Link
-                    to="/ws"
+                    to="/ylgy"
                     className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                     <div className="mb-3 text-4xl" aria-hidden>词</div>
@@ -182,7 +185,7 @@ export function HubPage() {
                     <div className="mb-3 flex gap-1 rounded-full bg-muted p-1">
                         {([
                             { key: "hlgx", label: "化了个学" },
-                            { key: "ws", label: "英了个语" },
+                            { key: "ylgy", label: "英了个语" },
                             { key: "clgz", label: "错了个字" },
                         ] as const).map(({ key, label }) => (
                             <button
@@ -197,7 +200,7 @@ export function HubPage() {
                             </button>
                         ))}
                     </div>
-                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ws" ? <WsRules /> : <ClgzRules />}
+                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ylgy" ? <YlgyRules /> : <ClgzRules />}
                 </DialogContent>
             </Dialog>
 
@@ -212,43 +215,43 @@ export function HubPage() {
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@在下雨</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.0.0-cloudflare~v2.1.2(云端迁移 / 工程化重构 / 安全处置);错了个字 v1.0.1、v1.0.2(识别算法与判定修复)
+                                化了个学 v2.0.0-cloudflare~v2.1.2(云端迁移 / 工程化重构 / 安全处置);英了个语 v1.1.0~v1.4.0(算法重构优化);错了个字 v1.0.1、v1.0.2(识别算法与判定修复)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@鹜秋</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.1.9(手牌槽两行 / 混合物类别)、v2.2.1(违禁品名录扩充)
+                                化了个学 v2.1.9、v2.2.1(屏蔽词名录扩充)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@鼠鼠鼠了</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.1.9(手牌槽两行 / 混合物类别)、v2.2.2(挑战难度布局);英了个语 v1.0.0(单词数独上线)
+                                化了个学 v2.1.9(混合物类别)、v2.2.2(挑战难度布局);英了个语 v1.0.0(单词数独上线)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@Skjusty</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.1.5(物质库扩容)、v2.1.8(移动端棋盘放大)
+                                化了个学 v2.1.5(多类别消除)、v2.1.8(移动端棋盘放大)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@安比</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.1.6(放开同名昵称)、v2.1.7(数据安全修复)
+                                化了个学 v2.1.6(玩法介绍完善)、v2.1.7(数据安全修复)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@壹棵小玖菜</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.1.8(移动端棋盘放大)
+                                化了个学 v2.1.8(题库修正)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@绝艺如君</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.1.6(放开同名昵称)
+                                化了个学 v2.1.6(玩法介绍完善)
                             </span>
                         </li>
                     </ul>
@@ -289,6 +292,26 @@ export function HubPage() {
                                     onChange={(e) => setFbContent(e.target.value)}
                                     className="w-full resize-none rounded-lg border bg-card px-3 py-2 text-sm outline-none focus:border-primary"
                                 />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                                    若建议被采纳,在对应版本更新后你是否愿意以现在的昵称进入特别鸣谢榜?
+                                </label>
+                                <div className="flex gap-1 rounded-full bg-muted p-1">
+                                    {([{ v: true, label: "愿意" }, { v: false, label: "不愿意" }] as const).map(({ v, label }) => (
+                                        <button
+                                            key={label}
+                                            type="button"
+                                            onClick={() => setFbCredit(v)}
+                                            className={cn(
+                                                "flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition",
+                                                fbCredit === v ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground",
+                                            )}
+                                        >
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             {fbTip && <p className="text-xs font-semibold text-destructive">{fbTip}</p>}
                             <Button className="w-full" size="lg" onClick={() => void submitFeedback()} disabled={fbSending}>

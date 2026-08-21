@@ -4,7 +4,7 @@
  * 5 字母词释义(词性 + 中文, 多词性/多义项全部列出)。
  * 生成器只从「有释义的词」中取词, 保证对局内每个词都能在结算页逐条查看。
  */
-export const WS_MEANINGS_5: Record<string, { pos: string; zh: string }[]> = {
+export const YLGY_MEANINGS_5: Record<string, { pos: string; zh: string }[]> = {
     "about": [{ pos: "prep.", zh: "关于;大约;到处" }, { pos: "adv.", zh: "大约;附近" }],
     "above": [{ pos: "prep.", zh: "在…上方;超过;高于" }, { pos: "adv.", zh: "在上面;以上" }],
     "actor": [{ pos: "n.", zh: "演员;男演员" }],

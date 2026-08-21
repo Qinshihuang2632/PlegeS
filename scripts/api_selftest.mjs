@@ -366,12 +366,12 @@ check("下线后会话失效 → 401", r.status === 401, JSON.stringify(r.data))
 /* ---------- 12.5 管理端三游戏独立榜单 ---------- */
 reset();
 // 三个游戏各提交一条(用户 API)
-const wsRank = await import(BASE + "functions/ws/api/rank.js");
+const ylgyRank = await import(BASE + "functions/ylgy/api/rank.js");
 const clgzRank = await import(BASE + "functions/clgz/api/rank.js");
-const postWs = (body, headers = {}) => call(wsRank.onRequestPost, { request: mockReq("http://x/ws/api/rank", body, headers), env });
+const postYlgy = (body, headers = {}) => call(ylgyRank.onRequestPost, { request: mockReq("http://x/ylgy/api/rank", body, headers), env });
 const postClgz = (body, headers = {}) => call(clgzRank.onRequestPost, { request: mockReq("http://x/clgz/api/rank", body, headers), env });
 await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "甲", hp: 3, time: 30, tools: 0, clears: 10, platform: "desktop" }), env });
-await postWs({ mode: "easy", name: "乙", hp: 3, time: 40, tools: 0, clears: 8, platform: "desktop" });
+await postYlgy({ mode: "easy", name: "乙", hp: 3, time: 40, tools: 0, clears: 8, platform: "desktop" });
 await postClgz({ mode: "all", name: "丙", score: 7, time: 50, platform: "desktop" });
 // 管理端登录
 r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "mg-ip-3g" }), env });
@@ -380,27 +380,27 @@ const adminReq3g = (path, method = "GET", headers = {}) => ({ request: mockReq("
 // 三游戏各自可见自己的榜单(互不串)
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
 check("管理端 hlgx 榜单仅含化了个学记录", r.status === 200 && r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
-r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=ws&mode=easy"));
-check("管理端 ws 榜单仅含英了个语记录", r.status === 200 && r.data.rank.length === 1 && r.data.rank[0].name === "乙", JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=ylgy&mode=easy"));
+check("管理端 ylgy 榜单仅含英了个语记录", r.status === 200 && r.data.rank.length === 1 && r.data.rank[0].name === "乙", JSON.stringify(r.data));
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=clgz&mode=all"));
 check("管理端 clgz 榜单仅含错了个字记录(含得分)", r.status === 200 && r.data.rank.length === 1 && r.data.rank[0].name === "丙" && r.data.rank[0].score === 7, JSON.stringify(r.data));
-// 独立删除: 删 ws 的不影响 hlgx / clgz
-r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=ws&mode=easy&key=0", "DELETE"));
-check("管理端 删除 ws 单条 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+// 独立删除: 删 ylgy 的不影响 hlgx / clgz
+r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=ylgy&mode=easy&key=0", "DELETE"));
+check("管理端 删除 ylgy 单条 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
-check("删除 ws 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
+check("删除 ylgy 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=clgz&mode=all"));
-check("删除 ws 后 clgz 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "丙", JSON.stringify(r.data));
+check("删除 ylgy 后 clgz 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "丙", JSON.stringify(r.data));
 // 独立清空: 清空 clgz 全部不影响 hlgx
 r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=clgz&mode=all", "DELETE"));
 check("管理端 清空 clgz 全部 → 200", r.status === 200 && r.data.msg === "已清空 错了个字 全部榜单", JSON.stringify(r.data));
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
 check("清空 clgz 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
 
-/* ---------- 12.6 建议反馈: 玩家提交 / 限频 / 违禁词 / 管理端查看删除 ---------- */
+/* ---------- 12.6 建议反馈: 玩家提交 / 限频 / 违禁词 / 鸣谢意愿 / 管理端查看删除 ---------- */
 reset();
-// 玩家提交
-r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家甲", content: "建议加个数学主题" }, { "X-Forwarded-For": "fb-ip-1" }), env });
+// 玩家提交(v2.5.5: 附带鸣谢意愿 credit)
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家甲", content: "建议加个数学主题", credit: true }, { "X-Forwarded-For": "fb-ip-1" }), env });
 check("反馈 玩家提交 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 // 60s 限频(同 IP 立即再提交)
 r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家甲", content: "再来一条" }, { "X-Forwarded-For": "fb-ip-1" }), env });
@@ -411,9 +411,12 @@ check("反馈 违禁词 → 400", r.status === 400, JSON.stringify(r.data));
 // 空内容
 r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "  " }, { "X-Forwarded-For": "fb-ip-3" }), env });
 check("反馈 空内容 → 400", r.status === 400, JSON.stringify(r.data));
-// 另一玩家提交成功
+// 另一玩家提交成功(不传 credit = 旧客户端)
 r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "界面很好看" }, { "X-Forwarded-For": "fb-ip-4" }), env });
 check("反馈 另一玩家提交 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+// v2.5.5 鸣谢意愿: credit=false 与不传字段分别存储
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家丙", content: "排行榜希望分科排", credit: false }, { "X-Forwarded-For": "fb-ip-5" }), env });
+check("反馈 credit=false 提交 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 // 管理端查看
 r = await call(adminAuth.onRequestPost, { request: mockReq("http://x/admin/api/auth", { token: ADMIN_TOKEN }, { "X-Forwarded-For": "fb-mg-ip" }), env });
 const fbSid = (r.headers.get("set-cookie") || "").match(/hlgx_admin=([^;]+)/)[1];
@@ -421,14 +424,19 @@ const fbReq = (path, method = "GET") => ({ request: mockReq("http://x" + path, n
 r = await call(adminFeedback.onRequestGet, { request: mockReq("http://x/admin/api/feedback"), env });
 check("管理端反馈 未登录 → 401", r.status === 401, JSON.stringify(r.data));
 r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback"));
-check("管理端反馈 已登录 → 2 条(新在前)", r.status === 200 && r.data.total === 2 && r.data.feedback[0].name === "玩家乙", JSON.stringify(r.data));
+check("管理端反馈 已登录 → 3 条(新在前)", r.status === 200 && r.data.total === 3 && r.data.feedback[0].name === "玩家丙", JSON.stringify(r.data));
+check("反馈鸣谢意愿存储: 甲=true / 乙不传→无字段 / 丙=false",
+      r.data.feedback.find((e) => e.name === "玩家甲").credit === true
+      && r.data.feedback.find((e) => e.name === "玩家乙").credit === undefined
+      && r.data.feedback.find((e) => e.name === "玩家丙").credit === false,
+      JSON.stringify(r.data.feedback.map((e) => [e.name, e.credit])));
 r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback?q=%E7%94%B2"));
 check("管理端反馈 搜索昵称「甲」", r.data.feedback.length === 1 && r.data.feedback[0].name === "玩家甲", JSON.stringify(r.data));
 // 删除 + 审计
 r = await call(adminFeedback.onRequestDelete, fbReq("/admin/api/feedback?key=1", "DELETE"));
 check("管理端反馈 单条删除 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback"));
-check("删除后剩 1 条", r.data.total === 1, JSON.stringify(r.data));
+check("删除后剩 2 条", r.data.total === 2, JSON.stringify(r.data));
 r = await call(adminLogs.onRequestGet, fbReq("/admin/api/logs?action=feedback_delete_one"));
 check("反馈删除写审计", r.data.total >= 1, JSON.stringify(r.data));
 r = await call(adminFeedback.onRequestDelete, fbReq("/admin/api/feedback?clear=1", "DELETE"));

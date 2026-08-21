@@ -16,16 +16,16 @@
  *       标准 6 词(5 字母, 2 全提示 + 2 留 3 字母 + 2 留 2 字母)/
  *       困难 8 词(5 字母课标难词, 1 全提示 + 2 留 3 字母 + 5 留 2 字母); 均保证唯一解。
  */
-import { WS_WORDS, WS_WORDS_HARD } from "./words";
-import { WS_MEANINGS } from "./meanings";
-import { WS_MEANINGS_5 } from "./meanings5";
+import { YLGY_WORDS, YLGY_WORDS_HARD } from "./words";
+import { YLGY_MEANINGS } from "./meanings";
+import { YLGY_MEANINGS_5 } from "./meanings5";
 
-export const WS_DIFFICULTIES = {
+export const YLGY_DIFFICULTIES = {
     easy:   { label: "简单", words: 4, len: 4, dictKey: "basic", known: [4, 2, 2, 2], maxDim: 7 },
     normal: { label: "标准", words: 6, len: 5, dictKey: "basic", known: [5, 5, 3, 3, 2, 2], maxDim: 9 },
     hard:   { label: "困难", words: 8, len: 5, dictKey: "hard",  known: [5, 3, 3, 2, 2, 2, 2, 2], maxDim: 10 },
 } as const;
-export type WsMode = keyof typeof WS_DIFFICULTIES;
+export type YlgyMode = keyof typeof YLGY_DIFFICULTIES;
 
 export const HINT_LIMIT = 2;          // 填空提示每局次数
 export const MEANING_HINT_LIMIT = 1;  // 含义提示每局次数
@@ -40,12 +40,12 @@ export function shuffleArr<T>(a: T[]): T[] {
 
 /* 单词释义(4/5 字母词库); 无释义返回 null */
 export function meaningOf(word: string): { pos: string; zh: string }[] | null {
-    return WS_MEANINGS[word] ?? WS_MEANINGS_5[word] ?? null;
+    return YLGY_MEANINGS[word] ?? YLGY_MEANINGS_5[word] ?? null;
 }
 
 /* 生成词库 = 课标词 ∩ 有释义词(保证本局所有词可解释) */
-export function dictFor(mode: WsMode): string[] {
-    const base = WS_DIFFICULTIES[mode].dictKey === "hard" ? WS_WORDS_HARD : WS_WORDS[WS_DIFFICULTIES[mode].len];
+export function dictFor(mode: YlgyMode): string[] {
+    const base = YLGY_DIFFICULTIES[mode].dictKey === "hard" ? YLGY_WORDS_HARD : YLGY_WORDS[YLGY_DIFFICULTIES[mode].len];
     return base.filter(w => meaningOf(w) !== null);
 }
 
@@ -226,8 +226,8 @@ export function solveCross(
     return solutions;
 }
 
-export class WsGame {
-    mode: WsMode = "normal";
+export class YlgyGame {
+    mode: YlgyMode = "normal";
     hp = 3;
     words: PlacedWord[] = [];       // 全部词(横+竖)
     H = 0; W = 0;                   // 网格尺寸(自由图形范围)
@@ -247,18 +247,18 @@ export class WsGame {
 
     private dictSet: Set<string> = new Set();
 
-    constructor(mode: WsMode = "normal") {
+    constructor(mode: YlgyMode = "normal") {
         this.applyMode(mode);
         this.newGame();
     }
 
-    applyMode(mode: WsMode) {
+    applyMode(mode: YlgyMode) {
         this.mode = mode;
         this.dictSet = new Set(dictFor(mode));
     }
 
     newGame() {
-        const d = WS_DIFFICULTIES[this.mode];
+        const d = YLGY_DIFFICULTIES[this.mode];
         this.hp = 3;
         this.gameOver = false;
         this.win = false;
@@ -294,7 +294,7 @@ export class WsGame {
 
     /* 生成答案交叉网格 → 从全填出发逐步挖空: 每一步挖掉某格后都验证
        「恰有 1 个解」, 不唯一则恢复该格 —— 挖空最大化且唯一解严格保证 */
-    private buildUniquePuzzle(d: typeof WS_DIFFICULTIES[WsMode], dict: string[]):
+    private buildUniquePuzzle(d: typeof YLGY_DIFFICULTIES[YlgyMode], dict: string[]):
         { words: PlacedWord[]; H: number; W: number; occupied: boolean[][]; puzzle: (string | null)[][]; grid: (string | null)[][] } {
         for (let attempt = 0; attempt < 60; attempt++) {
             const built = buildCross(d.words, dict, d.maxDim);

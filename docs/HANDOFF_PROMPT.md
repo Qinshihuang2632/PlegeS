@@ -14,15 +14,17 @@
 | 游戏 | 缩写 | 版本(2026-08-21) | 玩法一句话 |
 |------|------|------|------|
 | 化了个学 | hlgx(hualegexue) | **v2.3.9** | 羊了个羊式消除,覆盖高考化学 200+ 种物质 |
-| 英了个语 | ylgy(内部用 ws) | **v1.4.8** | 交叉单词网格填词,课标词库 |
+| 英了个语 | ylgy | **v1.4.9** | 交叉单词网格填词,课标词库 |
 | 错了个字 | clgz(cuolegezi) | **v1.0.5** | 手写考察高中各科易写错的字 |
-| 平台 | — | **v2.5.4** | 合集主界面/排行榜/后台管理/建议反馈 |
+| 平台 | — | **v2.5.5** | 合集主界面/排行榜/后台管理/建议反馈 |
 
 **核心铁律:三款游戏 + 平台各自独立版本号,互不继承,严禁混淆。** 版本号分布:
 - 化了个学:`src/version.ts` 的 `APP_VERSION`
 - 平台:`src/version.ts` 的 `PLATFORM_VERSION`
-- 英了个语:`src/game2/version.ts` 的 `WS_VERSION`
+- 英了个语:`src/game2/version.ts` 的 `YLGY_VERSION`
 - 错了个字:`src/game3/version.ts` 的 `CLGZ_VERSION`
+
+英了个语缩写于 v1.4.9 由历史遗留的 `ws` 全量改名 `ylgy`(路由/KV/后台参数/文档同步;旧链接 `/ws`、旧参数 `?game=ws` 兼容)。**此后新建游戏的文件缩写必须先问用户**(见 CONVENTIONS.md)。
 
 ---
 
@@ -36,7 +38,7 @@ Vitest 测试(Windows 必须 --pool=forks)
 
 ```
 src/
-├── main.tsx / App.tsx        # 游戏 SPA 路由(/、/hlgx/hua、/hlgx/rank、/ws、/clgz)
+├── main.tsx / App.tsx        # 游戏 SPA 路由(/、/hlgx/hua、/hlgx/rank、/ylgy、/clgz;/ws 重定向到 /ylgy)
 ├── version.ts                # APP_VERSION + PLATFORM_VERSION
 ├── game/                     # 化了个学
 │   ├── core.ts               # 棋盘/消除/胜负纯逻辑
@@ -48,8 +50,8 @@ src/
 ├── game2/                    # 英了个语
 │   ├── core.ts               # 交叉网格生成/求解/挖空
 │   ├── words.ts / meanings.ts / meanings5.ts   # 课标词库 + 释义
-│   ├── WsPage.tsx / WsRules.tsx
-│   └── version.ts            # WS_VERSION
+│   ├── YlgyPage.tsx / YlgyRules.tsx
+│   └── version.ts            # YLGY_VERSION
 ├── game3/                    # 错了个字
 │   ├── handwriting.ts        # 手写识别(归一化+膨胀+字形覆盖判定)
 │   ├── HandwritingPad.tsx    # 手写画框组件(含 __clgzSnapshot 调试)
@@ -64,7 +66,7 @@ src/
 
 functions/                    # Pages Functions(JS)
 ├── hlgx/api/rank.js          # 化了个学榜单(裸键)
-├── ws/api/rank.js            # 英了个语榜单(KV 键 ws:)
+├── ylgy/api/rank.js          # 英了个语榜单(KV 键 ylgy:)
 ├── clgz/api/rank.js          # 错了个字榜单(KV 键 clgz:)
 ├── api/feedback.js           # 建议反馈提交(公开 POST)
 ├── admin/api/                # 管理端(会话鉴权):auth/rank/feedback/logs/sessions
@@ -73,7 +75,7 @@ functions/                    # Pages Functions(JS)
 docs/                         # 日志与文档(md + docx 双份)
 ├── platform_log.md           # 平台总进度日志(历史表格 + 维护方法)
 ├── hlgx_summary_report.md    # 化了个学版本日志
-├── ws_summary_report.md      # 英了个语版本日志
+├── ylgy_summary_report.md    # 英了个语版本日志
 ├── clgz_summary_report.md    # 错了个字版本日志
 ├── clgz_characters.md        # 错了个字考察字库清单(待审查)
 └── HANDOFF.md                # 旧交接文档(可参考, 以本文档为准)
@@ -116,12 +118,13 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 4. **提交前确认**:每次 git 提交推送前,**必须弹窗询问用户两件事**:
    - ① 是否已开启临时代理(127.0.0.1:7890),用户确认后配置 `git config http.proxy http://127.0.0.1:7890`(含 https),推送后**立即撤销代理**(`git config --unset`)
    - ② 用户是否已实际检查问题确实修改完成——防止无效版本更迭
-5. **日志双份同步**:每个版本更新都要写对应游戏的 `docs/xxx_summary_report.md`(版本历史**正序追加**在末尾,最早的版本在最前)+ 平台 `docs/platform_log.md`(历史表格追加一行),并同步生成 .docx。贡献人未提及时默认只有 **ps**;如有他人参与需注明(见鸣谢)。
-6. **安全(绝不违反)**:
+5. **日志双份同步**:每个版本更新都要写对应游戏的 `docs/xxx_summary_report.md`(版本历史**正序追加**在末尾,最早的版本在最前)+ 平台 `docs/platform_log.md`(历史表格追加一行,**含「贡献人」列**,并同步生成 .docx)。贡献人未提及时默认只有 **ps**;平台行一律 ps;如有他人参与需注明(见鸣谢)。
+6. **新建游戏的缩写必须先问用户**(v2.5.5 起):命名前弹窗让用户给出缩写,用户确认后才建 `src/gameN/`、`functions/<缩写>/`、路由、KV 键,不得自行拟定。
+7. **安全(绝不违反)**:
    - 生产 `ADMIN_TOKEN` 绝不以明文出现在对话/代码/日志/commit 中;用 `wrangler pages secret put ADMIN_TOKEN`(生产)+ `.dev.vars`(本地,已 gitignore)
    - 违禁词表 `src/game/badwords.ts` 与 `functions/_lib/badwords.js` **双份必须同步**
    - `scripts/verify_prod.mjs` 非破坏性,绝不清榜,仅自删测试痕迹
-7. **接手模型纪律**:先读 `docs/platform_log.md`(历史+约定)再动手;高风险操作(清榜/删数据/改密钥/重部署)先向用户确认。
+8. **接手模型纪律**:先读 `docs/platform_log.md`(历史+约定)再动手;高风险操作(清榜/删数据/改密钥/重部署)先向用户确认。
 
 ---
 
@@ -134,15 +137,15 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 - **物质库**:src/game/substances.ts 约 217 种 + 8 类别(金属/非金属/氧化物/酸/碱/盐/有机物/混合物),有机酸双类别(酸+有机物),简介 ≤10 字不暴露类别
 - **改名流程(v2.3.9)**:顶栏昵称输入框编辑 → 点 ✓/回车 → NameConfirmDialog 二次确认 → 确认后保存并重启本局
 
-## 六、英了个语(ws, v1.4.8)
+## 六、英了个语(ylgy, v1.4.9)
 
 - **玩法**:自由形状交叉单词网格(横竖词交叉共享字母),灰色格不可交互,逐词校验,唯一解保证
-- **关键文件**:`src/game2/core.ts`、`words.ts`(课标 4/5 字母词库)、`meanings.ts`/`meanings5.ts`(释义)、`WsPage.tsx`
+- **关键文件**:`src/game2/core.ts`、`words.ts`(课标 4/5 字母词库)、`meanings.ts`/`meanings5.ts`(释义)、`YlgyPage.tsx`
 - **难度**:简单 4 词(4 字母,known=[4,2,2,2])/标准 6 词(5 字母,known=[5,5,3,3,2,2])/困难 8 词(课标难词,known=[5,3,3,2,2,2,2,2])
 - **道具**:填空提示(每局 2 次,填正确字母)/含义提示(每局 1 次,蓝色环圈词+单条释义,7 秒或按键消除)
 - **排行榜排序**:hp↓ → 填写字母数(clears)↓ → 用时↑ → 技能使用次数↑
 - **改名流程**:同化了个学(顶栏编辑 → ✓ → 确认弹窗 → 重开本局)
-- 注:缩写内部用 `ws`(历史遗留,勿改路由/KV,前端 `?game=ws`)
+- 注:缩写为 `ylgy`(v1.4.9 由历史遗留的 `ws` 全量改名:路由 `/ylgy`、KV 键 `ylgy:`、后台 `game=ylgy`;旧链接 `/ws`、旧参数 `?game=ws` 兼容)
 
 ## 七、错了个字(clgz, v1.0.5)
 
@@ -162,7 +165,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 ## 八、排行榜 API 通用规则(三游戏一致)
 
 - 防刷:60s/IP 限频(429)、昵称清洗(trim/去控制字符/≤10 字/违禁词 400/`< >` 过滤)、成绩 ≥10s(失败局 hp=0 放宽)、同名放开、单榜上限 200 条
-- KV 键:化了个学=裸键(easy/normal/challenge/extreme)、英了个语=`ws:easy/normal/hard`、错了个字=`clgz:all`
+- KV 键:化了个学=裸键(easy/normal/challenge/extreme)、英了个语=`ylgy:easy/normal/hard`、错了个字=`clgz:all`
 - 平台分离:mobile/desktop 榜单分开,排名仅同平台比较
 
 ## 九、后台管理(/admin)
@@ -183,7 +186,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 2. **wrangler pages dev 本地验证**:`npx wrangler pages dev dist --kv=RANKINGS --persist-to .wrangler/state --port 8799`,用完必须杀掉进程树(端口 8799 常被占用)
 3. **CDN 缓存**:部署后线上可能延迟生效,验证时用 `?t=时间戳` 破缓存;压缩后 JS 变量名/字符串会变(如 minCover 变 `.55`、函数名被内联),检测功能用行为特征码而非名称
 4. **curl 中文乱码**:git-bash 下 curl 中文输出乱码,用 Node fetch 验证
-5. **路由白名单** `public/_routes.json`:新增路径必须加进去(/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ws/api/*、/ws、/clgz/api/*、/clgz、/api/feedback、/admin/*)
+5. **路由白名单** `public/_routes.json`:新增路径必须加进去(/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ylgy/api/*、/ylgy、/ws(旧链接,SPA 重定向到 /ylgy)、/clgz/api/*、/clgz、/api/feedback、/admin/*)
 6. **git 代理**:临时用 `git config http.proxy http://127.0.0.1:7890`(含 https),推送后必须 unset
 7. **logs 日期时区**:fmtDate 固定 Asia/Shanghai
 8. 新增游戏参考模式:目录 src/gameN/ + functions/xxx/api/rank.js + _routes.json + RankPage GAMES + HubPage 卡片/玩法介绍 tab + version.ts + 独立日志

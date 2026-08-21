@@ -1,6 +1,6 @@
 /*
  * p了个s · 管理后台榜单管理 API(全部需管理会话)
- * 支持三款游戏独立榜单(化了个学 hlgx / 英了个语 ws / 错了个字 clgz):
+ * 支持三款游戏独立榜单(化了个学 hlgx / 英了个语 ylgy / 错了个字 clgz):
  *   GET    /admin/api/rank?game=X&mode=Y[&q=昵称关键字]   → 榜单(含管理索引 key, 可搜索)
  *   DELETE /admin/api/rank?game=X&key=N&mode=Y            → 单条删除(按存储数组索引)
  *   DELETE /admin/api/rank?game=X&mode=Y|all              → 清空该游戏单难度 / 该游戏全部
@@ -12,7 +12,7 @@ import { clientIp } from "../../_lib/ratelimit.js";
 import { appendAudit } from "../../_lib/audit.js";
 
 /* 各游戏: KV 键前缀 + 可选难度 + 排序规则 */
-const WS_MODES = ["easy", "normal", "hard"];
+const YLGY_MODES = ["easy", "normal", "hard"];
 const CLGZ_MODES = ["all"];
 
 /** 错了个字排序: 得分↓ → 用时↑ */
@@ -31,7 +31,7 @@ function clgzSort(entries) {
 
 const GAMES = {
     hlgx: { label: "化了个学", modes: HLGX_MODES, prefix: "", sort: sortRank },
-    ws:   { label: "英了个语", modes: WS_MODES, prefix: "ws:", sort: sortRank },
+    ylgy:   { label: "英了个语", modes: YLGY_MODES, prefix: "ylgy:", sort: sortRank },
     clgz: { label: "错了个字", modes: CLGZ_MODES, prefix: "clgz:", sort: clgzSort },
 };
 

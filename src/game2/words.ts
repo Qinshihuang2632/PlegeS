@@ -6,7 +6,7 @@
  * 衍生词组成的比例 ≥90%(生成器只从本词库取词, 词库即课标及衍生构成)。
  * 按长度分组; 全部小写; 已按长度自动归组去重; 词表可按需扩充。
  */
-export const WS_WORDS: Record<number, string[]> = {
+export const YLGY_WORDS: Record<number, string[]> = {
     4: [
         "able", "acid", "area", "army", "baby", "back",
         "bake", "ball", "band", "bank", "bare", "base",
@@ -272,7 +272,7 @@ export const WS_WORDS: Record<number, string[]> = {
 };
 
 /* 困难难度词库: 高中课标 5 字母词汇中相对抽象/低频者(全部取自课标主词库, 保证课标及衍生占比) */
-export const WS_WORDS_HARD: string[] = [
+export const YLGY_WORDS_HARD: string[] = [
     "adapt", "admit", "adopt", "alter", "arise", "avoid", "award", "aware",
     "awful", "blame", "blank", "blast", "bleed", "bless", "blind", "block",
     "brief", "broad", "burst", "cabin", "candy", "chain", "charm", "chart",
