@@ -365,38 +365,13 @@ export function HuaPage() {
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-2xl px-3 pb-10 pt-3">
-            {/* 顶栏: 返回大厅 / 标题 / 玩法 / 静音 */}
+            {/* 顶栏: 返回大厅 / 标题 / 静音+重开(v2.3.10: 标题独占一行, 玩法/昵称移到下方行, 移动端不再挤压成竖排 —— 与英了个语同构) */}
             <header className="mb-2 flex items-center gap-2">
                 <Button asChild variant="ghost" size="sm" className="-ml-2">
                     <Link to="/">← 返回大厅</Link>
                 </Button>
-                <h1 className="flex-1 text-center text-lg font-extrabold">化了个学</h1>
-                <div className="flex items-center gap-1">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)}>玩法</Button>
-                        </TooltipTrigger>
-                        <TooltipContent>玩法介绍</TooltipContent>
-                    </Tooltip>
-                    <input
-                        value={headerName}
-                        maxLength={10}
-                        placeholder="昵称"
-                        onChange={(e) => commitHeaderName(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") requestNameConfirm(); }}
-                        className="w-24 rounded-lg border bg-card px-2 py-1 text-sm outline-none focus:border-primary"
-                        aria-label="当前昵称,点击直接修改"
-                        title="当前昵称,修改后需二次确认并重开本局"
-                    />
-                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
-                    {headerNameTip && (
-                        <span className="text-xs font-semibold text-destructive">{headerNameTip}</span>
-                    )}
-                    {!rankActive && !headerNameTip && (
-                        <span className="text-[10px] font-semibold text-muted-foreground" title="未填写昵称或勾选了「不参与排行榜」,本局成绩不上榜;输入昵称即可恢复">
-                            未参与排行
-                        </span>
-                    )}
+                <h1 className="flex-1 whitespace-nowrap text-center text-lg font-extrabold">化了个学</h1>
+                <div className="flex shrink-0 items-center gap-1">
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }} aria-label="静音开关">
@@ -414,22 +389,52 @@ export function HuaPage() {
                 </div>
             </header>
 
-            {/* 难度切换 */}
-            <div className="mb-3 flex justify-center gap-1 rounded-full bg-muted p-1">
-                {MODE_TABS.map(({ mode, label }) => (
-                    <button
-                        key={mode}
-                        onClick={() => restart(mode)}
-                        className={cn(
-                            "flex-1 rounded-full px-4 py-1.5 text-sm font-semibold transition",
-                            game.mode === mode
-                                ? "bg-card text-foreground shadow"
-                                : "text-muted-foreground hover:text-foreground",
-                        )}
-                    >
-                        {label}
-                    </button>
-                ))}
+            {/* 难度切换 + 玩法入口(与英了个语同构: 玩法在难度行右侧) */}
+            <div className="mb-2 flex items-center gap-2">
+                <div className="flex flex-1 justify-center gap-1 rounded-full bg-muted p-1">
+                    {MODE_TABS.map(({ mode, label }) => (
+                        <button
+                            key={mode}
+                            onClick={() => restart(mode)}
+                            className={cn(
+                                "flex-1 rounded-full px-2 py-1.5 text-sm font-semibold transition",
+                                game.mode === mode
+                                    ? "bg-card text-foreground shadow"
+                                    : "text-muted-foreground hover:text-foreground",
+                            )}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)} className="shrink-0">
+                    玩法
+                </Button>
+            </div>
+
+            {/* 昵称行: 输入 + 二次确认 + 状态提示(独占一行, 窄屏自动换行) */}
+            <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+                <div className="flex items-center gap-1">
+                    <input
+                        value={headerName}
+                        maxLength={10}
+                        placeholder="昵称"
+                        onChange={(e) => commitHeaderName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") requestNameConfirm(); }}
+                        className="w-24 rounded-lg border bg-card px-2 py-1 text-sm outline-none focus:border-primary"
+                        aria-label="当前昵称,点击直接修改"
+                        title="当前昵称,修改后需二次确认并重开本局"
+                    />
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
+                </div>
+                {headerNameTip && (
+                    <span className="text-xs font-semibold text-destructive">{headerNameTip}</span>
+                )}
+                {!rankActive && !headerNameTip && (
+                    <span className="text-[10px] font-semibold text-muted-foreground" title="未填写昵称或勾选了「不参与排行榜」,本局成绩不上榜;输入昵称即可恢复">
+                        未参与排行
+                    </span>
+                )}
             </div>
 
             {/* 状态栏: 平台 / 血量 / 计时 / 剩余 */}
