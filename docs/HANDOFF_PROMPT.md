@@ -9,7 +9,7 @@
 
 ## 一、项目概览
 
-「p了个s」是一个**高考知识主题小游戏合集平台**,部署在 Cloudflare Pages + Functions + KV 上,生产域名 **ps.lingben.top**。当前共 3 款可玩小游戏 + 3 个「敬请期待」占位:
+「p了个s」是一个**高考知识主题小游戏合集平台**,部署在 Cloudflare Pages + Functions + KV 上,生产域名 **ps.lingben.top**。当前 2 款可玩(化了个学/英了个语),**错了个字自平台 v2.5.6 起暂时关闭维护**(卡片显示「维护中」,/clgz 为维护提示页;游戏代码与榜单数据均未动,恢复只需还原 HubPage 卡片与 App.tsx 路由),另有 3 个「敬请期待」占位:
 
 | 游戏 | 缩写 | 版本(2026-08-21) | 玩法一句话 |
 |------|------|------|------|
@@ -148,6 +148,8 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 - 注:缩写为 `ylgy`(v1.4.9 由历史遗留的 `ws` 全量改名:路由 `/ylgy`、KV 键 `ylgy:`、后台 `game=ylgy`;旧链接 `/ws`、旧参数 `?game=ws` 兼容)
 
 ## 七、错了个字(clgz, v1.0.5)
+
+> **状态:平台 v2.5.6(2026-08-22)起暂时关闭维护**——主界面卡片「维护中」不可进入,`/clgz` 直达显示维护提示页;游戏本体代码(`src/game3/`)与后端 `/clgz/api/*`、KV 榜单**均未改动**,历史数据保留;重新开放时还原 `HubPage.tsx` 卡片(改回 Link + 可玩徽标)与 `App.tsx` 的 `/clgz` 路由即可。
 
 - **玩法**:局内选科目(可多选,6 科)→ 随机抽 8 字 → 玩家在画框内手写该字(不经过键盘)→ 字形匹配判定对错 → 写对 1 字得 1 分
 - **关键文件**:`src/game3/handwriting.ts`(识别核心)、`HandwritingPad.tsx`(画框)、`chars.ts`(字库)、`ClgzPage.tsx`
