@@ -397,6 +397,22 @@ check("管理端 清空 clgz 全部 → 200", r.status === 200 && r.data.msg ===
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
 check("清空 clgz 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
 
+/* ---------- 12.55 分了个类(flgl): 得分制榜单 ---------- */
+const flglRank = await import(BASE + "functions/flgl/api/rank.js");
+const postFlgl = (body, headers = {}) => call(flglRank.onRequestPost, { request: mockReq("http://x/flgl/api/rank", body, headers), env });
+await postFlgl({ mode: "easy", name: "分类甲", score: 15, time: 60, version: "v1.0.0", platform: "desktop" });
+await postFlgl({ mode: "easy", name: "分类乙", score: 18, time: 90, version: "v1.0.0", platform: "desktop" });
+r = await call(flglRank.onRequestGet, { request: mockReq("http://x/flgl/api/rank?mode=easy&platform=desktop"), env });
+check("flgl GET 榜单已排序(得分↓ → 用时↑)", r.status === 200 && r.data.rank.length === 2 && r.data.rank[0].name === "分类乙", JSON.stringify(r.data));
+r = await call(flglRank.onRequestPost, { request: mockReq("http://x/flgl/api/rank", { mode: "easy", name: "刷子", score: 20, time: 3 }, { "X-Forwarded-For": "flgl-ip-1" }), env });
+check("flgl 用时<10s → 400 成绩无效", r.status === 400 && r.data.msg === "成绩无效:用时过短", JSON.stringify(r.data));
+r = await call(flglRank.onRequestPost, { request: mockReq("http://x/flgl/api/rank", { mode: "easy", name: "超分", score: 99, time: 30 }, { "X-Forwarded-For": "flgl-ip-2" }), env });
+check("flgl score 超 20 → clamp 为 20", r.status === 200 && r.data.rank[0].score === 20, JSON.stringify(r.data.rank?.[0]));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=flgl&mode=easy"));
+check("管理端 flgl 榜单独立可见(排序 得分↓)", r.status === 200 && r.data.rank.length === 3 && r.data.rank[0].score === 20, JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
+check("flgl 记录不影响 hlgx 榜单", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
+
 /* ---------- 12.6 建议反馈: 玩家提交 / 限频 / 违禁词 / 鸣谢意愿 / 管理端查看删除 ---------- */
 reset();
 // 玩家提交(v2.5.5: 附带鸣谢意愿 credit)

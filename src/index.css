@@ -169,3 +169,9 @@
   75% { transform: translateX(4px); }
 }
 .hlgx-shake { animation: hlgx-shake 0.25s ease; }
+
+/* 分了个类 · 传送带底纹向左匀速滚动(flgl) */
+@keyframes flgl-belt {
+  from { background-position: 0 0; }
+  to { background-position: -28px 0; }
+}

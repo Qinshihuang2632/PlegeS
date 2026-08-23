@@ -9,11 +9,12 @@ import { useAuth } from "../AuthContext";
 import { apiLogs, apiRanks } from "../api";
 import { actionLabel, fmtTs, type AuditEntry } from "../types";
 
-/** 三款游戏及其难度(用于看板统计) */
+/** 四款游戏及其难度(用于看板统计) */
 const GAME_STATS = [
     { game: "hlgx", label: "化了个学", modes: ["easy", "normal", "challenge", "extreme"] },
     { game: "ylgy", label: "英了个语", modes: ["easy", "normal", "hard"] },
     { game: "clgz", label: "错了个字", modes: ["all"] },
+    { game: "flgl", label: "分了个类", modes: ["easy", "normal", "hard"] },
 ] as const;
 
 export function DashboardPage() {

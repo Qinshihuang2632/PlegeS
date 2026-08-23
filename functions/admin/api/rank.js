@@ -14,8 +14,9 @@ import { appendAudit } from "../../_lib/audit.js";
 /* 各游戏: KV 键前缀 + 可选难度 + 排序规则 */
 const YLGY_MODES = ["easy", "normal", "hard"];
 const CLGZ_MODES = ["all"];
+const FLGL_MODES = ["easy", "normal", "hard"];
 
-/** 错了个字排序: 得分↓ → 用时↑ */
+/** 得分制排序(错了个字/分了个类): 得分↓ → 用时↑ */
 function clgzCmpKey(e) {
     return [-(e.score | 0), e.time | 0];
 }
@@ -33,6 +34,7 @@ const GAMES = {
     hlgx: { label: "化了个学", modes: HLGX_MODES, prefix: "", sort: sortRank },
     ylgy:   { label: "英了个语", modes: YLGY_MODES, prefix: "ylgy:", sort: sortRank },
     clgz: { label: "错了个字", modes: CLGZ_MODES, prefix: "clgz:", sort: clgzSort },
+    flgl: { label: "分了个类", modes: FLGL_MODES, prefix: "flgl:", sort: clgzSort },
 };
 
 async function loadMode(env, game, mode) {

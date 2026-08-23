@@ -30,6 +30,11 @@ const GAMES = [
     { key: "clgz", label: "错了个字", modes: [
         { mode: "all", label: "综合" },
     ] },
+    { key: "flgl", label: "分了个类", modes: [
+        { mode: "easy", label: "简单" },
+        { mode: "normal", label: "标准" },
+        { mode: "hard", label: "困难" },
+    ] },
 ] as const;
 type GameKey = (typeof GAMES)[number]["key"];
 
@@ -81,7 +86,7 @@ export function RanksPage() {
         }
     };
 
-    const isClgz = curGame === "clgz";
+    const isScore = curGame === "clgz" || curGame === "flgl";   // 得分制游戏(错了个字/分了个类): 显示得分列、无技能列
 
     return (
         <div className="mx-auto max-w-4xl space-y-4">
@@ -169,14 +174,14 @@ export function RanksPage() {
                                     <th className="px-4 py-2.5 font-semibold">#</th>
                                     <th className="px-4 py-2.5 font-semibold">昵称</th>
                                     <th className="px-4 py-2.5 font-semibold">平台</th>
-                                    {isClgz ? (
+                                    {isScore ? (
                                         <th className="px-4 py-2.5 font-semibold">得分</th>
                                     ) : (
                                         <th className="px-4 py-2.5 font-semibold">{curGame === "ylgy" ? "血量(填写字母)" : "血量(消除组数)"}</th>
                                     )}
                                     <th className="px-4 py-2.5 font-semibold">用时</th>
                                     <th className="px-4 py-2.5 font-semibold">版本</th>
-                                    {!isClgz && <th className="px-4 py-2.5 font-semibold">技能</th>}
+                                    {!isScore && <th className="px-4 py-2.5 font-semibold">技能</th>}
                                     <th className="px-4 py-2.5 font-semibold">上榜时间</th>
                                     <th className="px-4 py-2.5 text-right font-semibold">操作</th>
                                 </tr>
@@ -192,13 +197,13 @@ export function RanksPage() {
                                                 : <span className="rounded-full bg-secondary px-2 py-0.5">端游</span>}
                                         </td>
                                         <td className="px-4 py-2.5">
-                                            {isClgz
+                                            {isScore
                                                 ? `${e.score ?? 0} 分`
                                                 : `❤ ${e.hp}(${curGame === "ylgy" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")})`}
                                         </td>
                                         <td className="px-4 py-2.5 tabular-nums">{fmtTime(e.time)}</td>
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.version || "旧版"}</td>
-                                        {!isClgz && <td className="px-4 py-2.5">{e.tools}</td>}
+                                        {!isScore && <td className="px-4 py-2.5">{e.tools}</td>}
                                         <td className="px-4 py-2.5 text-xs text-muted-foreground">{e.date}</td>
                                         <td className="px-4 py-2.5 text-right">
                                             <Button
@@ -233,7 +238,7 @@ export function RanksPage() {
                 }
                 description={
                     confirm?.type === "delete"
-                        ? `将删除 ${confirm.entry.name} 的记录(${isClgz ? `得分 ${confirm.entry.score ?? 0}` : `血量 ${confirm.entry.hp}`} / 用时 ${fmtTime(confirm.entry.time)}),此操作不可撤销`
+                        ? `将删除 ${confirm.entry.name} 的记录(${isScore ? `得分 ${confirm.entry.score ?? 0}` : `血量 ${confirm.entry.hp}`} / 用时 ${fmtTime(confirm.entry.time)}),此操作不可撤销`
                         : confirm?.type === "clearMode"
                             ? "该难度的全部记录将被清空,此操作不可撤销"
                             : `该游戏(${game.label})的全部难度记录将被清空,此操作不可撤销`

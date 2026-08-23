@@ -12,13 +12,14 @@ import { cn } from "@/lib/utils";
 import { GameRules } from "./GameRules";
 import { YlgyRules } from "@/game2/YlgyRules";
 import { ClgzRules } from "@/game3/ClgzRules";
+import { FlglRules } from "@/game4/FlglRules";
 import { validateNickname } from "./NameConfirmDialog";
 import { PLATFORM_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
-    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 三子页
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 / 分了个类 四子页
     const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [fbName, setFbName] = useState(() => localStorage.getItem("hlgx_name")?.trim() || "");
     const [fbContent, setFbContent] = useState("");
@@ -115,17 +116,22 @@ export function HubPage() {
                     </span>
                 </div>
 
-                {/* 开发中占位(下一批游戏) */}
-                <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
-                    <div className="mb-3 text-4xl" aria-hidden>待</div>
-                    <h2 className="text-lg font-bold">敬请期待</h2>
+                {/* 分了个类(v1.0.0 / 平台 v2.6.0 可玩) */}
+                <Link
+                    to="/flgl"
+                    className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                    <div className="mb-3 text-4xl" aria-hidden>类</div>
+                    <h2 className="text-lg font-bold">分了个类</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        更多高考知识小游戏正在开发中……
+                        传送带送来 259 种物质,拖进 8 大类别。手速与化学功底的双重考验,满载即败。
                     </p>
-                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
-                        开发中
+                    <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+                        ● 可玩
                     </span>
-                </div>
+                </Link>
+
+                {/* 开发中占位(下一批游戏) */}
                 <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
                     <div className="mb-3 text-4xl" aria-hidden>待</div>
                     <h2 className="text-lg font-bold">敬请期待</h2>
@@ -184,6 +190,7 @@ export function HubPage() {
                             { key: "hlgx", label: "化了个学" },
                             { key: "ylgy", label: "英了个语" },
                             { key: "clgz", label: "错了个字" },
+                            { key: "flgl", label: "分了个类" },
                         ] as const).map(({ key, label }) => (
                             <button
                                 key={key}
@@ -197,7 +204,7 @@ export function HubPage() {
                             </button>
                         ))}
                     </div>
-                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ylgy" ? <YlgyRules /> : <ClgzRules />}
+                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ylgy" ? <YlgyRules /> : rulesTab === "flgl" ? <FlglRules /> : <ClgzRules />}
                 </DialogContent>
             </Dialog>
 

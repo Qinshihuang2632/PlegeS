@@ -7,4 +7,4 @@
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
 export const APP_VERSION = "v2.3.10";      // 化了个学(移动端顶栏重排: 标题独占一行不再竖排)
-export const PLATFORM_VERSION = "v2.5.6";  // 平台 p了个s(错了个字暂时关闭维护: 卡片「维护中」+ /clgz 维护页)
+export const PLATFORM_VERSION = "v2.6.0";  // 平台 p了个s(第四款游戏「分了个类」上线)
