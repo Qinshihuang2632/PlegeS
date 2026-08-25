@@ -248,6 +248,8 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 
 ## 十四、当前待办/可做方向(与用户确认后实施)
 
+> **进行中任务接续见 `docs/TASK_PROGRESS.md`**(2026-08-23 存档:第六款游戏「诗了个句 slgj」开发中,含完成/未完成清单与接续步骤)。
+
 - 错了个字:字库 165 字待用户审查定稿;「考察形式」待定;**识别 ML 计划待用户确认 M0 后启动**(`docs/clgz_ml_plan.md`)
 - **新游戏进展**:分了个类(flgl)与配了个平(plgp)均已上线(v2.6.0/v2.7.0);制作与决策过程留档于 `docs/dev_plan_plgp_flgl.md`,题库审定稿见 `docs/plgp_equations.md`(改题库必须过 core.test.ts 守恒校验)
 - 剩余 1 个「敬请期待」占位:候选见 **`docs/new_games_roadmap.md`**(元素连连看/数学速算/史语连连看/物理公式/政区/时间轴排序等),由用户拍板
