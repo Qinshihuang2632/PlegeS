@@ -18,6 +18,7 @@ import { detectPlatform } from "@/game/platform";
 import { YLGY_VERSION } from "./version";
 import { YlgyRules } from "./YlgyRules";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
+import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
 
@@ -43,6 +44,9 @@ export function YlgyPage() {
     const [nameDraft, setNameDraft] = useState(readName());   // 输入框编辑值(未确认)
     const [nameTip, setNameTip] = useState("");
     const [nameConfirmOpen, setNameConfirmOpen] = useState(false);
+    /* 排行榜参与(v2.6.1): 有昵称 且 未勾选跳过(hlgx_skip_rank) 才上榜 */
+    const [skipRank, setSkipRank] = useState(() => readSkipRank());
+    const rankActive = !!name.trim() && !skipRank;
     const [elapsed, setElapsed] = useState(0);
     const [rulesOpen, setRulesOpen] = useState(false);
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
@@ -52,7 +56,7 @@ export function YlgyPage() {
         if (tipTimerRef.current) clearTimeout(tipTimerRef.current);
         setMeaningTip(null);
     };
-    const [result, setResult] = useState<{ win: boolean; hp: number; time: number; surpassed: number | null; failed: boolean; failMsg?: string } | null>(null);
+    const [result, setResult] = useState<{ win: boolean; hp: number; time: number; surpassed: number | null; failed: boolean; failMsg?: string; skipped?: boolean } | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const refresh = () => setGame(g => Object.assign(Object.create(Object.getPrototypeOf(g)), g));
@@ -93,6 +97,13 @@ export function YlgyPage() {
         newGame(curMode);   // 重启本局(同难度重新生成)
     };
 
+    /* 排行榜参与开关(v2.6.1): 二次确认后切换参与状态并重开本局(昵称保留) */
+    const confirmRankPart = (participate: boolean) => {
+        setSkipRank(!participate);
+        storeSkipRank(!participate);
+        newGame(curMode);   // 重启本局(同难度重新生成)
+    };
+
     useEffect(() => { startTimer(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
     useEffect(() => {
@@ -102,8 +113,10 @@ export function YlgyPage() {
         setElapsed(time);
         setResult({ win: game.win, hp: game.hp, time, surpassed: null, failed: false });
         const n = name.trim();
-        if (n) {
+        if (n && !skipRank) {
             void submitScore(game, time);
+        } else {
+            setResult({ win: game.win, hp: game.hp, time, surpassed: null, failed: false, skipped: true });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game.gameOver]);
@@ -298,6 +311,7 @@ export function YlgyPage() {
                     />
                     <Button size="sm" variant="ghost" className="h-8 w-8 shrink-0 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
                 </div>
+                <RankPartToggle active={rankActive} onConfirmedChange={confirmRankPart} />
             </div>
             {nameTip && (
                 <p className="mb-2 text-center text-xs font-semibold text-destructive">{nameTip}</p>
@@ -442,7 +456,11 @@ export function YlgyPage() {
                                     <p className="mt-1.5 font-semibold text-primary">超越 {result.surpassed} 名玩家</p>
                                 )
                             )}
-                            {!name.trim() && <p className="mt-1.5 text-xs text-destructive">未填写昵称,成绩未上榜</p>}
+                            {!name.trim() ? (
+                                <p className="mt-1.5 text-xs text-destructive">未填写昵称,成绩未上榜</p>
+                            ) : result.skipped && (
+                                <p className="mt-1.5 text-xs text-destructive">已选择不参与排行榜,成绩未上榜</p>
+                            )}
                         </div>
 
                         {/* 正确答案网格 */}

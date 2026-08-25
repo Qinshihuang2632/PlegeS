@@ -17,8 +17,9 @@ import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { HLGX_CATS, type Category, type Substance } from "@/game/substances";
 import { FlglRules } from "./FlglRules";
 import { FLGL_VERSION } from "./version";
+import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
 import {
-    BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, tick, wrongHint,
+    BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
     type FlglCard, type FlglMode, type FlglState,
 } from "./core";
 
@@ -38,6 +39,7 @@ interface ResultInfo {
     score: number;
     time: number;
     mistakes: number;
+    skipped?: boolean;   // 未填昵称或选择不参与排行, 成绩未上传
     surpassed: number | null;
     failed: boolean;
     failMsg?: string;
@@ -67,6 +69,9 @@ export function FlglPage() {
     const [nameDraft, setNameDraft] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");
     const [nameTip, setNameTip] = useState("");
     const [nameConfirmOpen, setNameConfirmOpen] = useState(false);
+    /* 排行榜参与(v2.6.1): 有昵称 且 未勾选跳过(hlgx_skip_rank) 才上榜 */
+    const [skipRank, setSkipRank] = useState(() => readSkipRank());
+    const rankActive = !!name.trim() && !skipRank;
 
     /* 拖拽与反馈 */
     const [drag, setDrag] = useState<{ id: number; x: number; y: number; sub: Substance } | null>(null);
@@ -122,7 +127,7 @@ export function FlglPage() {
             failed: false,
         };
         const nm = name.trim();
-        if (!nm) { setResult(info); return; }
+        if (!nm || skipRank) { setResult({ ...info, skipped: true }); return; }
         (async () => {
             try {
                 const res = await fetch("/flgl/api/rank", {
@@ -231,6 +236,13 @@ export function FlglPage() {
         if (phase === "playing") start(mode);   // 重开本局
     };
 
+    /* 排行榜参与开关(v2.6.1): 二次确认后切换参与状态并重开本局(昵称保留) */
+    const confirmRankPart = (participate: boolean) => {
+        setSkipRank(!participate);
+        storeSkipRank(!participate);
+        if (phase === "playing") start(mode);   // 重开本局
+    };
+
     const playing = phase === "playing" && st && st.phase === "playing";
     const lastWrongHint = st?.lastJudge && !st.lastJudge.ok ? wrongHint(st.lastJudge.sub) : "";
 
@@ -264,7 +276,7 @@ export function FlglPage() {
                 <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)} className="shrink-0">玩法</Button>
             </div>
 
-            {/* 昵称行 */}
+            {/* 昵称行 + 排行参与开关(v2.6.1) */}
             <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
                 <div className="flex items-center gap-1">
                     <input
@@ -279,10 +291,8 @@ export function FlglPage() {
                     />
                     <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
                 </div>
+                <RankPartToggle active={rankActive} onConfirmedChange={confirmRankPart} />
                 {nameTip && <span className="text-xs font-semibold text-destructive">{nameTip}</span>}
-                {!name.trim() && !nameTip && (
-                    <span className="text-[10px] font-semibold text-muted-foreground" title="未填写昵称,本局成绩不上榜;输入昵称即可参与排行">未参与排行</span>
-                )}
             </div>
 
             {phase === "ready" && (
@@ -355,7 +365,8 @@ export function FlglPage() {
                                     width: "17.6%",
                                     top: "50%",
                                     transform: `translate(${enteredIds.includes(c.id) ? 0 : (beltRef.current?.offsetWidth ?? 420)}px, -50%)`,
-                                    transition: "left 0.6s linear, transform 0.7s linear",
+                                    /* v1.1.0: 滑动速度降为原来的一半(0.7s→1.4s 入场, 0.6s→1.2s 补位) */
+                                    transition: "left 1.2s linear, transform 1.4s linear",
                                 }}
                                 aria-label={`物质卡:${c.sub.n}`}
                             >
@@ -363,6 +374,19 @@ export function FlglPage() {
                                 <Formula sub={c.sub} />
                             </div>
                         ))}
+                    </div>
+
+                    {/* 直接弹出下一张(v1.1.0): 内置 1s 冷却防误触连点 */}
+                    <div className="flex justify-center">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={st.spawnCd > 0 || st.spawned >= st.deck.length}
+                            onClick={() => setSt((prev) => (prev ? spawnNow(prev) : prev))}
+                            title="立即让下一张物质卡从右侧出现(冷却 1 秒);传送带满载时点击会直接判负"
+                        >
+                            ⏩ 直接弹出下一张{st.spawnCd > 0 ? `(冷却 ${Math.ceil(st.spawnCd)}s)` : ""}
+                        </Button>
                     </div>
 
                     {/* 类别按钮(屏幕中间, 8 类 2×4) */}
@@ -408,11 +432,11 @@ export function FlglPage() {
                     <div className="mt-3 text-sm">
                         {result.failed ? (
                             <p className="text-destructive">成绩提交失败: {result.failMsg ?? "未知原因"}</p>
+                        ) : result.skipped ? (
+                            <p className="text-muted-foreground">{name.trim() ? "已选择不参与排行榜,本局成绩未上榜" : "未填写昵称,成绩未上榜"}</p>
                         ) : result.surpassed !== null ? (
                             <p className="font-semibold text-primary">超越 {result.surpassed} 名玩家</p>
-                        ) : (
-                            <p className="text-muted-foreground">未填写昵称,成绩未上榜</p>
-                        )}
+                        ) : null}
                     </div>
                     <div className="mt-5 flex flex-wrap justify-center gap-2">
                         <Button asChild variant="outline"><Link to="/hlgx/rank?game=flgl">查看排行榜</Link></Button>

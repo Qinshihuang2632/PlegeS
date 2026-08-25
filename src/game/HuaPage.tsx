@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { HLGX_Audio } from "./audio";
 import { hasBadWord } from "./badwords";
 import { NameConfirmDialog } from "./NameConfirmDialog";
+import { RankPartToggle } from "./RankPartToggle";
 import { fmtTime, TOOL_LIMIT, type Mode, type Tile } from "./core";
 import { detectPlatform, PLATFORM_LABEL } from "./platform";
 import { APP_VERSION } from "@/version";
@@ -243,6 +244,18 @@ export function HuaPage() {
         restart();   // 重启本局(同难度重新生成)
     };
 
+    /* 局内排行参与开关(v2.6.1): 二次确认后切换参与状态并重开本局(昵称保留) */
+    const confirmRankPart = (participate: boolean) => {
+        inRankRef.current = participate;
+        setRankActive(participate);
+        storeSkip(!participate);
+        if (participate && !playerNameRef.current) {
+            const n = headerName.trim() || readStoredName() || "";
+            playerNameRef.current = n || null;
+        }
+        restart();   // 重启本局(同难度重新生成)
+    };
+
     /* 局内/结算页「更换昵称」入口(v2.3.2): 预填当前默认昵称, 打开更换窗 */
     const openNameChange = () => {
         setNameTip("");
@@ -412,7 +425,7 @@ export function HuaPage() {
                 </Button>
             </div>
 
-            {/* 昵称行: 输入 + 二次确认 + 状态提示(独占一行, 窄屏自动换行) */}
+            {/* 昵称行: 输入 + 二次确认 + 排行参与开关(v2.6.1)+ 错误提示(独占一行, 窄屏自动换行) */}
             <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
                 <div className="flex items-center gap-1">
                     <input
@@ -427,13 +440,9 @@ export function HuaPage() {
                     />
                     <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
                 </div>
+                <RankPartToggle active={rankActive} onConfirmedChange={confirmRankPart} />
                 {headerNameTip && (
                     <span className="text-xs font-semibold text-destructive">{headerNameTip}</span>
-                )}
-                {!rankActive && !headerNameTip && (
-                    <span className="text-[10px] font-semibold text-muted-foreground" title="未填写昵称或勾选了「不参与排行榜」,本局成绩不上榜;输入昵称即可恢复">
-                        未参与排行
-                    </span>
                 )}
             </div>
 

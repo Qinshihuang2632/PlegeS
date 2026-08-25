@@ -16,6 +16,7 @@ import { HandwritingPad } from "./HandwritingPad";
 import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
+import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
 import { CLGZ_VERSION } from "./version";
 
 const ROUNDS = 8;   // 每局题数
@@ -24,6 +25,7 @@ const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学/英了个语共�
 interface ResultInfo {
     score: number;
     time: number;
+    skipped?: boolean;   // 未填昵称或选择不参与排行, 成绩未上传
     surpassed: number | null;
     failed: boolean;
     failMsg?: string;
@@ -36,6 +38,9 @@ export function ClgzPage() {
     const [nameDraft, setNameDraft] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");   // 输入框编辑值(未确认)
     const [nameTip, setNameTip] = useState("");
     const [nameConfirmOpen, setNameConfirmOpen] = useState(false);
+    /* 排行榜参与(v2.6.1): 有昵称 且 未勾选跳过(hlgx_skip_rank) 才上榜 */
+    const [skipRank, setSkipRank] = useState(() => readSkipRank());
+    const rankActive = !!name.trim() && !skipRank;
     const [queue, setQueue] = useState<ClgzChar[]>([]);
     const [idx, setIdx] = useState(0);
     const [score, setScore] = useState(0);
@@ -85,8 +90,8 @@ export function ClgzPage() {
         const finalScore = score + (idx + 1 >= queue.length ? 0 : 0);   // 分数已累计
         setScore(finalScore);
         const nm = name.trim();
-        if (!nm) {
-            setResult({ score: finalScore, time, surpassed: null, failed: false });
+        if (!nm || skipRank) {
+            setResult({ score: finalScore, time, skipped: true, surpassed: null, failed: false });
             return;
         }
         try {
@@ -136,6 +141,13 @@ export function ClgzPage() {
         startGame();   // 重启本局(重新抽题)
     };
 
+    /* 排行榜参与开关(v2.6.1): 二次确认后切换参与状态并重开本局(昵称保留) */
+    const confirmRankPart = (participate: boolean) => {
+        setSkipRank(!participate);
+        storeSkipRank(!participate);
+        startGame();   // 重启本局(重新抽题)
+    };
+
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
             <header className="mb-6 flex items-center justify-between gap-2">
@@ -154,6 +166,7 @@ export function ClgzPage() {
                     />
                     <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
                 </div>
+                <RankPartToggle active={rankActive} onConfirmedChange={confirmRankPart} />
             </header>
             {nameTip && (
                 <p className="mb-2 text-center text-xs font-semibold text-destructive">{nameTip}</p>
@@ -227,11 +240,11 @@ export function ClgzPage() {
                     <div className="mt-3 text-sm">
                         {result.failed ? (
                             <p className="text-destructive">成绩提交失败: {result.failMsg ?? "未知原因"}</p>
+                        ) : result.skipped ? (
+                            <p className="text-muted-foreground">{name.trim() ? "已选择不参与排行榜,本局成绩未上榜" : "未填写昵称,成绩未上榜"}</p>
                         ) : result.surpassed !== null ? (
                             <p className="font-semibold text-primary">超越 {result.surpassed} 名玩家</p>
-                        ) : (
-                            <p className="text-muted-foreground">未填写昵称,成绩未上榜</p>
-                        )}
+                        ) : null}
                     </div>
                     <div className="mt-5 flex justify-center gap-2">
                         <Button asChild variant="outline"><Link to="/hlgx/rank?game=clgz">查看排行榜</Link></Button>

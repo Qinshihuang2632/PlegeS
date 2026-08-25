@@ -5,8 +5,8 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-    BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, TRICKY_NAMES, TRICKY_POOL,
-    acceptCats, buildDeck, judge, newGame, tick, wrongHint,
+    BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, SPAWN_NOW_CD, TRICKY_NAMES, TRICKY_POOL,
+    acceptCats, buildDeck, judge, newGame, spawnNow, tick, wrongHint,
     type FlglState,
 } from "./core";
 import { HLGX_SUBSTANCES } from "../game/substances";
@@ -181,5 +181,63 @@ describe("分了个类 · 核心", () => {
         expect(st.score).toBe(ROUND_TOTAL);
         expect(st.mistakes).toBe(0);
         expect(st.elapsed).toBeGreaterThan(0);
+    });
+
+    it("v1.1.0 出牌间隔: 三档各为 7/5/3 秒", () => {
+        expect(FLGL_INTERVAL).toEqual({ easy: 7, normal: 5, hard: 3 });
+    });
+
+    it("直接弹出下一张: 立即出牌并重置间隔与冷却", () => {
+        let st = newGame("hard", seedRng(21));
+        st = tick(st, 0.1);   // 首张出现
+        expect(st.belt).toHaveLength(1);
+        const before = st.spawned;
+        st = tick(st, 0.5);   // 冷却未启动, spawnIn 走了一半
+        st = spawnNow(st);
+        expect(st.spawned).toBe(before + 1);   // 立即出现下一张
+        expect(st.belt).toHaveLength(2);
+        expect(st.spawnIn).toBe(FLGL_INTERVAL.hard);   // 间隔重置
+        expect(st.spawnCd).toBe(SPAWN_NOW_CD);         // 进入 1s 冷却
+    });
+
+    it("直接弹出下一张: 冷却期间连点无效", () => {
+        let st = newGame("easy", seedRng(22));
+        st = tick(st, 0.1);
+        st = spawnNow(st);
+        const spawnedAfterFirst = st.spawned;
+        st = spawnNow(st);   // 冷却中再点 → 原样返回
+        expect(st.spawned).toBe(spawnedAfterFirst);
+        st = spawnNow(st);   // 仍然无效
+        expect(st.spawned).toBe(spawnedAfterFirst);
+        // 冷却随 tick 递减: 满 1s 后可再次触发
+        st = tick(st, SPAWN_NOW_CD + 0.01);
+        expect(st.spawnCd).toBe(0);
+        // 注意: 间隔 7s 未到, 但冷却结束后允许强制出牌
+        st = spawnNow(st);
+        expect(st.spawned).toBe(spawnedAfterFirst + 1);
+    });
+
+    it("直接弹出下一张: 满载时点击 = 新卡到达 → 判负(overflow)", () => {
+        let st = newGame("hard", seedRng(23));
+        for (let i = 0; i < BELT_CAPACITY; i++) st = tick(st, FLGL_INTERVAL.hard + 0.01);
+        expect(st.belt).toHaveLength(BELT_CAPACITY);
+        st = spawnNow(st);
+        expect(st.phase).toBe("lose");
+        expect(st.loseReason).toBe("overflow");
+    });
+
+    it("直接弹出下一张: 卡牌已出完时点击无效", () => {
+        let st = newGame("hard", seedRng(24));
+        // 用「弹一下 + 等冷却 + 立即分对」把 20 张全部弹出(及时清带防满载判负)
+        let guard = 0;
+        while (st.spawned < ROUND_TOTAL && st.phase === "playing" && guard++ < 200) {
+            st = spawnNow(st);
+            st = tick(st, SPAWN_NOW_CD + 0.01);
+            for (const c of [...st.belt]) st = judgeRight(st, c.id);
+        }
+        expect(st.spawned).toBe(ROUND_TOTAL);
+        const snapshot = st;
+        st = spawnNow(st);
+        expect(st).toEqual(snapshot);   // 无新卡可出
     });
 });
