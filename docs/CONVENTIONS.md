@@ -9,7 +9,7 @@
 
 ## 一、版本号约定(核心铁律)
 
-1. **五线独立**:化了个学 / 英了个语 / 错了个字 / 分了个类 / 平台各自维护独立版本号,互不继承,严禁混淆。
+1. **六线独立**:化了个学 / 英了个语 / 错了个字 / 分了个类 / 配了个平 / 平台各自维护独立版本号,互不继承,严禁混淆。
 2. **改哪个游戏,只递增哪个游戏的版本号**;平台层面的改动才递增平台版本号。
 3. 版本号唯一来源(界面显示必须与其一致):
 
@@ -20,9 +20,10 @@
 | 英了个语 | `src/game2/version.ts` | `YLGY_VERSION` |
 | 错了个字 | `src/game3/version.ts` | `CLGZ_VERSION` |
 | 分了个类 | `src/game4/version.ts` | `FLGL_VERSION` |
+| 配了个平 | `src/game5/version.ts` | `PLGP_VERSION` |
 
 4. **版本号显示约定**(v2.3.8/v2.4.3 确立):任意游戏任意界面下方都显示**该游戏自己**的版本号(排行榜、玩法介绍弹窗底部、局内 footer 均按当前游戏显示,不得误显其他游戏版本)。
-5. 缩写固定:化了个学=hlgx、英了个语=**ylgy**(v1.4.9 起,由历史遗留的 `ws` 改名;旧链接 `/ws`、旧参数 `?game=ws` 重定向兼容)、错了个字=clgz、分了个类=flgl。
+5. 缩写固定:化了个学=hlgx、英了个语=**ylgy**(v1.4.9 起,由历史遗留的 `ws` 改名;旧链接 `/ws`、旧参数 `?game=ws` 重定向兼容)、错了个字=clgz、分了个类=flgl、配了个平=plgp。
 6. **新建游戏的文件缩写必须先问用户**(v2.5.5 起):命名前弹窗让用户给出缩写,用户确认后才建 `src/gameN/`、`functions/<缩写>/`、路由、KV 键——不得自行拟定。
 
 ## 二、开发 / 测试 / 构建 / 部署流程
@@ -78,13 +79,15 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
    - 英了个语:`ylgy:easy` / `ylgy:normal` / `ylgy:hard`(v1.4.9 由 `ws:` 改名,线上旧键 `ws:*` 已复制迁移、保留未删)
    - 错了个字:`clgz:all`
    - 分了个类:`flgl:easy` / `flgl:normal` / `flgl:hard`
+   - 配了个平:`plgp:easy` / `plgp:normal` / `plgp:hard`
    - 建议反馈:`feedback`(上限 500 条,超出丢最旧)
 3. 平台分离:mobile / desktop 榜单分开,排名仅同平台比较。
 4. 排序规则:
    - 化了个学:hp↓ → 消除组数(clears)↓ → 用时↑ → 技能使用次数(tools)↑;0 心无组数旧记录按用时降序;
    - 英了个语:hp↓ → 填写字母数(clears)↓ → 用时↑ → 技能使用次数↑;
    - 错了个字:得分(score)↓ → 用时↑;
-   - 分了个类:正确数(score)↓ → 用时↑(score 上限 clamp 20)。
+   - 分了个类:正确数(score)↓ → 用时↑(score 上限 clamp 20);
+   - 配了个平:答对数(score)↓ → 用时↑ → 提示使用(tools)↑(score 上限 clamp 8)。
 
 ## 七、后台管理与审计约定
 
@@ -99,7 +102,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 2. **本地验证**:`npx wrangler pages dev dist --kv=RANKINGS --persist-to .wrangler/state --port 8799`,用完必须杀掉进程树(端口 8799 常被占用)。
 3. **CDN 缓存**:部署后线上可能延迟生效,验证用 `?t=时间戳` 破缓存;压缩后 JS 变量名/字符串会变(minCover 变 `.55`、函数名被内联),检测功能用**行为特征码**而非名称。
 4. **curl 中文乱码**:git-bash 下 curl 中文输出乱码,线上验证用 Node fetch。
-5. **路由白名单 `public/_routes.json`**:新增任何路径必须加进去(现有:/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ylgy/api/*、/ylgy、/ws(旧链接,SPA 重定向兼容)、/clgz/api/*、/clgz、/flgl/api/*、/flgl、/api/feedback、/admin/*),漏加则线上 404。
+5. **路由白名单 `public/_routes.json`**:新增任何路径必须加进去(现有:/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ylgy/api/*、/ylgy、/ws(旧链接,SPA 重定向兼容)、/clgz/api/*、/clgz、/flgl/api/*、/flgl、/plgp/api/*、/plgp、/api/feedback、/admin/*),漏加则线上 404。
 6. **git 代理是临时的**:推完必须 `git config --unset http.proxy`(及 https.proxy),不留全局配置。
 7. **日志日期时区**:fmtDate 固定 Asia/Shanghai。
 8. 错了个字判定调参:用控制台 `__clgzSnapshot()` 查看墨迹/字形 ASCII 快照与 cover/stray 详情;**不要加面积比上限**(v1.0.5 教训,误伤认真写粗笔画的玩家)。

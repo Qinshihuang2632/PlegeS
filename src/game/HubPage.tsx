@@ -13,13 +13,14 @@ import { GameRules } from "./GameRules";
 import { YlgyRules } from "@/game2/YlgyRules";
 import { ClgzRules } from "@/game3/ClgzRules";
 import { FlglRules } from "@/game4/FlglRules";
+import { PlgpRules } from "@/game5/PlgpRules";
 import { validateNickname } from "./NameConfirmDialog";
 import { PLATFORM_VERSION } from "@/version";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
-    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl">("hlgx");   // 玩法介绍: 化了个学 / 英了个语 / 错了个字 / 分了个类 四子页
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl" | "plgp">("hlgx");   // 玩法介绍: 五游戏子页(错了个字维护中仍保留)
     const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [fbName, setFbName] = useState(() => localStorage.getItem("hlgx_name")?.trim() || "");
     const [fbContent, setFbContent] = useState("");
@@ -131,6 +132,21 @@ export function HubPage() {
                     </span>
                 </Link>
 
+                {/* 配了个平(v1.0.0 / 平台 v2.7.0 可玩) */}
+                <Link
+                    to="/plgp"
+                    className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                    <div className="mb-3 text-4xl" aria-hidden>平</div>
+                    <h2 className="text-lg font-bold">配了个平</h2>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                        111 道课标方程式等你配平:选系数、填系数,比例解也算错——最简整数比才是化学的浪漫。
+                    </p>
+                    <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+                        ● 可玩
+                    </span>
+                </Link>
+
                 {/* 开发中占位(下一批游戏) */}
                 <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
                     <div className="mb-3 text-4xl" aria-hidden>待</div>
@@ -191,6 +207,7 @@ export function HubPage() {
                             { key: "ylgy", label: "英了个语" },
                             { key: "clgz", label: "错了个字" },
                             { key: "flgl", label: "分了个类" },
+                            { key: "plgp", label: "配了个平" },
                         ] as const).map(({ key, label }) => (
                             <button
                                 key={key}
@@ -204,7 +221,11 @@ export function HubPage() {
                             </button>
                         ))}
                     </div>
-                    {rulesTab === "hlgx" ? <GameRules /> : rulesTab === "ylgy" ? <YlgyRules /> : rulesTab === "flgl" ? <FlglRules /> : <ClgzRules />}
+                    {rulesTab === "hlgx" ? <GameRules />
+                        : rulesTab === "ylgy" ? <YlgyRules />
+                            : rulesTab === "flgl" ? <FlglRules />
+                                : rulesTab === "plgp" ? <PlgpRules />
+                                    : <ClgzRules />}
                 </DialogContent>
             </Dialog>
 

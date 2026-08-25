@@ -15,6 +15,7 @@ import { appendAudit } from "../../_lib/audit.js";
 const YLGY_MODES = ["easy", "normal", "hard"];
 const CLGZ_MODES = ["all"];
 const FLGL_MODES = ["easy", "normal", "hard"];
+const PLGP_MODES = ["easy", "normal", "hard"];
 
 /** 得分制排序(错了个字/分了个类): 得分↓ → 用时↑ */
 function clgzCmpKey(e) {
@@ -30,11 +31,26 @@ function clgzSort(entries) {
     });
 }
 
+/** 配了个平排序: 得分↓ → 用时↑ → 提示使用↑ */
+function plgpCmpKey(e) {
+    return [-(e.score | 0), e.time | 0, e.tools | 0];
+}
+function plgpSort(entries) {
+    return [...entries].sort((a, b) => {
+        const ka = plgpCmpKey(a), kb = plgpCmpKey(b);
+        for (let i = 0; i < ka.length; i++) {
+            if (ka[i] !== kb[i]) return ka[i] - kb[i];
+        }
+        return 0;
+    });
+}
+
 const GAMES = {
     hlgx: { label: "化了个学", modes: HLGX_MODES, prefix: "", sort: sortRank },
     ylgy:   { label: "英了个语", modes: YLGY_MODES, prefix: "ylgy:", sort: sortRank },
     clgz: { label: "错了个字", modes: CLGZ_MODES, prefix: "clgz:", sort: clgzSort },
     flgl: { label: "分了个类", modes: FLGL_MODES, prefix: "flgl:", sort: clgzSort },
+    plgp: { label: "配了个平", modes: PLGP_MODES, prefix: "plgp:", sort: plgpSort },
 };
 
 async function loadMode(env, game, mode) {

@@ -7,6 +7,7 @@ import { HuaPage } from "./game/HuaPage";
 import { RankPage } from "./game/RankPage";
 import { YlgyPage } from "./game2/YlgyPage";
 import { FlglPage } from "./game4/FlglPage";
+import { PlgpPage } from "./game5/PlgpPage";
 import { NotFoundPage } from "./game/NotFoundPage";
 
 /* 错了个字 · 维护提示页(平台 v2.5.6: 游戏暂时关闭, /clgz 直达链接落在该页;游戏本体代码未改动) */
@@ -37,6 +38,8 @@ export default function App() {
                 <Route path="/clgz" element={<ClgzMaintenancePage />} />
                 {/* v1.0.0 / 平台 v2.6.0: 第四款游戏「分了个类」上线 */}
                 <Route path="/flgl" element={<FlglPage />} />
+                {/* v1.0.0 / 平台 v2.7.0: 第五款游戏「配了个平」上线 */}
+                <Route path="/plgp" element={<PlgpPage />} />
                 <Route path="/admin" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>

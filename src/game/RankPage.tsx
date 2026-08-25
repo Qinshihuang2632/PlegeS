@@ -14,6 +14,7 @@ import { APP_VERSION } from "@/version";
 import { YLGY_VERSION } from "@/game2/version";
 import { CLGZ_VERSION } from "@/game3/version";
 import { FLGL_VERSION } from "@/game4/version";
+import { PLGP_VERSION } from "@/game5/version";
 
 interface RankEntry {
     name: string;
@@ -45,6 +46,7 @@ const GAMES = [
     { key: "ylgy", label: "英了个语" },
     { key: "clgz", label: "错了个字" },
     { key: "flgl", label: "分了个类" },
+    { key: "plgp", label: "配了个平" },
 ] as const;
 type GameKey = (typeof GAMES)[number]["key"];
 
@@ -58,15 +60,17 @@ const FLGL_MODES = [
     { mode: "hard", label: "困难" },
 ] as const;
 
+const PLGP_MODES = FLGL_MODES;
+
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 export function RankPage() {
     const [searchParams] = useSearchParams();
-    // v2.4.2+: 支持 ?game=ylgy|hlgx|clgz|flgl 直达对应游戏榜单(结算页「查看排行榜」直达)
+    // v2.4.2+: 支持 ?game=ylgy|hlgx|clgz|flgl|plgp 直达对应游戏榜单(结算页「查看排行榜」直达)
     // v1.4.9: 缩写 ws→ylgy 改名, 旧参数 ?game=ws 兼容映射到 ylgy
     const [game, setGame] = useState<GameKey>(() => {
         const g = searchParams.get("game");
-        return g === "ylgy" || g === "ws" ? "ylgy" : g === "clgz" ? "clgz" : g === "flgl" ? "flgl" : "hlgx";
+        return g === "ylgy" || g === "ws" ? "ylgy" : g === "clgz" ? "clgz" : g === "flgl" ? "flgl" : g === "plgp" ? "plgp" : "hlgx";
     });
     const [curMode, setCurMode] = useState<string>("normal");
     const [curPlatform, setCurPlatform] = useState<Platform>(() => detectPlatform());
@@ -78,7 +82,7 @@ export function RankPage() {
         let cancelled = false;
         setEntries(null);
         setError(false);
-        const api = game === "ylgy" ? "/ylgy/api/rank" : game === "clgz" ? "/clgz/api/rank" : game === "flgl" ? "/flgl/api/rank" : "/hlgx/api/rank";
+        const api = game === "ylgy" ? "/ylgy/api/rank" : game === "clgz" ? "/clgz/api/rank" : game === "flgl" ? "/flgl/api/rank" : game === "plgp" ? "/plgp/api/rank" : "/hlgx/api/rank";
         fetch(`${api}?mode=${curMode}&platform=${curPlatform}`)
             .then((res) => res.json())
             .then((data: { rank?: RankEntry[] }) => {
@@ -90,7 +94,7 @@ export function RankPage() {
 
     const switchGame = (g: GameKey) => {
         setGame(g);
-        setCurMode(g === "ylgy" ? "normal" : g === "clgz" ? "all" : "normal");
+        setCurMode(g === "clgz" ? "all" : "normal");
     };
 
     const rule = game === "ylgy"
@@ -99,6 +103,8 @@ export function RankPage() {
             ? "得分多 → 用时短(同分用时短者靠前);榜单按平台分开,成绩只与本平台比较;「版本」列为错了个字独立版本"
             : game === "flgl"
                 ? "正确分类数多 → 用时短(同数用时短者靠前,失败记录也会上榜);榜单按平台分开,成绩只与本平台比较;「版本」列为分了个类独立版本"
+                : game === "plgp"
+                    ? "答对题数多 → 用时短 → 提示使用少(失败记录也会上榜);榜单按平台分开,成绩只与本平台比较;「版本」列为配了个平独立版本"
                 : "剩余血量多 → 成功消除组数多 → 用时短 → 技能使用次数少(失败记录也会上榜,0 心玩家中消除组数多者排前);榜单按平台分开,成绩只与本平台比较;「版本」列对应当局游戏版本,不同版本难度有别,便于横向比较";
 
     return (
@@ -129,7 +135,7 @@ export function RankPage() {
 
             {/* 难度切换 */}
             <div className="mb-2 flex justify-center gap-1 rounded-full bg-muted p-1">
-                {(game === "ylgy" ? YLGY_MODES : game === "clgz" ? CLGZ_MODES : game === "flgl" ? FLGL_MODES : MODES).map(({ mode, label }) => (
+                {(game === "ylgy" ? YLGY_MODES : game === "clgz" ? CLGZ_MODES : game === "flgl" ? FLGL_MODES : game === "plgp" ? PLGP_MODES : MODES).map(({ mode, label }) => (
                     <button
                         key={mode}
                         onClick={() => setCurMode(mode)}
@@ -210,7 +216,7 @@ export function RankPage() {
                                         <td className="px-4 py-2.5">{MEDALS[i] ?? i + 1}</td>
                                         <td className="px-4 py-2.5 font-semibold">{e.name}</td>
                                         <td className="px-4 py-2.5">
-                                            {(game === "clgz" || game === "flgl")
+                                            {(game === "clgz" || game === "flgl" || game === "plgp")
                                                 ? `${e.score ?? 0} 分`
                                                 : `❤ ${e.hp}(${game === "ylgy" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")})`}
                                         </td>
@@ -234,7 +240,7 @@ export function RankPage() {
                                     <p className="text-xs text-muted-foreground">{e.date}</p>
                                 </div>
                                 <div className="text-right text-xs leading-relaxed">
-                                    {(game === "clgz" || game === "flgl") ? (
+                                    {(game === "clgz" || game === "flgl" || game === "plgp") ? (
                                         <p className="font-semibold">{e.score ?? 0} 分 · ⏱ {fmtTime(e.time)}</p>
                                     ) : (
                                         <p>❤ {e.hp}({game === "ylgy" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")}) · ⏱ {fmtTime(e.time)}</p>
@@ -250,7 +256,7 @@ export function RankPage() {
             )}
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">
-                {game === "ylgy" ? `英了个语 · ${YLGY_VERSION}(仅供个人娱乐)` : game === "clgz" ? `错了个字 · ${CLGZ_VERSION}(仅供个人娱乐)` : game === "flgl" ? `分了个类 · ${FLGL_VERSION}(仅供个人娱乐)` : `化了个学 · ${APP_VERSION}(仅供个人娱乐)`}
+                {game === "ylgy" ? `英了个语 · ${YLGY_VERSION}(仅供个人娱乐)` : game === "clgz" ? `错了个字 · ${CLGZ_VERSION}(仅供个人娱乐)` : game === "flgl" ? `分了个类 · ${FLGL_VERSION}(仅供个人娱乐)` : game === "plgp" ? `配了个平 · ${PLGP_VERSION}(仅供个人娱乐)` : `化了个学 · ${APP_VERSION}(仅供个人娱乐)`}
             </footer>
         </div>
     );

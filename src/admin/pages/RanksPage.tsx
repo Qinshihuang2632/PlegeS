@@ -35,6 +35,11 @@ const GAMES = [
         { mode: "normal", label: "标准" },
         { mode: "hard", label: "困难" },
     ] },
+    { key: "plgp", label: "配了个平", modes: [
+        { mode: "easy", label: "简单" },
+        { mode: "normal", label: "标准" },
+        { mode: "hard", label: "困难" },
+    ] },
 ] as const;
 type GameKey = (typeof GAMES)[number]["key"];
 
@@ -86,7 +91,7 @@ export function RanksPage() {
         }
     };
 
-    const isScore = curGame === "clgz" || curGame === "flgl";   // 得分制游戏(错了个字/分了个类): 显示得分列、无技能列
+    const isScore = curGame === "clgz" || curGame === "flgl";   // 得分制游戏(错了个字/分了个类): 显示得分列、无技能列(plgp 有技能列)
 
     return (
         <div className="mx-auto max-w-4xl space-y-4">

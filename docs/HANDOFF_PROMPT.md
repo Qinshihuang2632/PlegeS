@@ -9,7 +9,7 @@
 
 ## 一、项目概览
 
-「p了个s」是一个**高考知识主题小游戏合集平台**,部署在 Cloudflare Pages + Functions + KV 上,生产域名 **ps.lingben.top**。当前 3 款可玩(化了个学/英了个语/分了个类),**错了个字自平台 v2.5.6 起暂时关闭维护**(卡片显示「维护中」,/clgz 为维护提示页;游戏代码与榜单数据均未动,恢复只需还原 HubPage 卡片与 App.tsx 路由),另有 2 个「敬请期待」占位:
+「p了个s」是一个**高考知识主题小游戏合集平台**,部署在 Cloudflare Pages + Functions + KV 上,生产域名 **ps.lingben.top**。当前 4 款可玩(化了个学/英了个语/分了个类/配了个平),**错了个字自平台 v2.5.6 起暂时关闭维护**(卡片显示「维护中」,/clgz 为维护提示页;游戏代码与榜单数据均未动,恢复只需还原 HubPage 卡片与 App.tsx 路由),另有 1 个「敬请期待」占位:
 
 | 游戏 | 缩写 | 版本(2026-08-23) | 玩法一句话 |
 |------|------|------|------|
@@ -17,14 +17,16 @@
 | 英了个语 | ylgy | **v1.5.0** | 交叉单词网格填词,课标词库 |
 | 错了个字 | clgz(cuolegezi) | **v1.0.6**(维护中) | 手写考察高中各科易写错的字 |
 | 分了个类 | flgl | **v1.1.0** | 传送带式物质分类,拖入 8 类,满载到点判负 |
-| 平台 | — | **v2.6.0** | 合集主界面/排行榜/后台管理/建议反馈 |
+| 配了个平 | plgp | **v1.0.0** | 方程式配平闯关,比例解判错,111 条审定题库 |
+| 平台 | — | **v2.7.0** | 合集主界面/排行榜/后台管理/建议反馈 |
 
-**核心铁律:四款游戏 + 平台各自独立版本号,互不继承,严禁混淆。** 版本号分布:
+**核心铁律:五款游戏 + 平台各自独立版本号,互不继承,严禁混淆。** 版本号分布:
 - 化了个学:`src/version.ts` 的 `APP_VERSION`
 - 平台:`src/version.ts` 的 `PLATFORM_VERSION`
 - 英了个语:`src/game2/version.ts` 的 `YLGY_VERSION`
 - 错了个字:`src/game3/version.ts` 的 `CLGZ_VERSION`
 - 分了个类:`src/game4/version.ts` 的 `FLGL_VERSION`
+- 配了个平:`src/game5/version.ts` 的 `PLGP_VERSION`
 
 英了个语缩写于 v1.4.9 由历史遗留的 `ws` 全量改名 `ylgy`(路由/KV/后台参数/文档同步;旧链接 `/ws`、旧参数 `?game=ws` 兼容)。**此后新建游戏的文件缩写必须先问用户**(见 CONVENTIONS.md)。
 
@@ -66,6 +68,13 @@ src/
 │   ├── FlglPage.tsx / FlglRules.tsx
 │   ├── core.test.ts
 │   └── version.ts            # FLGL_VERSION
+├── game5/                    # 配了个平
+│   ├── equations.ts          # 题库 111 条(与 docs/plgp_equations.md 对应)
+│   ├── parse.ts              # 化学式解析(守恒校验用)
+│   ├── core.ts               # 选题/填写/判定(最简比)/提示道具/MC 选项
+│   ├── PlgpPage.tsx / PlgpRules.tsx
+│   ├── core.test.ts          # 含 111 条全量守恒+gcd 校验(改题库必过)
+│   └── version.ts            # PLGP_VERSION
 └── admin/                    # 管理后台 SPA(独立入口 admin/index.html)
     ├── pages/                # Login/Dashboard/Ranks/Feedback/Logs/Sessions
     ├── api.ts / types.ts / AuthContext.tsx / AdminLayout.tsx
@@ -76,6 +85,7 @@ functions/                    # Pages Functions(JS)
 ├── ylgy/api/rank.js          # 英了个语榜单(KV 键 ylgy:)
 ├── clgz/api/rank.js          # 错了个字榜单(KV 键 clgz:)
 ├── flgl/api/rank.js          # 分了个类榜单(KV 键 flgl:)
+├── plgp/api/rank.js          # 配了个平榜单(KV 键 plgp:)
 ├── api/feedback.js           # 建议反馈提交(公开 POST)
 ├── admin/api/                # 管理端(会话鉴权):auth/rank/feedback/logs/sessions
 └── _lib/                     # ranklib/ratelimit/badwords/auth/audit 共享库
@@ -86,6 +96,8 @@ docs/                         # 日志与文档(md + docx 双份)
 ├── ylgy_summary_report.md    # 英了个语版本日志
 ├── clgz_summary_report.md    # 错了个字版本日志
 ├── flgl_summary_report.md    # 分了个类版本日志
+├── plgp_summary_report.md    # 配了个平版本日志
+├── plgp_equations.md         # 配了个平方程式题库(审定稿)
 ├── clgz_characters.md        # 错了个字考察字库清单(待审查)
 └── HANDOFF.md                # 旧交接文档(可参考, 以本文档为准)
 
@@ -137,7 +149,7 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 
 ---
 
-## 五、化了个学(hua-liao-ge-xue, hlgx, v2.3.10)
+## 五、化了个学(hua-liao-ge-xue, hlgx, v2.3.11)
 
 - **玩法**:羊了个羊式消除,棋盘卡牌点击入槽,3 张同类自动消除;难度简单/标准/困难/挑战;血量 3、道具(撤回/移出/洗牌 各 3 次)
 - **关键文件**:`src/game/core.ts`(纯逻辑)、`HuaPage.tsx`、`RankPage.tsx`
@@ -191,40 +203,54 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 - 共享组件 `src/game/RankPartToggle.tsx`:昵称 ✓ 旁「☑ 参与排行 / ☐ 不参与排行」图标,点击二次确认后切换并重开本局(昵称保留)
 - 存储:`hlgx_skip_rank`("1"=不参与),与化了个学开局勾选框共用;参与 = 有昵称 且 未跳过;不参与时结算窗明示「已选择不参与排行榜」
 
-## 九、排行榜 API 通用规则(四游戏一致)
+## 九、配了个平(peie-le-ge-ping, plgp, v1.0.0)
+
+- **玩法**:方程式配平——每局 8 题;简单=系数组合三选一(含 ×2 比例陷阱选项);标准/困难=点击系数空位 + 物理/屏幕数字键盘填写
+- **判定(核心, 勿改)**:① 所有空位填满才能提交(**系数为 1 也必须填**);② 正确得 1 分进入下一题;③ **比例解判错**并提示「请化为最简整数比」(`isScaledVersion`);④ 其它错误扣血(3 点)且作答保留可修改
+- **道具**:提示每局 2 次——自动填入一个正确系数并锁定(不可再改),次数计入 tools
+- **题库**:`src/game5/equations.ts` 111 条(32/43/36)与 `docs/plgp_equations.md`(v0.2 用户审定稿)对应;`parse.ts` 解析化学式(支持嵌套括号/方括号 Na[Al(OH)₄]、unicode 下标、有机串式、双键 = 写法、中文限量标注剔除);**core.test.ts 对全部 111 条做守恒+gcd 校验,改题库必过测试**
+- **关键文件**:`core.ts`(pickRound/setBlank/submit/useHint/mcOptions)、`PlgpPage.tsx`
+- **排行榜**:排序 答对数↓ → 用时↑ → 提示使用↑(score↓→time↑→tools↑,score clamp ≤8)
+- 注:限量标注(如 Fe(足量))是题目的一部分,括号不是系数位
+
+### 局内排行参与开关(五游戏通用)
+
+- 共享组件 `src/game/RankPartToggle.tsx`:昵称 ✓ 旁「☑ 参与排行 / ☐ 不参与排行」,二次确认后切换并重开本局(昵称保留);存储 `hlgx_skip_rank`;不参与时结算窗明示未上榜
+
+## 十、排行榜 API 通用规则(可玩游戏一致)
 
 - 防刷:60s/IP 限频(429)、昵称清洗(trim/去控制字符/≤10 字/违禁词 400/`< >` 过滤)、成绩 ≥10s(失败局 hp=0 放宽)、同名放开、单榜上限 200 条
-- KV 键:化了个学=裸键(easy/normal/challenge/extreme)、英了个语=`ylgy:easy/normal/hard`、错了个字=`clgz:all`、分了个类=`flgl:easy/normal/hard`
+- KV 键:化了个学=裸键(easy/normal/challenge/extreme)、英了个语=`ylgy:easy/normal/hard`、错了个字=`clgz:all`、分了个类=`flgl:easy/normal/hard`、配了个平=`plgp:easy/normal/hard`
 - 平台分离:mobile/desktop 榜单分开,排名仅同平台比较
 
-## 十、后台管理(/admin)
+## 十一、后台管理(/admin)
 
 - 登录令牌 ADMIN_TOKEN;四大模块:数据看板(三游戏统计)/榜单管理(三游戏独立 tab, 查看/搜索/删除/清空)/审计日志/会话管理 + **建议反馈**(v2.5.4)
 - 所有删除/清空操作写审计日志(rank_delete_one/rank_clear_mode/rank_clear_all/feedback_delete_one/feedback_clear 等)
 - 审计环形上限 500 条
 
-## 十一、建议反馈(v2.5.4)
+## 十二、建议反馈(v2.5.4)
 
 - 玩家侧:主界面「建议反馈」按钮 → 弹窗(昵称 + 内容 ≤500 字)→ POST /api/feedback
 - 后台:管理端「建议反馈」模块,列表(昵称/IP/时间/内容)/搜索/单条删除/清空,操作审计
 - KV 键 `feedback`,上限 500 条(超出丢最旧)
 
-## 十二、已知坑与注意
+## 十三、已知坑与注意
 
 1. **Vitest 在 Windows 必须 `--pool=forks`**(默认线程池会挂起);偶有残留 node 进程,用 `taskkill //F //T //PID` 清进程树(workerd 会不断重启)
 2. **wrangler pages dev 本地验证**:`npx wrangler pages dev dist --kv=RANKINGS --persist-to .wrangler/state --port 8799`,用完必须杀掉进程树(端口 8799 常被占用)
 3. **CDN 缓存**:部署后线上可能延迟生效,验证时用 `?t=时间戳` 破缓存;压缩后 JS 变量名/字符串会变(如 minCover 变 `.55`、函数名被内联),检测功能用行为特征码而非名称
 4. **curl 中文乱码**:git-bash 下 curl 中文输出乱码,用 Node fetch 验证
-5. **路由白名单** `public/_routes.json`:新增路径必须加进去(/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ylgy/api/*、/ylgy、/ws(旧链接,SPA 重定向到 /ylgy)、/clgz/api/*、/clgz、/flgl/api/*、/flgl、/api/feedback、/admin/*)
+5. **路由白名单** `public/_routes.json`:新增路径必须加进去(/hlgx/api/*、/hlgx/hua、/hlgx/rank、/ylgy/api/*、/ylgy、/ws(旧链接,SPA 重定向到 /ylgy)、/clgz/api/*、/clgz、/flgl/api/*、/flgl、/plgp/api/*、/plgp、/api/feedback、/admin/*)
 6. **git 代理**:临时用 `git config http.proxy http://127.0.0.1:7890`(含 https),推送后必须 unset
 7. **logs 日期时区**:fmtDate 固定 Asia/Shanghai
 8. 新增游戏参考模式:目录 src/gameN/ + functions/xxx/api/rank.js + _routes.json + RankPage GAMES + HubPage 卡片/玩法介绍 tab + version.ts + 独立日志
 
-## 十三、当前待办/可做方向(与用户确认后实施)
+## 十四、当前待办/可做方向(与用户确认后实施)
 
 - 错了个字:字库 165 字待用户审查定稿;「考察形式」待定;**识别 ML 计划待用户确认 M0 后启动**(`docs/clgz_ml_plan.md`)
-- **已立项新游戏(2026-08-22)**:「配了个平」(plgp,方程式配平)与「分了个类」(flgl,物质分类)——制作计划见 **`docs/dev_plan_plgp_flgl.md`**(决策已定:混合式答题/有机酸双类均可;建议分了个类先行,平台版本 v2.6.0 / v2.7.0)
-- 剩余 2 个「敬请期待」占位:候选见 **`docs/new_games_roadmap.md`**(元素连连看/数学速算/史语连连看/物理公式/政区/时间轴排序等),由用户拍板
+- **新游戏进展**:分了个类(flgl)与配了个平(plgp)均已上线(v2.6.0/v2.7.0);制作与决策过程留档于 `docs/dev_plan_plgp_flgl.md`,题库审定稿见 `docs/plgp_equations.md`(改题库必须过 core.test.ts 守恒校验)
+- 剩余 1 个「敬请期待」占位:候选见 **`docs/new_games_roadmap.md`**(元素连连看/数学速算/史语连连看/物理公式/政区/时间轴排序等),由用户拍板
 - 任何新需求以用户最新消息为准,先读本文档 + docs/platform_log.md 再动手
 
 ---

@@ -413,6 +413,24 @@ check("管理端 flgl 榜单独立可见(排序 得分↓)", r.status === 200 &&
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=hlgx&mode=easy"));
 check("flgl 记录不影响 hlgx 榜单", r.data.rank.length === 1 && r.data.rank[0].name === "甲", JSON.stringify(r.data));
 
+/* ---------- 12.57 配了个平(plgp): 得分/用时/提示 三维排序 ---------- */
+const plgpRank = await import(BASE + "functions/plgp/api/rank.js");
+const postPlgp = (body, headers = {}) => call(plgpRank.onRequestPost, { request: mockReq("http://x/plgp/api/rank", body, headers), env });
+await postPlgp({ mode: "easy", name: "配平甲", score: 6, time: 120, tools: 2, version: "v1.0.0", platform: "desktop" });
+await postPlgp({ mode: "easy", name: "配平乙", score: 8, time: 150, tools: 0, version: "v1.0.0", platform: "desktop" });
+await postPlgp({ mode: "easy", name: "配平丙", score: 8, time: 150, tools: 3, version: "v1.0.0", platform: "desktop" });
+r = await call(plgpRank.onRequestGet, { request: mockReq("http://x/plgp/api/rank?mode=easy&platform=desktop"), env });
+check("plgp GET 排序 score↓→time↑→tools↑", r.status === 200 && r.data.rank.length === 3
+      && r.data.rank.map((e) => e.name).join(",") === "配平乙,配平丙,配平甲", JSON.stringify(r.data));
+r = await call(plgpRank.onRequestPost, { request: mockReq("http://x/plgp/api/rank", { mode: "easy", name: "刷子", score: 8, time: 5 }, { "X-Forwarded-For": "plgp-ip-1" }), env });
+check("plgp 用时<10s → 400 成绩无效", r.status === 400 && r.data.msg === "成绩无效:用时过短", JSON.stringify(r.data));
+r = await call(plgpRank.onRequestPost, { request: mockReq("http://x/plgp/api/rank", { mode: "easy", name: "超分", score: 99, time: 30 }, { "X-Forwarded-For": "plgp-ip-2" }), env });
+check("plgp score 超 8 → clamp 为 8", r.status === 200 && r.data.rank[0].score === 8, JSON.stringify(r.data.rank?.[0]));
+r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=plgp&mode=easy"));
+check("管理端 plgp 榜单独立可见", r.status === 200 && r.data.rank.length === 4, JSON.stringify(r.data));
+r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=plgp&mode=easy&key=3", "DELETE"));
+check("管理端 plgp 单条删除 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+
 /* ---------- 12.6 建议反馈: 玩家提交 / 限频 / 违禁词 / 鸣谢意愿 / 管理端查看删除 ---------- */
 reset();
 // 玩家提交(v2.5.5: 附带鸣谢意愿 credit)
