@@ -7,4 +7,4 @@
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
 export const APP_VERSION = "v2.3.11";      // 化了个学(局内排行参与开关: ☑/☐ 二次确认切换并重开本局)
-export const PLATFORM_VERSION = "v2.7.0";  // 平台 p了个s(第五款游戏「配了个平」上线)
+export const PLATFORM_VERSION = "v2.7.1";  // 平台 p了个s(修复主界面重复的「敬请期待」占位卡, 恢复为 1 个)
