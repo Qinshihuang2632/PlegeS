@@ -8,8 +8,13 @@
  *   - 管理 API: 登录鉴权与锁定 / 会话 / 榜单管理 / 审计日志 / 强制下线 / 审计环形上限
  * 任一项失败退出码 1。
  */
-const BASE = "file:///D:/program/game one/";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { dirname, join } from "node:path";
+/* v2.8.0: 仓库根目录按脚本位置推导(不再硬编码绝对路径, 换机器/换盘也能跑) */
+const BASE = pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), "..") + "/").href;
 const rankApi = await import(BASE + "functions/hlgx/api/rank.js");
+const hlgxSession = await import(BASE + "functions/hlgx/api/session.js");
+const gamesess = await import(BASE + "functions/_lib/gamesess.js");
 const adminAuth = await import(BASE + "functions/admin/api/auth.js");
 const adminRank = await import(BASE + "functions/admin/api/rank.js");
 const adminLogs = await import(BASE + "functions/admin/api/logs.js");
@@ -67,8 +72,31 @@ function check(name, pass, detail = "") {
     results.push({ name, pass: !!pass, detail: pass ? "" : detail });
 }
 const deepEq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const post = (body, headers = {}) =>
-    call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", body, headers), env });
+
+/* ---------- v2.8.0 会话令牌测试基建 ----------
+ * 排行榜提交须携带开局令牌, 且服务端实际经过时长 ≥ 上报用时。
+ * 这里把全局 Date.now 前拨(timeShift)来模拟真实游戏时长, 测完归零。 */
+const realNow = Date.now;
+let timeShift = 0;
+Date.now = () => realNow() + timeShift;
+
+/** 通用: 带合法令牌提交成绩(game=游戏前缀, rankFn=榜单 POST, url, modes=合法难度, dfltMode=非法难度回退值) */
+function makePost(rankFn, url, game, modes, dfltMode) {
+    return async (body, headers = {}) => {
+        const ip = headers["X-Forwarded-For"] || headers["x-forwarded-for"] || headers["cf-connecting-ip"] || ("selftest-ip-" + (++ipCounter));
+        const h = { ...headers, "X-Forwarded-For": ip };
+        const mode = modes.includes(body.mode) ? body.mode : dfltMode;
+        const token = await gamesess.issueGameSession(env, game, mode, ip);
+        const secs = Math.max(0, Number.parseInt(body.time, 10) || 0);
+        timeShift = (secs + 30) * 1000;   // 模拟「玩了 secs+30 秒」再提交
+        try {
+            return await call(rankFn, { request: mockReq(url, { ...body, token }, h), env });
+        } finally {
+            timeShift = 0;
+        }
+    };
+}
+const post = makePost(rankApi.onRequestPost, "http://x/hlgx/api/rank", "hlgx", ["easy", "normal", "challenge", "extreme"], "normal");
 
 /* ---------- 1. GET 查询 ---------- */
 reset();
@@ -124,7 +152,8 @@ check("0心排序: 同hp先比清除组数, 同组数比时间短", r.data.rank.
 reset();
 await post({ mode: "easy", name: "SV", hp: 3, time: 30, tools: 0, clears: 99, version: "v2.2.0\nx" });
 r = await call(rankApi.onRequestGet, { request: mockReq("http://x/hlgx/api/rank?mode=easy"), env });
-check("clears/version 存储: clears=99, version 清洗控制字符", r.data.rank[0].clears === 99 && r.data.rank[0].version === "v2.2.0x", JSON.stringify(r.data.rank[0]));
+check("clears/version 存储: clears 超 easy 上限(18)夹取为 18, version 清洗控制字符",
+      r.data.rank[0].clears === 18 && r.data.rank[0].version === "v2.2.0x", JSON.stringify(r.data.rank[0]));
 reset();
 r = await post({ mode: "easy", name: "CV", hp: 3, time: 30, tools: 0, clears: -5 });
 check("clears 负数 → 0", r.data.rank[0].clears === 0, JSON.stringify(r.data.rank[0]));
@@ -228,13 +257,69 @@ check("同名连续 4 次提交全部成功(放开同名)", r.status === 200 && 
 // 7.4 用户 API 已移除 DELETE(管理功能收归管理端)
 reset();
 check("用户 API 不再导出 onRequestDelete", typeof rankApi.onRequestDelete === "undefined", "");
+
+/* ---------- 7.8 v2.8.0 防刷榜: 游戏会话令牌 ---------- */
+reset();
+// 无令牌直接构造成绩(漏洞报告的攻击方式) → 400
+r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "裸奔刷榜", hp: 3, time: 30, tools: 0, clears: 9999 }), env });
+check("无令牌提交 → 400 拒绝", r.status === 400 && !r.data.ok, JSON.stringify(r.data));
+// 伪造令牌(格式合法但不存在) → 400
+r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "伪造令牌", hp: 3, time: 30, tools: 0, token: "0".repeat(48) }), env });
+check("伪造令牌 → 400 拒绝", r.status === 400 && !r.data.ok, JSON.stringify(r.data));
+// 令牌一次性: 首次成功, 复用 → 400
+{
+    const tk = await gamesess.issueGameSession(env, "hlgx", "easy", "reuse-ip");
+    timeShift = 120_000;
+    r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "首发", hp: 3, time: 60, tools: 0, token: tk }, { "X-Forwarded-For": "reuse-ip" }), env });
+    check("令牌首次提交 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
+    store.delete("rank:rl:reuse-ip");   // 绕过 60s 提交限频(限频在令牌校验之前, 单独测过), 专测令牌一次性
+    r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "复用", hp: 3, time: 60, tools: 0, token: tk }, { "X-Forwarded-For": "reuse-ip" }), env });
+    check("令牌重复使用 → 400 拒绝", r.status === 400 && !r.data.ok, JSON.stringify(r.data));
+    timeShift = 0;
+}
+// 上报用时超过服务端实际经过时长 → 400(不玩游戏等不出时长)
+{
+    const tk = await gamesess.issueGameSession(env, "hlgx", "easy", "fast-ip");
+    r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "闪电侠", hp: 3, time: 600, tools: 0, token: tk }, { "X-Forwarded-For": "fast-ip" }), env });
+    check("上报用时 > 实际时长 → 400 拒绝", r.status === 400 && String(r.data.msg).includes("实际游戏时长"), JSON.stringify(r.data));
+}
+// 令牌与难度不匹配 → 400
+{
+    const tk = await gamesess.issueGameSession(env, "hlgx", "easy", "mode-ip");
+    timeShift = 120_000;
+    r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "normal", name: "窜难度", hp: 3, time: 60, tools: 0, token: tk }, { "X-Forwarded-For": "mode-ip" }), env });
+    check("令牌与难度不匹配 → 400 拒绝", r.status === 400 && String(r.data.msg).includes("不匹配"), JSON.stringify(r.data));
+    timeShift = 0;
+}
+// 令牌 IP 不一致 → 400(防令牌倒卖)
+{
+    const tk = await gamesess.issueGameSession(env, "hlgx", "easy", "ip-a");
+    timeShift = 120_000;
+    r = await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "换IP", hp: 3, time: 60, tools: 0, token: tk }, { "X-Forwarded-For": "ip-b" }), env });
+    check("令牌 IP 不一致 → 400 拒绝", r.status === 400 && !r.data.ok, JSON.stringify(r.data));
+    timeShift = 0;
+}
+// 会话申领路由本身
+r = await call(hlgxSession.onRequestPost, { request: mockReq("http://x/hlgx/api/session", { mode: "easy" }), env });
+check("session 申领令牌 → 200 + 48位hex", r.status === 200 && /^[0-9a-f]{48}$/.test(r.data?.token || ""), JSON.stringify(r.data));
+r = await call(hlgxSession.onRequestPost, { request: mockReq("http://x/hlgx/api/session", { mode: "xx" }), env });
+check("session 非法难度 → 400", r.status === 400, JSON.stringify(r.data));
+{
+    // 申领限频: 同 IP 一分钟内第 11 次 → 429
+    let last = null;
+    for (let i = 0; i < 11; i++) {
+        last = await call(hlgxSession.onRequestPost, { request: mockReq("http://x/hlgx/api/session", { mode: "easy" }, { "X-Forwarded-For": "gsess-rl" }), env });
+    }
+    check("session 申领限频: 第 11 次 → 429", last.status === 429, JSON.stringify(last.data));
+}
+//  clears 超上限夹取(hlgx easy 上限 18)
+reset();
+r = await post({ mode: "easy", name: "超组", hp: 0, time: 100, tools: 0, clears: 9999 });
+check("clears 超物理上限 → 夹取为 18", r.status === 200 && r.data.rank[0].clears === 18, JSON.stringify(r.data.rank?.[0]));
 /* ---------- 7.7 平台分离(手游/端游榜单分开) ---------- */
 reset();
 // UA 兜底: 无 platform + Android UA → mobile
-r = await call(rankApi.onRequestPost, {
-    request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "触屏玩家", hp: 3, time: 30, tools: 0 }, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Mobile" }),
-    env,
-});
+r = await post({ mode: "easy", name: "触屏玩家", hp: 3, time: 30, tools: 0 }, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Mobile" });
 check("UA 兜底: Android UA → mobile", r.data.platform === "mobile" && r.data.rank[0].platform === "mobile", JSON.stringify(r.data));
 // 显式 platform
 r = await post({ mode: "easy", name: "键鼠玩家", hp: 3, time: 40, tools: 0, platform: "desktop" });
@@ -291,7 +376,8 @@ const authReq = (h = {}) => ({ request: mockReq("http://x/admin/api/auth", null,
 r = await call(adminAuth.onRequestGet, authReq());
 check("me 未登录 → 401", r.status === 401, JSON.stringify(r.data));
 r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=" + sid }));
-check("me 已登录 → 200 含 actor/ip", r.status === 200 && r.data.actor === "admin" && r.data.id === sid, JSON.stringify(r.data));
+check("me 已登录 → 200 含 actor/ip", r.status === 200 && r.data.actor === "admin" && !!r.data.ip, JSON.stringify(r.data));
+check("me 返回的是脱敏公开标识而非真实会话 id", r.data.id && r.data.id !== sid, "id=" + r.data.id);
 r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=deadbeef" }));
 check("me 伪造会话 → 401", r.status === 401, JSON.stringify(r.data));
 r = await call(adminAuth.onRequestDelete, authReq({ cookie: "hlgx_admin=" + sid }));
@@ -324,6 +410,16 @@ r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=easy"));
 check("单条删除后剩 1 条", r.data.rank.length === 1, JSON.stringify(r.data));
 r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy&key=99", "DELETE"));
 check("单条删除 索引越界 → 404", r.status === 404, JSON.stringify(r.data));
+// v2.8.0 CSRF: 跨站请求 → 403
+r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy&key=0", "DELETE", { "sec-fetch-site": "cross-site" }));
+check("CSRF: 跨站 DELETE → 403", r.status === 403, JSON.stringify(r.data));
+r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy&key=0", "DELETE", { origin: "https://evil.example.com" }));
+check("CSRF: Origin 跨域 → 403", r.status === 403, JSON.stringify(r.data));
+// v2.8.0 竞态防护: 期望昵称不匹配 → 409(榜单被并发修改时拒绝误删)
+r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy&key=0&name=" + encodeURIComponent("不存在的人"), "DELETE"));
+check("删除单条 期望昵称不匹配 → 409", r.status === 409, JSON.stringify(r.data));
+r = await call(adminRank.onRequestGet, adminReq("/admin/api/rank?mode=easy"));
+check("409 后记录未被误删", r.data.rank.length === 1 && r.data.rank[0].name === "记录乙", JSON.stringify(r.data));
 
 // 清空单难度 + 清空全部 + 审计
 r = await call(adminRank.onRequestDelete, adminReq("/admin/api/rank?mode=easy", "DELETE"));
@@ -356,8 +452,10 @@ r = await call(adminSessions.onRequestGet, { request: mockReq("http://x/admin/ap
 check("会话列表 未登录 → 401", r.status === 401, JSON.stringify(r.data));
 r = await call(adminSessions.onRequestGet, adminReq("/admin/api/sessions"));
 check("会话列表 已登录 → 至少含当前会话", r.status === 200 && r.data.sessions.length >= 1, JSON.stringify(r.data));
+check("会话列表 不含完整会话 id(脱敏 ≤16 位)", r.data.sessions.every((s) => String(s.id).length <= 16), JSON.stringify(r.data.sessions.map((s) => s.id)));
+check("会话列表 标注当前会话 current", r.data.sessions.some((s) => s.current === true), JSON.stringify(r.data.sessions));
 r = await call(adminSessions.onRequestDelete, adminReq("/admin/api/sessions?id=ghost", "DELETE"));
-check("下线不存在的会话 → 200(幂等)", r.status === 200, JSON.stringify(r.data));
+check("下线不存在的会话 → 404", r.status === 404, JSON.stringify(r.data));
 r = await call(adminSessions.onRequestDelete, adminReq("/admin/api/sessions?id=" + sid2, "DELETE"));
 check("强制下线 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 r = await call(adminAuth.onRequestGet, authReq({ cookie: "hlgx_admin=" + sid2 }));
@@ -365,12 +463,12 @@ check("下线后会话失效 → 401", r.status === 401, JSON.stringify(r.data))
 
 /* ---------- 12.5 管理端三游戏独立榜单 ---------- */
 reset();
-// 三个游戏各提交一条(用户 API)
+// 三个游戏各提交一条(用户 API, v2.8.0: 携带会话令牌)
 const ylgyRank = await import(BASE + "functions/ylgy/api/rank.js");
 const clgzRank = await import(BASE + "functions/clgz/api/rank.js");
-const postYlgy = (body, headers = {}) => call(ylgyRank.onRequestPost, { request: mockReq("http://x/ylgy/api/rank", body, headers), env });
-const postClgz = (body, headers = {}) => call(clgzRank.onRequestPost, { request: mockReq("http://x/clgz/api/rank", body, headers), env });
-await call(rankApi.onRequestPost, { request: mockReq("http://x/hlgx/api/rank", { mode: "easy", name: "甲", hp: 3, time: 30, tools: 0, clears: 10, platform: "desktop" }), env });
+const postYlgy = makePost(ylgyRank.onRequestPost, "http://x/ylgy/api/rank", "ylgy", ["easy", "normal", "hard"], "normal");
+const postClgz = makePost(clgzRank.onRequestPost, "http://x/clgz/api/rank", "clgz", ["all"], "all");
+await post({ mode: "easy", name: "甲", hp: 3, time: 30, tools: 0, clears: 10, platform: "desktop" });
 await postYlgy({ mode: "easy", name: "乙", hp: 3, time: 40, tools: 0, clears: 8, platform: "desktop" });
 await postClgz({ mode: "all", name: "丙", score: 7, time: 50, platform: "desktop" });
 // 管理端登录
@@ -399,14 +497,14 @@ check("清空 clgz 后 hlgx 记录仍在", r.data.rank.length === 1 && r.data.ra
 
 /* ---------- 12.55 分了个类(flgl): 得分制榜单 ---------- */
 const flglRank = await import(BASE + "functions/flgl/api/rank.js");
-const postFlgl = (body, headers = {}) => call(flglRank.onRequestPost, { request: mockReq("http://x/flgl/api/rank", body, headers), env });
+const postFlgl = makePost(flglRank.onRequestPost, "http://x/flgl/api/rank", "flgl", ["easy", "normal", "hard"], "normal");
 await postFlgl({ mode: "easy", name: "分类甲", score: 15, time: 60, version: "v1.0.0", platform: "desktop" });
 await postFlgl({ mode: "easy", name: "分类乙", score: 18, time: 90, version: "v1.0.0", platform: "desktop" });
 r = await call(flglRank.onRequestGet, { request: mockReq("http://x/flgl/api/rank?mode=easy&platform=desktop"), env });
 check("flgl GET 榜单已排序(得分↓ → 用时↑)", r.status === 200 && r.data.rank.length === 2 && r.data.rank[0].name === "分类乙", JSON.stringify(r.data));
 r = await call(flglRank.onRequestPost, { request: mockReq("http://x/flgl/api/rank", { mode: "easy", name: "刷子", score: 20, time: 3 }, { "X-Forwarded-For": "flgl-ip-1" }), env });
 check("flgl 用时<10s → 400 成绩无效", r.status === 400 && r.data.msg === "成绩无效:用时过短", JSON.stringify(r.data));
-r = await call(flglRank.onRequestPost, { request: mockReq("http://x/flgl/api/rank", { mode: "easy", name: "超分", score: 99, time: 30 }, { "X-Forwarded-For": "flgl-ip-2" }), env });
+r = await postFlgl({ mode: "easy", name: "超分", score: 99, time: 30 }, { "X-Forwarded-For": "flgl-ip-2" });
 check("flgl score 超 20 → clamp 为 20", r.status === 200 && r.data.rank[0].score === 20, JSON.stringify(r.data.rank?.[0]));
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=flgl&mode=easy"));
 check("管理端 flgl 榜单独立可见(排序 得分↓)", r.status === 200 && r.data.rank.length === 3 && r.data.rank[0].score === 20, JSON.stringify(r.data));
@@ -415,7 +513,7 @@ check("flgl 记录不影响 hlgx 榜单", r.data.rank.length === 1 && r.data.ran
 
 /* ---------- 12.57 配了个平(plgp): 得分/用时/提示 三维排序 ---------- */
 const plgpRank = await import(BASE + "functions/plgp/api/rank.js");
-const postPlgp = (body, headers = {}) => call(plgpRank.onRequestPost, { request: mockReq("http://x/plgp/api/rank", body, headers), env });
+const postPlgp = makePost(plgpRank.onRequestPost, "http://x/plgp/api/rank", "plgp", ["easy", "normal", "hard"], "normal");
 await postPlgp({ mode: "easy", name: "配平甲", score: 6, time: 120, tools: 2, version: "v1.0.0", platform: "desktop" });
 await postPlgp({ mode: "easy", name: "配平乙", score: 8, time: 150, tools: 0, version: "v1.0.0", platform: "desktop" });
 await postPlgp({ mode: "easy", name: "配平丙", score: 8, time: 150, tools: 3, version: "v1.0.0", platform: "desktop" });
@@ -424,10 +522,12 @@ check("plgp GET 排序 score↓→time↑→tools↑", r.status === 200 && r.dat
       && r.data.rank.map((e) => e.name).join(",") === "配平乙,配平丙,配平甲", JSON.stringify(r.data));
 r = await call(plgpRank.onRequestPost, { request: mockReq("http://x/plgp/api/rank", { mode: "easy", name: "刷子", score: 8, time: 5 }, { "X-Forwarded-For": "plgp-ip-1" }), env });
 check("plgp 用时<10s → 400 成绩无效", r.status === 400 && r.data.msg === "成绩无效:用时过短", JSON.stringify(r.data));
-r = await call(plgpRank.onRequestPost, { request: mockReq("http://x/plgp/api/rank", { mode: "easy", name: "超分", score: 99, time: 30 }, { "X-Forwarded-For": "plgp-ip-2" }), env });
+r = await postPlgp({ mode: "easy", name: "超分", score: 99, time: 30 }, { "X-Forwarded-For": "plgp-ip-2" });
 check("plgp score 超 8 → clamp 为 8", r.status === 200 && r.data.rank[0].score === 8, JSON.stringify(r.data.rank?.[0]));
+r = await postPlgp({ mode: "easy", name: "超提示", score: 8, time: 60, tools: 99 }, { "X-Forwarded-For": "plgp-ip-3" });
+check("plgp tools 超 16 → clamp 为 16", r.status === 200 && r.data.rank.find((e) => e.name === "超提示")?.tools === 16, JSON.stringify(r.data.rank?.map((e) => [e.name, e.tools])));
 r = await call(adminRank.onRequestGet, adminReq3g("/admin/api/rank?game=plgp&mode=easy"));
-check("管理端 plgp 榜单独立可见", r.status === 200 && r.data.rank.length === 4, JSON.stringify(r.data));
+check("管理端 plgp 榜单独立可见", r.status === 200 && r.data.rank.length === 5, JSON.stringify(r.data));
 r = await call(adminRank.onRequestDelete, adminReq3g("/admin/api/rank?game=plgp&mode=easy&key=3", "DELETE"));
 check("管理端 plgp 单条删除 → 200", r.status === 200 && r.data.ok === true, JSON.stringify(r.data));
 
@@ -442,6 +542,9 @@ check("反馈 60s 限频 → 429", r.status === 429, JSON.stringify(r.data));
 // 违禁词拦截
 r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "f**k 内容" }, { "X-Forwarded-For": "fb-ip-2" }), env });
 check("反馈 违禁词 → 400", r.status === 400, JSON.stringify(r.data));
+// v2.8.0: 内容含 < > → 400(与昵称同标准, 防存储型 XSS/钓鱼链接)
+r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "<script>alert(1)</script>" }, { "X-Forwarded-For": "fb-ip-6" }), env });
+check("反馈 内容含 < > → 400 非法字符", r.status === 400 && r.data.msg === "反馈内容包含非法字符", JSON.stringify(r.data));
 // 空内容
 r = await call(feedbackApi.onRequestPost, { request: mockReq("http://x/api/feedback", { name: "玩家乙", content: "  " }, { "X-Forwarded-For": "fb-ip-3" }), env });
 check("反馈 空内容 → 400", r.status === 400, JSON.stringify(r.data));
@@ -459,6 +562,9 @@ r = await call(adminFeedback.onRequestGet, { request: mockReq("http://x/admin/ap
 check("管理端反馈 未登录 → 401", r.status === 401, JSON.stringify(r.data));
 r = await call(adminFeedback.onRequestGet, fbReq("/admin/api/feedback"));
 check("管理端反馈 已登录 → 3 条(新在前)", r.status === 200 && r.data.total === 3 && r.data.feedback[0].name === "玩家丙", JSON.stringify(r.data));
+check("反馈隐私(v2.8.0): 下发 ipHash 匿名标识, 不含真实 ip 字段",
+      r.data.feedback.every((e) => typeof e.ipHash === "string" && e.ipHash.length === 16 && !("ip" in e)),
+      JSON.stringify(r.data.feedback.map((e) => [e.name, e.ipHash, e.ip])));
 check("反馈鸣谢意愿存储: 甲=true / 乙不传→无字段 / 丙=false",
       r.data.feedback.find((e) => e.name === "玩家甲").credit === true
       && r.data.feedback.find((e) => e.name === "玩家乙").credit === undefined

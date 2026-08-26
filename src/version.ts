@@ -6,5 +6,5 @@
  * 升级规则: 各游戏与平台各自独立递增, 互不继承。
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
-export const APP_VERSION = "v2.3.11";      // 化了个学(局内排行参与开关: ☑/☐ 二次确认切换并重开本局)
-export const PLATFORM_VERSION = "v2.7.1";  // 平台 p了个s(修复主界面重复的「敬请期待」占位卡, 恢复为 1 个)
+export const APP_VERSION = "v2.3.12";     // 化了个学(排行榜提交需开局一次性会话令牌, 防刷榜)
+export const PLATFORM_VERSION = "v2.8.0";  // 平台 p了个s(安全加固: 5 游戏排行榜会话令牌防刷 / 反馈 XSS+IP 脱敏 / 管理端 CSRF 防护 / 会话 ID 脱敏 / 成绩物理上限)

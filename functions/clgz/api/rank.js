@@ -10,11 +10,13 @@
 import { fmtDate, clampInt, json } from "../../_lib/ranklib.js";
 import { countIncr, clientIp } from "../../_lib/ratelimit.js";
 import { hasBadWord } from "../../_lib/badwords.js";
+import { peekGameSession, burnGameSession } from "../../_lib/gamesess.js";
 
 export const MODES = ["all"];
 const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒)
 const RANK_LIMIT = 200;     // 单难度榜单条目上限
 const KEY_PREFIX = "clgz:"; // KV 键前缀(与化了个学/英了个语榜单分离)
+const SCORE_MAX = 8;        // 每局题数(v2.8.0: 收紧至物理上限, 原 999 是假成绩温床)
 
 async function loadMode(env, mode) {
     const raw = await env.RANKINGS.get(KEY_PREFIX + mode);
@@ -84,12 +86,20 @@ export async function onRequestPost({ request, env }) {
     if (hasBadWord(name)) return json({ ok: false, msg: "昵称包含违禁词,请更换" }, 400);
     if (/[<>]/.test(name)) return json({ ok: false, msg: "昵称包含非法字符" }, 400);
 
-    const score = clampInt(body.score, 0, 999, 0);
+    const score = clampInt(body.score, 0, SCORE_MAX, 0);
     const secs = Math.max(0, clampInt(body.time, 0, Number.MAX_SAFE_INTEGER, 0));
     const version = String(body.version ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16);
 
     // 成绩合理性: 10 秒以内完成 8 题手写不可能(防脚本刷假成绩)
     if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
+
+    // 游戏会话凭证(v2.8.0 防刷榜): 开局下发的一次性 token, 全部校验通过才销毁
+    const token = String(body.token ?? "");
+    const sess = await peekGameSession(env, "clgz", token, ip);
+    if (!sess.ok) return json({ ok: false, msg: sess.msg }, 400);
+    // 服务端实际经过时长必须 ≥ 上报用时(容忍 10s 误差): 不玩游戏直接构造成绩无法通过
+    const serverSecs = Math.floor((Date.now() - sess.rec.startedAt) / 1000);
+    if (serverSecs + 10 < secs) return json({ ok: false, msg: "成绩校验失败:上报用时短于实际游戏时长,请稍后重试" }, 400);
 
     const entries = await loadMode(env, "all");
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
@@ -107,6 +117,7 @@ export async function onRequestPost({ request, env }) {
         date: fmtDate(),
     };
     entries.push(entry);
+    await burnGameSession(env, "clgz", token);   // 一次性凭证: 校验全部通过后销毁
     await saveMode(env, "all", entries);
     return json({ ok: true, platform, surpassed, rank: sortEntries(entries) });
 }

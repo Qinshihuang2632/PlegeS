@@ -36,6 +36,8 @@ export function HubPage() {
         if (tip) { setFbTip(tip); return; }
         if (!fbContent.trim()) { setFbTip("请填写反馈内容"); return; }
         if ([...fbContent.trim()].length > 500) { setFbTip("反馈内容不能超过 500 个字"); return; }
+        // v2.8.0: 与服务端同口径, 本地先行拦截(防存储型 XSS 特征字符)
+        if (/[<>]/.test(fbContent)) { setFbTip("反馈内容不能包含 < > 字符"); return; }
         setFbSending(true);
         setFbTip("");
         try {
@@ -332,6 +334,10 @@ export function HubPage() {
                             <Button className="w-full" size="lg" onClick={() => void submitFeedback()} disabled={fbSending}>
                                 {fbSending ? "提交中…" : "提交反馈"}
                             </Button>
+                            {/* v2.8.0 隐私告知: 只记录匿名化哈希, 不存真实 IP */}
+                            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+                                提交即表示知悉:为防恶意刷反馈,我们会记录经匿名化处理(SHA-256 哈希、无法反推)的网络标识,不保存你的真实 IP。
+                            </p>
                         </div>
                     )}
                 </DialogContent>

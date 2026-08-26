@@ -25,6 +25,7 @@ import { RankPartToggle } from "./RankPartToggle";
 import { fmtTime, TOOL_LIMIT, type Mode, type Tile } from "./core";
 import { detectPlatform, PLATFORM_LABEL } from "./platform";
 import { APP_VERSION } from "@/version";
+import { fetchRankToken } from "@/lib/rankToken";
 import { BoardTile, TrayCell } from "./game-ui";
 import { GameRules } from "./GameRules";
 import { useGame } from "./useGame";
@@ -92,6 +93,11 @@ export function HuaPage() {
     const playerNameRef = useRef<string | null>(null);
     const inRankRef = useRef(false);
     const nameChangeRestartRef = useRef(false);   // v2.3.2: 结算页换名确认→开新局; 局内换名→不重开,只更新默认昵称
+    const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
+    const refreshRankToken = (m: Mode) => {   // 失败不阻塞游戏, 提交时补领
+        rankTokenRef.current = "";
+        void fetchRankToken("hlgx", m).then((t) => { rankTokenRef.current = t; });
+    };
 
     /* ---- 新手引导(首次进入) ---- */
     const [tutorialOpen, setTutorialOpen] = useState(false);
@@ -181,6 +187,7 @@ export function HuaPage() {
         setNameTip("");
         game.newGame();
         startTimer();
+        refreshRankToken(game.mode);   // v2.8.0: 申领本局成绩提交凭证
     };
 
     const confirmName = () => {
@@ -307,6 +314,12 @@ export function HuaPage() {
             return;
         }
         try {
+            // v2.8.0: 携带开局申领的一次性凭证; 缺失时补领(如开局时离线)
+            let token = rankTokenRef.current;
+            if (!token) {
+                token = await fetchRankToken("hlgx", game.mode);
+                rankTokenRef.current = token;
+            }
             const res = await fetch("/hlgx/api/rank", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -319,6 +332,7 @@ export function HuaPage() {
                     clears: r.clears,          // 成功消除组数(v2.2.0 排名依据)
                     version: APP_VERSION,      // 通关版本(v2.2.0 便于跨版本比较)
                     platform,
+                    token,
                 }),
             });
             const data = await res.json().catch(() => null);
@@ -359,6 +373,7 @@ export function HuaPage() {
         if (m) game.applyMode(m);
         game.newGame();
         startTimer();
+        refreshRankToken(game.mode);   // v2.8.0: 换局重新申领成绩提交凭证
         setResultInfo(null);
         submittedRef.current = false;
         audioPlayedRef.current = false;

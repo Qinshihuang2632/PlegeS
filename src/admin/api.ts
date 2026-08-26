@@ -34,8 +34,10 @@ export async function apiRanks(game: string, mode: string, q = ""): Promise<Rank
     return res.ok ? j<RankList>(res) : null;
 }
 
-export async function apiDeleteRankEntry(game: string, mode: string, key: number): Promise<{ ok: boolean; msg?: string }> {
-    const res = await fetch(`/admin/api/rank?game=${encodeURIComponent(game)}&mode=${encodeURIComponent(mode)}&key=${key}`, { method: "DELETE" });
+export async function apiDeleteRankEntry(game: string, mode: string, key: number, expect?: { name: string; date: string }): Promise<{ ok: boolean; msg?: string }> {
+    // v2.8.0: 附带期望删除的昵称/日期, 服务端校验不一致说明榜单已被并发修改 → 409 提示刷新
+    const q = expect ? `&name=${encodeURIComponent(expect.name)}&date=${encodeURIComponent(expect.date)}` : "";
+    const res = await fetch(`/admin/api/rank?game=${encodeURIComponent(game)}&mode=${encodeURIComponent(mode)}&key=${key}${q}`, { method: "DELETE" });
     return j<{ ok: boolean; msg?: string }>(res);
 }
 

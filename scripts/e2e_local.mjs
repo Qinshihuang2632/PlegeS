@@ -30,12 +30,25 @@ async function send(path, method, body, headers = {}) {
     return { status: res.status, data, setCookie: res.headers.get("set-cookie") };
 }
 /* 独立 IP 提交(避免触发 60s 提交限频; 本地 KV 持久化, 每次运行用时间戳保证全新 IP)
-   v2.1.6: 同名昵称已放开, 不再需要唯一化避同名限频 */
+   v2.1.6: 同名昵称已放开, 不再需要唯一化避同名限频
+   v2.8.0: 提交需携带开局令牌, 且服务端实际计时须 ≥ 上报用时-10s(防不玩游戏刷榜),
+           故 helper 申领令牌后按上报用时补等待(模拟真实游戏时长) */
 const RUN = Date.now();
 const RUN_NAME = "帅帅" + String(RUN % 100000);
 let ipn = 0;
-const postRank = (body) => send("/hlgx/api/rank", "POST", body, { "X-Forwarded-For": `e2e-${RUN}-${++ipn}` });
-const postRankSameIp = (body) => send("/hlgx/api/rank", "POST", body, { "X-Forwarded-For": `e2e-${RUN}-same` });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function issueToken(ip, mode = "easy") {
+    const s = await send("/hlgx/api/session", "POST", { mode }, { "X-Forwarded-For": ip });
+    return s.data?.token || "";
+}
+async function postRankWithIp(body, ip) {
+    const token = await issueToken(ip, body.mode);
+    const secs = Math.max(0, Number.parseInt(body.time, 10) || 0);
+    if (secs >= 10) await sleep((secs - 9) * 1000);   // 满足服务端计时校验(容忍 10s)
+    return send("/hlgx/api/rank", "POST", { ...body, token }, { "X-Forwarded-For": ip });
+}
+const postRank = (body) => postRankWithIp(body, `e2e-${RUN}-${++ipn}`);
+const postRankSameIp = (body) => postRankWithIp(body, `e2e-${RUN}-same`);
 
 /* ---------- 1. 静态页面 + SPA 路由 ---------- */
 let r = await get("/");
@@ -66,8 +79,13 @@ check("GET rank 200 + 契约", r.status === 200 && r.text.includes('"mode":"easy
 r = await get("/hlgx/api/rank?mode=乱写");
 check("GET rank 非法mode回退normal", r.status === 200 && r.text.includes('"mode":"normal"'), r.text.slice(0, 120));
 
-/* ---------- 3. API: POST rank (中文昵称 UTF-8 + 限频) ---------- */
-let p = await postRank({ mode: "easy", name: RUN_NAME, hp: 3, time: 131, tools: 0, clears: 17, version: "v2.2.0" });
+/* ---------- 3. API: POST rank (中文昵称 UTF-8 + 限频) ----------
+   v2.8.0: 本节因防刷榜计时校验会按上报用时补等待, 整体约需 3~4 分钟 */
+// 无令牌裸提交 → 400(刷榜漏洞回归验证; 用一次性 IP 不影响后续限频用例)
+let p = await send("/hlgx/api/rank", "POST", { mode: "easy", name: "裸奔", hp: 3, time: 30, tools: 0 }, { "X-Forwarded-For": `e2e-${RUN}-bare` });
+check("无令牌提交 → 400 拒绝", p.status === 400 && p.data.ok === false, "status " + p.status + " " + JSON.stringify(p.data));
+
+p = await postRank({ mode: "easy", name: RUN_NAME, hp: 3, time: 131, tools: 0, clears: 17, version: "v2.2.0" });
 check("POST rank 200 + ok:true", p.status === 200 && p.data.ok === true, JSON.stringify(p.data).slice(0, 200));
 check("POST 中文昵称正确返回(UTF-8)", p.data.rank && p.data.rank[0].name === RUN_NAME, JSON.stringify(p.data.rank && p.data.rank[0]));
 check("POST date 格式正确", /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(p.data.rank[0].date || ""), p.data.rank[0].date);

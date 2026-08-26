@@ -19,6 +19,7 @@ import { YLGY_VERSION } from "./version";
 import { YlgyRules } from "./YlgyRules";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { fetchRankToken } from "@/lib/rankToken";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
 
@@ -51,6 +52,7 @@ export function YlgyPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
     const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
 
     const clearMeaningTip = () => {
         if (tipTimerRef.current) clearTimeout(tipTimerRef.current);
@@ -75,6 +77,9 @@ export function YlgyPage() {
         setGame(g);
         setElapsed(0);
         startTimer();
+        // v2.8.0: 开局申领成绩提交凭证(失败不阻塞游戏, 提交时补领)
+        rankTokenRef.current = "";
+        void fetchRankToken("ylgy", m).then((t) => { rankTokenRef.current = t; });
     };
 
     /* 局内改昵称(v1.4.8): 输入框编辑(实时校验) → ✓ 二次确认弹窗 → 保存并重启本局 */
@@ -104,7 +109,12 @@ export function YlgyPage() {
         newGame(curMode);   // 重启本局(同难度重新生成)
     };
 
-    useEffect(() => { startTimer(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+    useEffect(() => {
+        startTimer();
+        // v2.8.0: 首局(组件初始化即开局)也要申领成绩提交凭证
+        void fetchRankToken("ylgy", "easy").then((t) => { rankTokenRef.current = t; });
+        /* eslint-disable-next-line react-hooks/exhaustive-deps */
+    }, []);
 
     useEffect(() => {
         if (!game.gameOver || result) return;
@@ -126,6 +136,12 @@ export function YlgyPage() {
         const nm = name.trim();
         if (!nm) return;
         try {
+            // v2.8.0: 携带开局申领的一次性凭证; 缺失时补领(如开局时离线)
+            let token = rankTokenRef.current;
+            if (!token) {
+                token = await fetchRankToken("ylgy", g.mode);
+                rankTokenRef.current = token;
+            }
             const res = await fetch("/ylgy/api/rank", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -134,6 +150,7 @@ export function YlgyPage() {
                     tools: g.hints + g.meaningHints,   // 使用次数(与化了个学一致, 用得少排名靠前)
                     clears: g.fills, version: YLGY_VERSION,
                     platform: detectPlatform(),
+                    token,
                 }),
             });
             const d = await res.json().catch(() => null);
@@ -210,7 +227,9 @@ export function YlgyPage() {
 
     // 调试接口: 控制台执行 hlgxDebug() 导出当前局面快照, 方便反馈调试
     //   # = 灰格(非单词成分) | 大写 = 预填(给定) | 小写 = 已填 | . = 待填空格
+    //   v2.8.0: 仅开发环境注册(生产构建移除, 防玩家控制台直接看答案)
     useEffect(() => {
+        if (!import.meta.env.DEV) return;
         const dump = () => {
             const g = game;
             const ascii = Array.from({ length: g.H }, (_, r) =>

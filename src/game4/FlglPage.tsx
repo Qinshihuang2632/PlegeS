@@ -18,6 +18,7 @@ import { HLGX_CATS, type Category, type Substance } from "@/game/substances";
 import { FlglRules } from "./FlglRules";
 import { FLGL_VERSION } from "./version";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { fetchRankToken } from "@/lib/rankToken";
 import {
     BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
     type FlglCard, type FlglMode, type FlglState,
@@ -86,6 +87,7 @@ export function FlglPage() {
     const knownIdsRef = useRef<Set<number>>(new Set());
     const beltRef = useRef<HTMLDivElement | null>(null);
     const submittedRef = useRef(false);
+    const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
 
     const start = (m: FlglMode) => {
         setMode(m);
@@ -99,6 +101,9 @@ export function FlglPage() {
         setEnteredIds([]);
         knownIdsRef.current = new Set();
         submittedRef.current = false;
+        // v2.8.0: 开局申领成绩提交凭证(失败不阻塞游戏, 提交时补领)
+        rankTokenRef.current = "";
+        void fetchRankToken("flgl", m).then((t) => { rankTokenRef.current = t; });
     };
 
     /* 游戏时钟: 100ms 推进一次核心状态 */
@@ -130,10 +135,16 @@ export function FlglPage() {
         if (!nm || skipRank) { setResult({ ...info, skipped: true }); return; }
         (async () => {
             try {
+                // v2.8.0: 携带开局申领的一次性凭证; 缺失时补领(如开局时离线)
+                let token = rankTokenRef.current;
+                if (!token) {
+                    token = await fetchRankToken("flgl", mode);
+                    rankTokenRef.current = token;
+                }
                 const res = await fetch("/flgl/api/rank", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ mode, name: nm, score: st.score, time, version: FLGL_VERSION, platform }),
+                    body: JSON.stringify({ mode, name: nm, score: st.score, time, version: FLGL_VERSION, platform, token }),
                 });
                 const d = await res.json().catch(() => null);
                 setResult({

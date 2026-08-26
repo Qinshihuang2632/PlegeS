@@ -38,7 +38,8 @@ export interface AuditPage {
 }
 
 export interface SessionInfo {
-    id: string;
+    id: string;      // v2.8.0: 公开标识(非真实会话 id, 服务端已脱敏)
+    current?: boolean;   // v2.8.0: 是否当前登录会话(服务端下发)
     ip: string;
     loginAt: number;
     expiresAt: number;
@@ -48,7 +49,7 @@ export interface FeedbackEntry {
     name: string;
     content: string;
     credit?: boolean; // v2.5.5: 鸣谢意愿(建议被采纳后是否愿入特别鸣谢榜); 旧条目无此字段
-    ip: string;
+    ipHash?: string;  // v2.8.0: 匿名化 IP 哈希(真实 IP 不再存储/下发); 旧条目无此字段
     date: string;
     ts: number;
     key: number; // 管理用索引(存储数组下标)

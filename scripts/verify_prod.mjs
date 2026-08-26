@@ -91,7 +91,15 @@ console.log("\n== API: 同名放开(v2.1.6) ==");
 
 console.log("\n== API: POST 提交(限频下仅 1 条, 合并检查) ==");
 {
-    const P = await api("/hlgx/api/rank", "POST", { mode: "easy", name: TEST_NAME, hp: 99, time: 15, tools: -3, clears: 8, version: "v2.2.0-test", platform: "desktop" });
+    // v2.8.0 防刷榜: 先验证「无令牌裸提交」被拒(本漏洞的回归验证), 会占用 60s 提交配额
+    const bare = await api("/hlgx/api/rank", "POST", { mode: "easy", name: "无令牌", hp: 3, time: 30, tools: 0 });
+    check("无令牌提交 → 400 拒绝(刷榜漏洞已堵)", bare.status === 400 && bare.data?.ok === false, `(实际 ${bare.status} ${bare.data?.msg || ""})`);
+    // 申领一次性会话令牌(开局凭证), 等待 65s 跨过提交限频窗口
+    const S = await api("/hlgx/api/session", "POST", { mode: "easy" });
+    check("POST /hlgx/api/session 申领令牌 → 200 + 48位hex", S.status === 200 && /^[0-9a-f]{48}$/.test(S.data?.token || ""), `(实际 ${S.status})`);
+    console.log("  … 等待 65s(跨过 60s 提交限频窗口, 同时满足服务端计时 ≥ 上报用时-10s)");
+    await new Promise((r) => setTimeout(r, 65_000));
+    const P = await api("/hlgx/api/rank", "POST", { mode: "easy", name: TEST_NAME, hp: 99, time: 15, tools: -3, clears: 8, version: "v2.2.0-test", platform: "desktop", token: S.data?.token });
     check("POST → 200 ok:true", P.status === 200 && P.data?.ok === true, `(实际 ${P.status} ${P.data?.msg || ""})`);
     const f = (P.data?.rank || []).find(e => e.name === TEST_NAME);
     check("中文昵称 UTF-8 + clamp(hp99→3, tools-3→0)", f?.hp === 3 && f?.time === 15 && f?.tools === 0, `(实际 ${JSON.stringify(f)})`);
