@@ -7,7 +7,7 @@
  * 榜单: 独立 API /plgp/api/rank, 排序 答对数↓ → 用时↑ → 提示使用↑。
  */
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { fmtTime } from "@/game/core";
 import { detectPlatform, PLATFORM_LABEL, type Platform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
 import { PlgpRules } from "./PlgpRules";
 import { PLGP_VERSION } from "./version";
@@ -81,6 +82,9 @@ export function PlgpPage() {
     const [nameConfirmOpen, setNameConfirmOpen] = useState(false);
     const [skipRank, setSkipRank] = useState(() => readSkipRank());
     const rankActive = !!name.trim() && !skipRank;
+    /* 首次进入昵称弹窗(v1.0.2): 本机从未填过昵称且未勾选不参与时弹出(手游/端游一致) */
+    const navigate = useNavigate();
+    const [entryOpen, setEntryOpen] = useState(() => !storedIdentity());
 
     const submittedRef = useRef(false);
     const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
@@ -94,6 +98,18 @@ export function PlgpPage() {
         // v2.8.0: 开局申领成绩提交凭证(失败不阻塞游戏, 提交时补领)
         rankTokenRef.current = "";
         void fetchRankToken("plgp", m).then((t) => { rankTokenRef.current = t; });
+    };
+
+    const confirmEntry = (n: string, skip: boolean) => {
+        if (n) {
+            setName(n);
+            setNameDraft(n);
+            try { localStorage.setItem(NAME_KEY, n); } catch { /* 隐私模式忽略 */ }
+        }
+        setSkipRank(skip);
+        storeSkipRank(skip);
+        setEntryOpen(false);
+        start(mode);   // 确认即开局(与化了个学昵称窗「确认开始」一致)
     };
 
     /* 切换题目时刷新选择题选项 */
@@ -429,6 +445,14 @@ export function PlgpPage() {
                 current={name}
                 onOpenChange={setNameConfirmOpen}
                 onConfirm={confirmName}
+            />
+
+            {/* 首次进入昵称弹窗(✕/返回大厅 = 放弃进入) */}
+            <NameEntryDialog
+                open={entryOpen}
+                gameName="配了个平"
+                onDismiss={() => navigate("/")}
+                onConfirm={confirmEntry}
             />
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">配了个平 · {PLGP_VERSION}(仅供个人娱乐)</footer>

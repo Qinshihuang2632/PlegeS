@@ -7,7 +7,7 @@
  * 榜单: 独立 API /clgz/api/rank, 排序 得分↓ → 用时↑ → 提交早者优先。
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
 import { CLGZ_VERSION } from "./version";
 
@@ -42,6 +43,19 @@ export function ClgzPage() {
     /* 排行榜参与(v2.6.1): 有昵称 且 未勾选跳过(hlgx_skip_rank) 才上榜 */
     const [skipRank, setSkipRank] = useState(() => readSkipRank());
     const rankActive = !!name.trim() && !skipRank;
+    /* 首次进入昵称弹窗(v1.0.8): 本机从未填过昵称且未勾选不参与时弹出; 关闭后仍在选题屏(错了个字需要先选科目) */
+    const navigate = useNavigate();
+    const [entryOpen, setEntryOpen] = useState(() => !storedIdentity());
+    const confirmEntry = (n: string, skip: boolean) => {
+        if (n) {
+            setName(n);
+            setNameDraft(n);
+            try { localStorage.setItem(NAME_KEY, n); } catch { /* 隐私模式忽略 */ }
+        }
+        setSkipRank(skip);
+        storeSkipRank(skip);
+        setEntryOpen(false);
+    };
     const [queue, setQueue] = useState<ClgzChar[]>([]);
     const [idx, setIdx] = useState(0);
     const [score, setScore] = useState(0);
@@ -282,6 +296,14 @@ export function ClgzPage() {
                 current={name}
                 onOpenChange={setNameConfirmOpen}
                 onConfirm={confirmName}
+            />
+
+            {/* 首次进入昵称弹窗(✕/返回大厅 = 放弃进入; 确认后回到选题屏) */}
+            <NameEntryDialog
+                open={entryOpen}
+                gameName="错了个字"
+                onDismiss={() => navigate("/")}
+                onConfirm={confirmEntry}
             />
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">错了个字 · {CLGZ_VERSION}(仅供个人娱乐)</footer>

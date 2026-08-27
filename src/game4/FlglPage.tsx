@@ -7,7 +7,7 @@
  * 榜单: 独立 API /flgl/api/rank, 排序 正确数↓ → 用时↑。
  */
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import { HLGX_CATS, type Category, type Substance } from "@/game/substances";
 import { FlglRules } from "./FlglRules";
 import { FLGL_VERSION } from "./version";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
 import {
     BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
@@ -73,6 +74,20 @@ export function FlglPage() {
     /* 排行榜参与(v2.6.1): 有昵称 且 未勾选跳过(hlgx_skip_rank) 才上榜 */
     const [skipRank, setSkipRank] = useState(() => readSkipRank());
     const rankActive = !!name.trim() && !skipRank;
+    /* 首次进入昵称弹窗(v1.1.2): 本机从未填过昵称且未勾选不参与时弹出(手游/端游一致) */
+    const navigate = useNavigate();
+    const [entryOpen, setEntryOpen] = useState(() => !storedIdentity());
+    const confirmEntry = (n: string, skip: boolean) => {
+        if (n) {
+            setName(n);
+            setNameDraft(n);
+            try { localStorage.setItem(NAME_KEY, n); } catch { /* 隐私模式忽略 */ }
+        }
+        setSkipRank(skip);
+        storeSkipRank(skip);
+        setEntryOpen(false);
+        start(mode);   // 确认即开局(与化了个学昵称窗「确认开始」一致)
+    };
 
     /* 拖拽与反馈 */
     const [drag, setDrag] = useState<{ id: number; x: number; y: number; sub: Substance } | null>(null);
@@ -485,6 +500,14 @@ export function FlglPage() {
                 current={name}
                 onOpenChange={setNameConfirmOpen}
                 onConfirm={confirmName}
+            />
+
+            {/* 首次进入昵称弹窗(✕/返回大厅 = 放弃进入) */}
+            <NameEntryDialog
+                open={entryOpen}
+                gameName="分了个类"
+                onDismiss={() => navigate("/")}
+                onConfirm={confirmEntry}
             />
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">分了个类 · {FLGL_VERSION}(仅供个人娱乐)</footer>

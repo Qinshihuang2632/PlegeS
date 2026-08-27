@@ -8,7 +8,7 @@
  * 排行榜移至主界面与「化了个学」共用(见 /hlgx/rank)。
  */
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { YLGY_VERSION } from "./version";
 import { YlgyRules } from "./YlgyRules";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
@@ -48,6 +49,10 @@ export function YlgyPage() {
     /* 排行榜参与(v2.6.1): 有昵称 且 未勾选跳过(hlgx_skip_rank) 才上榜 */
     const [skipRank, setSkipRank] = useState(() => readSkipRank());
     const rankActive = !!name.trim() && !skipRank;
+    /* 首次进入昵称弹窗(v1.5.2): 本机从未填过昵称且未勾选不参与时弹出; 弹窗期间暂停计时(见 startTimer) */
+    const navigate = useNavigate();
+    const [entryOpen, setEntryOpen] = useState(() => !storedIdentity());
+    const entryOpenRef = useRef(entryOpen);
     const [elapsed, setElapsed] = useState(0);
     const [rulesOpen, setRulesOpen] = useState(false);
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
@@ -65,7 +70,11 @@ export function YlgyPage() {
 
     const startTimer = () => {
         if (timerRef.current) clearInterval(timerRef.current);
-        timerRef.current = setInterval(() => setElapsed(Math.floor((Date.now() - game.startAt) / 1000)), 500);
+        timerRef.current = setInterval(() => {
+            // v1.5.2: 首次昵称弹窗打开期间暂停计时 —— 把开局时间戳同步前移, 玩家不会被弹窗耗时的计入用时
+            if (entryOpenRef.current) game.startAt += 500;
+            setElapsed(Math.floor((Date.now() - game.startAt) / 1000));
+        }, 500);
     };
 
     useEffect(() => { return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, []);
@@ -107,6 +116,19 @@ export function YlgyPage() {
         setSkipRank(!participate);
         storeSkipRank(!participate);
         newGame(curMode);   // 重启本局(同难度重新生成)
+    };
+
+    /* 首次进入昵称弹窗: 同步 ref 供计时暂停判断; 确认后直接开始当前局(无需重开) */
+    useEffect(() => { entryOpenRef.current = entryOpen; }, [entryOpen]);
+    const confirmEntry = (n: string, skip: boolean) => {
+        if (n) {
+            setName(n);
+            setNameDraft(n);
+            storeName(n);
+        }
+        setSkipRank(skip);
+        storeSkipRank(skip);
+        setEntryOpen(false);
     };
 
     useEffect(() => {
@@ -555,6 +577,14 @@ export function YlgyPage() {
                 current={name}
                 onOpenChange={setNameConfirmOpen}
                 onConfirm={confirmName}
+            />
+
+            {/* 首次进入昵称弹窗(✕/返回大厅 = 放弃进入; 确认后直接开始当前局) */}
+            <NameEntryDialog
+                open={entryOpen}
+                gameName="英了个语"
+                onDismiss={() => navigate("/")}
+                onConfirm={confirmEntry}
             />
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">英了个语 · {YLGY_VERSION}(仅供个人娱乐)</footer>
