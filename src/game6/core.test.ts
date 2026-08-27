@@ -9,7 +9,7 @@ import {
 } from "./bank";
 import {
     FLOW_TIME, HINT_LIMIT, ROUND_TOTAL,
-    answerMc, flowerChars, flowTimeout, makeMc, newGame, setInput, submitFlow, tick, useHint,
+    answerMc, flowerChars, flowTimeout, newGame, setInput, submitFlow, tick, useHint,
     type SlgjState,
 } from "./core";
 
@@ -99,7 +99,8 @@ describe("诗了个局 · 游戏逻辑", () => {
 
         // 回到本题语境: 手工构造同一题重判各种错误
         let s2 = flowSt();
-        (s2.deck as object)[0] = { kind: "flow", char: ch, timeLimit: 40 };
+        const d2 = s2.deck as unknown as { kind: "flow"; char: string; timeLimit: number }[];
+        d2[0] = { kind: "flow", char: ch, timeLimit: 40 };
         s2 = setInput(s2, "床前明月光，");
         if (!"床前明月光".includes(ch)) {
             s2 = submitFlow(s2);

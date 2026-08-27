@@ -27,8 +27,6 @@ export const SLGJ_MODES: { mode: SlgjMode; label: string }[] = [
     { mode: "hard", label: "困难" },
 ];
 
-const DIFF_OF: Record<SlgjMode, 1 | 2 | 3> = { easy: 1, normal: 2, hard: 3 };
-
 function shuffled<T>(arr: T[], rng: () => number): T[] {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
