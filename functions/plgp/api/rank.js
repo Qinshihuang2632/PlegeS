@@ -11,9 +11,11 @@
 import { fmtDate, clampInt, json } from "../../_lib/ranklib.js";
 import { countIncr, clientIp } from "../../_lib/ratelimit.js";
 import { hasBadWord } from "../../_lib/badwords.js";
+import { peekGameSession, burnGameSession } from "../../_lib/gamesess.js";
 
 export const MODES = ["easy", "normal", "hard"];
 export const SCORE_MAX = 8;        // 每局题数(防刷上限)
+const TOOLS_MAX = 16;              // 提示上限(v2.8.0): 每题 2 次 × 8 题
 const SUBMIT_TTL = 60;             // 同一 IP 提交间隔(秒)
 const RANK_LIMIT = 200;            // 单难度榜单条目上限
 const KEY_PREFIX = "plgp:";        // KV 键前缀(与其他游戏榜单分离)
@@ -93,11 +95,20 @@ export async function onRequestPost({ request, env }) {
 
     const score = clampInt(body.score, 0, SCORE_MAX, 0);
     const secs = Math.max(0, clampInt(body.time, 0, Number.MAX_SAFE_INTEGER, 0));
-    const tools = clampInt(body.tools, 0, 9, 0);
+    const tools = clampInt(body.tools, 0, TOOLS_MAX, 0);
     const version = String(body.version ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16);
 
     // 成绩合理性: 10 秒以内做完 8 题不可能(防脚本刷假成绩)
     if (secs < 10) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
+
+    // 游戏会话凭证(v2.8.0 防刷榜): 开局下发的一次性 token, 全部校验通过才销毁
+    const token = String(body.token ?? "");
+    const sess = await peekGameSession(env, "plgp", token, ip);
+    if (!sess.ok) return json({ ok: false, msg: sess.msg }, 400);
+    if (sess.rec.mode !== mode) return json({ ok: false, msg: "会话与难度不匹配,请重新开局后再提交" }, 400);
+    // 服务端实际经过时长必须 ≥ 上报用时(容忍 10s 误差): 不玩游戏直接构造成绩无法通过
+    const serverSecs = Math.floor((Date.now() - sess.rec.startedAt) / 1000);
+    if (serverSecs + 10 < secs) return json({ ok: false, msg: "成绩校验失败:上报用时短于实际游戏时长,请稍后重试" }, 400);
 
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
@@ -116,6 +127,7 @@ export async function onRequestPost({ request, env }) {
         date: fmtDate(),
     };
     entries.push(entry);
+    await burnGameSession(env, "plgp", token);   // 一次性凭证: 校验全部通过后销毁
     await saveMode(env, mode, entries);
     return json({ ok: true, platform, surpassed, rank: sortEntries(entries) });
 }

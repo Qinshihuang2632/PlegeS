@@ -15,6 +15,7 @@ import { fmtTime } from "@/game/core";
 import { detectPlatform, PLATFORM_LABEL, type Platform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { fetchRankToken } from "@/lib/rankToken";
 import { PlgpRules } from "./PlgpRules";
 import { PLGP_VERSION } from "./version";
 import {
@@ -82,6 +83,7 @@ export function PlgpPage() {
     const rankActive = !!name.trim() && !skipRank;
 
     const submittedRef = useRef(false);
+    const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
 
     const start = (m: PlgpMode) => {
         setMode(m);
@@ -89,6 +91,9 @@ export function PlgpPage() {
         setSelIdx(0);
         setPhase("playing");
         submittedRef.current = false;
+        // v2.8.0: 开局申领成绩提交凭证(失败不阻塞游戏, 提交时补领)
+        rankTokenRef.current = "";
+        void fetchRankToken("plgp", m).then((t) => { rankTokenRef.current = t; });
     };
 
     /* 切换题目时刷新选择题选项 */
@@ -126,12 +131,19 @@ export function PlgpPage() {
         if (!nm || skipRank) { setResInfo({ ...info }); return; }
         (async () => {
             try {
+                // v2.8.0: 携带开局申领的一次性凭证; 缺失时补领(如开局时离线)
+                let token = rankTokenRef.current;
+                if (!token) {
+                    token = await fetchRankToken("plgp", mode);
+                    rankTokenRef.current = token;
+                }
                 const res = await fetch("/plgp/api/rank", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         mode, name: nm, score: st.score, time,
                         tools: st.toolsUsed, version: PLGP_VERSION, platform,
+                        token,
                     }),
                 });
                 const d = await res.json().catch(() => null);

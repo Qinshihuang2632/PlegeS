@@ -42,8 +42,11 @@ export function sessionCookieValue(request) {
 export async function createSession(env, ip) {
     const id = [...crypto.getRandomValues(new Uint8Array(32))]
         .map((b) => b.toString(16).padStart(2, "0")).join("");
+    // v2.8.0: 会话列表对外的公开标识(与真实会话 id 独立), 防止会话 id 被列表接口泄露后遭劫持
+    const pub = [...crypto.getRandomValues(new Uint8Array(8))]
+        .map((b) => b.toString(16).padStart(2, "0")).join("");
     const now = Date.now();
-    const sess = { id, ip, loginAt: now, expiresAt: now + SESSION_TTL * 1000 };
+    const sess = { id, pub, ip, loginAt: now, expiresAt: now + SESSION_TTL * 1000 };
     await env.RANKINGS.put(SESS_PREFIX + id, JSON.stringify(sess), { expirationTtl: SESSION_TTL });
     return sess;
 }
@@ -79,4 +82,23 @@ export function clearCookieHeader() {
 /* 未登录统一响应 */
 export function unauthorized() {
     return json({ ok: false, msg: "未登录或会话已过期" }, 401);
+}
+
+/*
+ * CSRF 防护(v2.8.0): 管理端状态变更请求(POST/DELETE)调用。
+ * Cookie 已是 SameSite=Lax, 这里再做两层纵深防御:
+ *   1. Sec-Fetch-Site: cross-site 直接拒绝(现代浏览器跨站 fetch 必带此头);
+ *   2. Origin 存在但与目标 host 不一致 → 拒绝(curl 等无 Origin 的客户端不受影响)。
+ * 通过返回 null, 拦截返回 403 Response。
+ */
+export function csrfGuard(request) {
+    const site = request.headers.get("sec-fetch-site");
+    if (site === "cross-site") return json({ ok: false, msg: "非法请求来源" }, 403);
+    const origin = request.headers.get("origin");
+    if (origin) {
+        let host = null;
+        try { host = new URL(origin).host; } catch { return json({ ok: false, msg: "非法请求来源" }, 403); }
+        if (host !== new URL(request.url).host) return json({ ok: false, msg: "非法请求来源" }, 403);
+    }
+    return null;
 }

@@ -19,7 +19,8 @@ export async function onRequest({ env, request }) {
 
     // 未知 API 路径保持 404 契约(不要回退成 SPA 页面)
     if (path.startsWith("/hlgx/api/") || path.startsWith("/ylgy/api/")
-        || path.startsWith("/clgz/api/") || path.startsWith("/admin/api/")) {
+        || path.startsWith("/clgz/api/") || path.startsWith("/flgl/api/")
+        || path.startsWith("/plgp/api/") || path.startsWith("/admin/api/")) {
         return json({ ok: false, msg: "接口不存在" }, 404);
     }
 

@@ -13,7 +13,7 @@
 import { json } from "../../_lib/ranklib.js";
 import {
     SESSION_TTL, tokenMatches, createSession, verifySession,
-    destroySession, sessionCookieHeader, clearCookieHeader,
+    destroySession, sessionCookieHeader, clearCookieHeader, csrfGuard,
 } from "../../_lib/auth.js";
 import { countIncr, countGet, countReset, clientIp } from "../../_lib/ratelimit.js";
 import { appendAudit } from "../../_lib/audit.js";
@@ -23,6 +23,8 @@ const LOCK_TTL = 15 * 60;  // 锁定 15 分钟(秒)
 
 /* POST /admin/api/auth → 登录 */
 export async function onRequestPost({ request, env }) {
+    const csrf = csrfGuard(request);   // v2.8.0: 跨站请求防护
+    if (csrf) return csrf;
     const ip = clientIp(request);
     if (!env.ADMIN_TOKEN) {
         return json({ ok: false, msg: "未配置管理员令牌(ADMIN_TOKEN)" }, 500);
@@ -69,6 +71,8 @@ export async function onRequestPost({ request, env }) {
 
 /* DELETE /admin/api/auth → 登出 */
 export async function onRequestDelete({ request, env }) {
+    const csrf = csrfGuard(request);   // v2.8.0: 跨站请求防护
+    if (csrf) return csrf;
     const ip = clientIp(request);
     const sid = await destroySession(env, request);
     if (sid) {
@@ -90,7 +94,8 @@ export async function onRequestGet({ request, env }) {
     return json({
         ok: true,
         actor: "admin",
-        id: sess.id,
+        // v2.8.0: 只返回公开标识(历史无 pub 的会话回退为截断的真实 id), 完整会话 id 不出服务端
+        id: sess.pub || String(sess.id).slice(0, 12),
         loginAt: sess.loginAt,
         expiresAt: sess.expiresAt,
         ip: sess.ip,

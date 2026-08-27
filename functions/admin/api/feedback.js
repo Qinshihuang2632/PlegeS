@@ -7,7 +7,7 @@
  * 每次删除/清空都写审计日志。
  */
 import { json } from "../../_lib/ranklib.js";
-import { verifySession, unauthorized } from "../../_lib/auth.js";
+import { verifySession, unauthorized, csrfGuard } from "../../_lib/auth.js";
 import { clientIp } from "../../_lib/ratelimit.js";
 import { appendAudit } from "../../_lib/audit.js";
 import { loadFeedback, saveFeedback } from "../../api/feedback.js";
@@ -20,7 +20,11 @@ export async function onRequestGet({ request, env }) {
     if (!(await authed(env, request))) return unauthorized();
     const url = new URL(request.url);
     const list = await loadFeedback(env);
-    const withKey = list.map((e, i) => ({ ...e, key: i }));
+    // v2.8.0 隐私合规: 历史条目中的真实 IP 一律不下发, 只展示匿名化 ipHash
+    const withKey = list.map((e, i) => {
+        const { ip: _ip, ...rest } = e;
+        return { ...rest, key: i };
+    });
     const q = (url.searchParams.get("q") || "").trim();
     const filtered = q
         ? withKey.filter((e) => String(e.name).includes(q) || String(e.content).includes(q))
@@ -31,6 +35,8 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestDelete({ request, env }) {
     const sess = await authed(env, request);
     if (!sess) return unauthorized();
+    const csrf = csrfGuard(request);   // v2.8.0: 跨站请求防护
+    if (csrf) return csrf;
     const ip = clientIp(request);
     const url = new URL(request.url);
     const key = url.searchParams.get("key");

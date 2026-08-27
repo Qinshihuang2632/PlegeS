@@ -84,10 +84,10 @@ export function SessionsPage() {
                             </thead>
                             <tbody>
                                 {sessions.map((s) => {
-                                    const isCurrent = s.id === me?.id;
+                                    const isCurrent = s.current ?? s.id === me?.id;
                                     return (
                                         <tr key={s.id} className="border-b border-muted/60 last:border-0">
-                                            <td className="px-4 py-2.5 font-mono text-xs">{s.id.slice(0, 12)}…</td>
+                                            <td className="px-4 py-2.5 font-mono text-xs">{s.id}</td>
                                             <td className="px-4 py-2.5 text-xs tabular-nums">{s.ip || "—"}</td>
                                             <td className="px-4 py-2.5 text-xs tabular-nums">{fmtTs(s.loginAt)}</td>
                                             <td className="px-4 py-2.5 text-xs tabular-nums">{fmtTs(s.expiresAt)}</td>

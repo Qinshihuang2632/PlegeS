@@ -7,7 +7,7 @@
  * 每次删除/清榜都写审计日志(带游戏标识)。
  */
 import { MODES as HLGX_MODES, sortRank, fmtDate, json } from "../../_lib/ranklib.js";
-import { verifySession, unauthorized } from "../../_lib/auth.js";
+import { verifySession, unauthorized, csrfGuard } from "../../_lib/auth.js";
 import { clientIp } from "../../_lib/ratelimit.js";
 import { appendAudit } from "../../_lib/audit.js";
 
@@ -95,6 +95,8 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestDelete({ request, env }) {
     const sess = await authed(env, request);
     if (!sess) return unauthorized();
+    const csrf = csrfGuard(request);   // v2.8.0: 跨站请求防护
+    if (csrf) return csrf;
     const ip = clientIp(request);
     const url = new URL(request.url);
     const game = parseGame(url);
@@ -109,6 +111,14 @@ export async function onRequestDelete({ request, env }) {
         const i = Number.parseInt(key, 10);
         if (!Number.isInteger(i) || i < 0 || i >= raw.length) {
             return json({ ok: false, msg: "记录不存在" }, 404);
+        }
+        // v2.8.0 竞态防护: 前端附带期望删除的昵称/日期, 不匹配说明榜单已被并发修改,
+        // 拒绝执行并提示刷新(防两个管理员同时删不同记录时互相覆盖误删)
+        const expectName = url.searchParams.get("name");
+        const expectDate = url.searchParams.get("date");
+        const cur = raw[i];
+        if ((expectName !== null && cur.name !== expectName) || (expectDate !== null && cur.date !== expectDate)) {
+            return json({ ok: false, msg: "榜单已变化,请刷新后重试" }, 409);
         }
         const [removed] = raw.splice(i, 1);
         await saveMode(env, game, mode, raw);

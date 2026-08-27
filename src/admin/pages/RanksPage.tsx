@@ -252,7 +252,7 @@ export function RanksPage() {
                 destructive
                 onConfirm={() => {
                     if (confirm?.type === "delete") {
-                        void doAction(() => apiDeleteRankEntry(curGame, curMode, confirm.entry.key), "记录已删除");
+                        void doAction(() => apiDeleteRankEntry(curGame, curMode, confirm.entry.key, { name: confirm.entry.name, date: confirm.entry.date }), "记录已删除");
                     } else if (confirm?.type === "clearMode") {
                         void doAction(() => apiClearRank(curGame, curMode), "榜单已清空");
                     } else if (confirm?.type === "clearAll") {

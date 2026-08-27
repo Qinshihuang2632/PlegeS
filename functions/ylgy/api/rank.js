@@ -10,11 +10,15 @@
 import { MODES as _MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, json } from "../../_lib/ranklib.js";
 import { countIncr, clientIp } from "../../_lib/ratelimit.js";
 import { hasBadWord } from "../../_lib/badwords.js";
+import { peekGameSession, burnGameSession } from "../../_lib/gamesess.js";
 
 export const MODES = ["easy", "normal", "hard"];
 const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒)
 const RANK_LIMIT = 200;     // 单难度榜单条目上限
 const KEY_PREFIX = "ylgy:";   // KV 键前缀(与化了个学榜单分离)
+/* 成绩物理上限(v2.8.0): fills ≤ 总字母数(词数×词长); tools ≤ 填空提示2 + 含义提示1 */
+const FILLS_MAX = { easy: 16, normal: 30, hard: 40 };
+const TOOLS_MAX = 3;
 
 async function loadMode(env, mode) {
     const raw = await env.RANKINGS.get(KEY_PREFIX + mode);
@@ -72,13 +76,22 @@ export async function onRequestPost({ request, env }) {
 
     const hp = clampInt(body.hp, 0, 3, 0);
     const secs = Math.max(0, clampInt(body.time, 0, Number.MAX_SAFE_INTEGER, 0));
-    const tools = clampInt(body.tools, 0, 9, 0);
-    const clears = clampInt(body.clears, 0, 9999, 0);
+    const tools = clampInt(body.tools, 0, TOOLS_MAX, 0);
+    const clears = clampInt(body.clears, 0, FILLS_MAX[mode] ?? 40, 0);
     const version = String(body.version ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "").slice(0, 16);
 
     // 成绩合理性: 10 秒以内通关不可能(防脚本刷假成绩); 失败局(hp=0)放宽 ——
     // 真实玩家快速失败(乱填几个字母血量耗尽)应当能上榜, 刷失败记录无排名收益
     if (secs < 10 && hp > 0) return json({ ok: false, msg: "成绩无效:用时过短" }, 400);
+
+    // 游戏会话凭证(v2.8.0 防刷榜): 开局下发的一次性 token, 全部校验通过才销毁
+    const token = String(body.token ?? "");
+    const sess = await peekGameSession(env, "ylgy", token, ip);
+    if (!sess.ok) return json({ ok: false, msg: sess.msg }, 400);
+    if (sess.rec.mode !== mode) return json({ ok: false, msg: "会话与难度不匹配,请重新开局后再提交" }, 400);
+    // 服务端实际经过时长必须 ≥ 上报用时(容忍 10s 误差): 不玩游戏直接构造成绩无法通过
+    const serverSecs = Math.floor((Date.now() - sess.rec.startedAt) / 1000);
+    if (serverSecs + 10 < secs) return json({ ok: false, msg: "成绩校验失败:上报用时短于实际游戏时长,请稍后重试" }, 400);
 
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
@@ -98,6 +111,7 @@ export async function onRequestPost({ request, env }) {
         date: fmtDate(),
     };
     entries.push(entry);
+    await burnGameSession(env, "ylgy", token);   // 一次性凭证: 校验全部通过后销毁
     await saveMode(env, mode, entries);
     return json({ ok: true, platform, surpassed, rank: sortRank(entries) });
 }

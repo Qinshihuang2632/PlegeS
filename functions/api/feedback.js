@@ -6,7 +6,8 @@
  *         旧客户端不传该字段则不存储(管理端显示「—」)
  *   GET   需管理会话(见 /admin/api/feedback)
  * KV 键: feedback(数组 JSON, 上限 500 条, 新提交在前)
- * 校验: 昵称清洗(同榜单规则: ≤10 字/违禁词/< >过滤) + 内容 1~500 字 + 违禁词。
+ * 校验: 昵称清洗(同榜单规则: ≤10 字/违禁词/< >过滤) + 内容 1~500 字 + 违禁词 + < >过滤。
+ * v2.8.0: 不再存储真实 IP, 只存 SHA-256 截断哈希(ipHash); 旧条目的 ip 字段管理端不再展示。
  */
 import { fmtDate, clampInt, json } from "../_lib/ranklib.js";
 import { countIncr, clientIp } from "../_lib/ratelimit.js";
@@ -48,13 +49,19 @@ export async function onRequestPost({ request, env }) {
     if (!content) return json({ ok: false, msg: "请填写反馈内容" }, 400);
     if ([...content].length > 500) return json({ ok: false, msg: "反馈内容不能超过 500 个字" }, 400);
     if (hasBadWord(content)) return json({ ok: false, msg: "反馈内容包含违禁词,请修改" }, 400);
+    // v2.8.0: 内容与昵称同标准过滤 < >(防存储型 XSS / 钓鱼链接注入)
+    if (/[<>]/.test(content)) return json({ ok: false, msg: "反馈内容包含非法字符" }, 400);
+
+    // v2.8.0 隐私合规: 不再存储真实 IP, 只存 SHA-256 截断哈希(用于防刷排查, 无法反推)
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(ip ?? "")));
+    const ipHash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 
     const list = await loadFeedback(env);
     list.unshift({
         name,
         content,
         ...(body.credit === undefined ? {} : { credit: body.credit === true }),
-        ip: String(ip ?? "").slice(0, 45),
+        ipHash,
         date: fmtDate(),
         ts: Date.now(),
     });

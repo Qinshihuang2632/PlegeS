@@ -6,14 +6,15 @@
  * 强制下线写审计日志。
  */
 import { json } from "../../_lib/ranklib.js";
-import { verifySession, unauthorized } from "../../_lib/auth.js";
+import { verifySession, unauthorized, csrfGuard } from "../../_lib/auth.js";
 import { clientIp } from "../../_lib/ratelimit.js";
 import { appendAudit } from "../../_lib/audit.js";
 
 const PREFIX = "admin:sess:";
 
 export async function onRequestGet({ request, env }) {
-    if (!(await verifySession(env, request))) return unauthorized();
+    const me = await verifySession(env, request);
+    if (!me) return unauthorized();
     const now = Date.now();
     const list = await env.RANKINGS.list({ prefix: PREFIX });
     const sessions = [];
@@ -23,8 +24,12 @@ export async function onRequestGet({ request, env }) {
         try {
             const s = JSON.parse(raw);
             if (s && s.expiresAt && s.expiresAt > now) {
+                // v2.8.0: 只下发公开标识(历史无 pub 的会话回退为截断的真实 id),
+                // 完整会话 id 不出服务端, 防止列表接口泄露后被构造 Cookie 劫持
+                const pub = s.pub || k.name.slice(PREFIX.length, PREFIX.length + 12);
                 sessions.push({
-                    id: k.name.slice(PREFIX.length),
+                    id: pub,
+                    current: s.id === me.id,
                     ip: s.ip || "",
                     loginAt: s.loginAt,
                     expiresAt: s.expiresAt,
@@ -40,13 +45,30 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestDelete({ request, env }) {
     const sess = await verifySession(env, request);
     if (!sess) return unauthorized();
+    const csrf = csrfGuard(request);   // v2.8.0: 跨站请求防护
+    if (csrf) return csrf;
     const url = new URL(request.url);
     const id = (url.searchParams.get("id") || "").trim();
     if (!id) return json({ ok: false, msg: "缺少会话 id" }, 400);
-    await env.RANKINGS.delete(PREFIX + id);
+    // 按公开标识定位真实会话; 历史无 pub 的会话允许用真实 id 前缀(≥12位)兜底匹配
+    const list = await env.RANKINGS.list({ prefix: PREFIX });
+    let target = null;
+    for (const k of list.keys) {
+        const realId = k.name.slice(PREFIX.length);
+        if (realId === id) { target = realId; break; }   // 兼容旧前端直传完整 id
+        const raw = await env.RANKINGS.get(k.name);
+        if (!raw) continue;
+        try {
+            const s = JSON.parse(raw);
+            if (s && s.pub === id) { target = realId; break; }
+            if (!s?.pub && realId.startsWith(id) && id.length >= 12) { target = realId; break; }
+        } catch { /* 跳过损坏条目 */ }
+    }
+    if (!target) return json({ ok: false, msg: "会话不存在或已过期" }, 404);
+    await env.RANKINGS.delete(PREFIX + target);
     await appendAudit(env, {
         actor: "admin", action: "session_revoke", ip: clientIp(request),
-        detail: `强制下线会话 ${id.slice(0, 8)}…${id === sess.id ? "(当前会话)" : ""}`,
+        detail: `强制下线会话 ${target.slice(0, 8)}…${target === sess.id ? "(当前会话)" : ""}`,
     });
     return json({ ok: true, msg: "已强制下线" });
 }

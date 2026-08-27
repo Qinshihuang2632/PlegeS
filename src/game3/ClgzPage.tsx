@@ -17,6 +17,7 @@ import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
+import { fetchRankToken } from "@/lib/rankToken";
 import { CLGZ_VERSION } from "./version";
 
 const ROUNDS = 8;   // 每局题数
@@ -49,6 +50,7 @@ export function ClgzPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const startAtRef = useRef(0);
     const submittedRef = useRef(false);
+    const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
     const [elapsed, setElapsed] = useState(0);
 
     const cur = queue[idx];
@@ -67,6 +69,9 @@ export function ClgzPage() {
         startAtRef.current = Date.now();
         setElapsed(0);
         setPhase("play");
+        // v2.8.0: 开局申领成绩提交凭证(失败不阻塞游戏, 提交时补领)
+        rankTokenRef.current = "";
+        void fetchRankToken("clgz", "all").then((t) => { rankTokenRef.current = t; });
     };
 
     // 计时
@@ -87,24 +92,30 @@ export function ClgzPage() {
         const time = Math.floor((Date.now() - startAtRef.current) / 1000);
         setElapsed(time);
         setPhase("result");
-        const finalScore = score + (idx + 1 >= queue.length ? 0 : 0);   // 分数已累计
-        setScore(finalScore);
+        const finalScore = score;   // 分数已逐题累计, 无需再加
         const nm = name.trim();
         if (!nm || skipRank) {
             setResult({ score: finalScore, time, skipped: true, surpassed: null, failed: false });
             return;
         }
         try {
+            // v2.8.0: 携带开局申领的一次性凭证; 缺失时补领(如开局时离线)
+            let token = rankTokenRef.current;
+            if (!token) {
+                token = await fetchRankToken("clgz", "all");
+                rankTokenRef.current = token;
+            }
             const res = await fetch("/clgz/api/rank", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     mode: "all",
-                    name,
+                    name: nm,
                     score: finalScore,
                     time,
                     version: CLGZ_VERSION,
                     platform: detectPlatform(),
+                    token,
                 }),
             });
             const d = await res.json().catch(() => null);
