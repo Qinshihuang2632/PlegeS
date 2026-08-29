@@ -410,8 +410,10 @@ export function FlglPage() {
                                     width: "17.6%",
                                     top: "50%",
                                     transform: `translate(${enteredIds.includes(c.id) ? 0 : (beltRef.current?.offsetWidth ?? 420)}px, -50%)`,
-                                    /* v1.1.0: 滑动速度降为原来的一半(0.7s→1.4s 入场, 0.6s→1.2s 补位) */
-                                    transition: "left 1.2s linear, transform 1.4s linear",
+                                    /* v1.1.0: 滑动速度降为一半(0.7s→1.4s 入场, 0.6s→1.2s 补位);
+                                       v1.1.4: 再降 50%(1.4s→2.8s 入场, 1.2s→2.4s 补位), 滑行阶段即可拖走分类,
+                                       卡牌挂载即响应 pointerdown, 无需等滑行结束 */
+                                    transition: "left 2.4s linear, transform 2.8s linear",
                                 }}
                                 aria-label={`物质卡:${c.sub.n}`}
                             >

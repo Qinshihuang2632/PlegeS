@@ -129,20 +129,26 @@ describe("分了个类 · 核心", () => {
         }
     });
 
-    it("简单: 前 16 张类别均衡(8 类各 2 张); 标准掺易错后仍 8 类齐", () => {
+    it("v1.1.4 类别难度逻辑: 简单前 12 张 6 类各 2(无有机物/混合物), 标准前 14 张 7 类各 2(无混合物), 困难 8 类齐", () => {
         const easy = buildDeck("easy", seedRng(5));
-        const counts = new Map<string, number>();
-        for (const s of easy.slice(0, 16)) counts.set(s.c, (counts.get(s.c) ?? 0) + 1);
-        expect([...counts.values()].every((v) => v === 2)).toBe(true);
-        // 标准难度有 30% 易错替换, 不保证恰好均衡, 但 20 张内 8 类应齐
+        const eastCount = new Map<string, number>();
+        for (const s of easy.slice(0, 12)) eastCount.set(s.c, (eastCount.get(s.c) ?? 0) + 1);
+        expect([...eastCount.values()].every((v) => v === 2)).toBe(true);
+        expect(eastCount.size).toBe(6);
+        expect(easy.every((s) => s.c !== "organic" && s.c !== "mix")).toBe(true);
+        // 标准(v1.1.4): 取消易错掺入, 7 类均衡(前 14 张每类各 2), 且全程无混合物
         const normal = buildDeck("normal", seedRng(5));
-        const nc = new Set(normal.map((s) => s.c));
-        expect(nc.size).toBe(8);
-    });
-
-    it("标准难度掺入易错物质: rng 恒小于 0.3 → 全部来自易错池", () => {
-        const deck = buildDeck("normal", () => 0.05);
-        for (const s of deck) expect(TRICKY_NAMES.has(s.n)).toBe(true);
+        const nCount = new Map<string, number>();
+        for (const s of normal.slice(0, 14)) nCount.set(s.c, (nCount.get(s.c) ?? 0) + 1);
+        expect([...nCount.values()].every((v) => v === 2)).toBe(true);
+        expect(nCount.size).toBe(7);
+        expect(normal.every((s) => s.c !== "mix")).toBe(true);
+        // 困难全 8 类随机: 单局 20 张可能凑不齐 8 类, 多种子并集断言 8 类齐全
+        const catsSeen = new Set<string>();
+        for (let seed = 0; seed < 40; seed++) {
+            for (const s of buildDeck("hard", seedRng(seed))) catsSeen.add(s.c);
+        }
+        expect(catsSeen.size).toBe(8);
     });
 
     it("易错池 ≥ 30 且清单名称全部在物质库中有效", () => {
@@ -183,8 +189,9 @@ describe("分了个类 · 核心", () => {
         expect(st.elapsed).toBeGreaterThan(0);
     });
 
-    it("v1.1.0 出牌间隔: 三档各为 7/5/3 秒", () => {
-        expect(FLGL_INTERVAL).toEqual({ easy: 7, normal: 5, hard: 3 });
+    it("v1.1.4 出牌间隔: 三档各为 6/4.5/3 秒; 弹卡冷却 0.5s", () => {
+        expect(FLGL_INTERVAL).toEqual({ easy: 6, normal: 4.5, hard: 3 });
+        expect(SPAWN_NOW_CD).toBe(0.5);
     });
 
     it("直接弹出下一张: 立即出牌并重置间隔与冷却", () => {

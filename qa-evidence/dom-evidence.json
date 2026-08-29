@@ -1,0 +1,99 @@
+{
+  "ghostParent": {
+    "label": "幽灵容器(已消失卡牌的父级绝对定位容器)",
+    "tag": "div",
+    "cls": "absolute",
+    "inline": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+    "computed": {
+      "pointer-events": "auto",
+      "z-index": "16",
+      "position": "absolute",
+      "opacity": "1",
+      "transform": "none",
+      "width": "50px",
+      "height": "50px",
+      "visibility": "visible"
+    }
+  },
+  "ghostFace": {
+    "label": "已消失卡牌的视觉层",
+    "tag": "div",
+    "cls": "hlgx-tile hlgx-tile-board hlgx-tile-removed",
+    "inline": "width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), rgb(190, 18, 60));",
+    "computed": {
+      "pointer-events": "none",
+      "z-index": "auto",
+      "position": "absolute",
+      "opacity": "0",
+      "transform": "matrix(0, 0, 0, 0, 0, 0)",
+      "width": "50px",
+      "height": "50px",
+      "visibility": "visible"
+    }
+  },
+  "targetParent": {
+    "label": "目标卡牌的父容器(被拦截)",
+    "tag": "div",
+    "cls": "absolute",
+    "inline": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 14;",
+    "computed": {
+      "pointer-events": "auto",
+      "z-index": "14",
+      "position": "absolute",
+      "opacity": "1",
+      "transform": "none",
+      "width": "50px",
+      "height": "50px",
+      "visibility": "visible"
+    }
+  },
+  "targetFace": {
+    "label": "目标卡牌视觉层(已解锁, 应可点)",
+    "tag": "div",
+    "cls": "hlgx-tile hlgx-tile-board",
+    "inline": "width: 50px; height: 50px; background: linear-gradient(145deg, rgb(34, 211, 238), rgb(14, 116, 144));",
+    "computed": {
+      "pointer-events": "auto",
+      "z-index": "auto",
+      "position": "absolute",
+      "opacity": "1",
+      "transform": "none",
+      "width": "50px",
+      "height": "50px",
+      "visibility": "visible"
+    }
+  },
+  "targetFormula": "NH₄Cl",
+  "ghostFormula": "KO₂",
+  "efp": {
+    "cls": "absolute",
+    "inline": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+    "outer": "<div class=\"absolute\" style=\"left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"超氧化钾: 供氧面具原料\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94),"
+  },
+  "stack": [
+    {
+      "tag": "div",
+      "cls": "absolute",
+      "z": "16",
+      "pe": "auto"
+    },
+    {
+      "tag": "div",
+      "cls": "hlgx-tile hlgx-tile-board",
+      "z": "auto",
+      "pe": "auto"
+    },
+    {
+      "tag": "div",
+      "cls": "absolute",
+      "z": "14",
+      "pe": "auto"
+    },
+    {
+      "tag": "span",
+      "cls": "hlgx-tile-f",
+      "z": "auto",
+      "pe": "auto"
+    }
+  ]
+}

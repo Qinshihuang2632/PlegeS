@@ -10,9 +10,9 @@
  *   ② 「新卡该出现的时刻」流水线已满 5 张 —— 注意不是满 5 张立刻判负,
  *      玩家拥有整个出牌间隔的时间清理空位; 20 张全部出完后不再出牌, 也不会判负。
  * 判胜: 本局 20 张物质全部被正确分类。
- * 难度: 简单(类别均衡抽样, 间隔 7s) / 标准(均衡 + 30% 掺入易错物质, 间隔 5s)
- *       / 困难(全库 259 种随机, 间隔 3s)。
- * 「直接弹出下一张」(v1.1.0): 立即触发一次出牌时刻, 内置 1s 冷却防连点。
+ * 难度: 简单(6 类无有机物/混合物, 均衡抽样, 间隔 6s) / 标准(7 类无混合物, 均衡 + 30% 易错, 间隔 4.5s)
+ *       / 困难(全 8 类 259 种随机, 间隔 3s)。
+ * 「直接弹出下一张」(v1.1.0): 立即触发一次出牌时刻, 内置 0.5s 冷却防连点(v1.1.4)。
  */
 import { HLGX_CATS, HLGX_SUBSTANCES, type Category, type Substance } from "../game/substances";
 
@@ -20,7 +20,7 @@ export type FlglMode = "easy" | "normal" | "hard";
 
 export const BELT_CAPACITY = 5;   // 流水线容量(满载后新卡到点即判负)
 export const ROUND_TOTAL = 20;    // 每局物质总数
-export const SPAWN_NOW_CD = 1;    // 「直接弹出下一张」冷却(秒, 防误触连点)
+export const SPAWN_NOW_CD = 0.5;  // 「直接弹出下一张」冷却(秒, 防误触连点; v1.1.4 由 1s 收紧到 0.5s)
 
 export const FLGL_MODES: { mode: FlglMode; label: string }[] = [
     { mode: "easy", label: "简单" },
@@ -28,12 +28,25 @@ export const FLGL_MODES: { mode: FlglMode; label: string }[] = [
     { mode: "hard", label: "困难" },
 ];
 
-/** 出牌间隔(秒): 也即满载后留给玩家的清理时间(v1.1.0 三档各缩短 2s) */
-export const FLGL_INTERVAL: Record<FlglMode, number> = { easy: 7, normal: 5, hard: 3 };
+/** 出牌间隔(秒): 也即满载后留给玩家的清理时间(v1.1.4: 简单 6 / 标准 4.5 / 困难 3) */
+export const FLGL_INTERVAL: Record<FlglMode, number> = { easy: 6, normal: 4.5, hard: 3 };
 
-const CATS: Category[] = ["metal", "nonmetal", "oxide", "acid", "base", "salt", "organic", "mix"];
+const ALL_CATS: Category[] = ["metal", "nonmetal", "oxide", "acid", "base", "salt", "organic", "mix"];
 
-/** 易错物质清单(标准难度 30% 概率掺入): 混合物易错 / 同素异形体 / 溶液与纯净物对应 */
+/**
+ * 各难度可选类别(v1.1.4): 简单去掉「有机物/混合物」(6 类), 标准去掉「混合物」(7 类), 困难全 8 类。
+ * 均衡抽样在前 2×N 张内保证每类恰 2 张(N=该模式类别数), 其余随机类别。
+ */
+/** 各难度可选类别(v1.1.4): 简单去掉「有机物/混合物」(6 类), 标准去掉「混合物」(7 类), 困难全 8 类。
+ * 均衡抽样在前 2×N 张内保证每类恰 2 张(N=该模式类别数), 其余随机类别。
+ */
+export const CATS_OF: Record<FlglMode, Category[]> = {
+    easy: ALL_CATS.filter((c) => c !== "organic" && c !== "mix"),
+    normal: ALL_CATS.filter((c) => c !== "mix"),
+    hard: ALL_CATS,
+};
+
+/** 易错物质清单(历史用途参考; v1.1.4 起标准难度不再掺入): 混合物易错 / 同素异形体 / 溶液与纯净物对应 */
 export const TRICKY_NAMES = new Set([
     "盐酸", "氨水", "水玻璃", "漂白液", "王水", "稀硫酸", "酒精", "生铁", "钢", "青铜",
     "黄铜", "硬铝", "18K金", "普通玻璃", "水泥", "陶瓷", "石灰石", "漂白粉", "碱石灰", "铝热剂",
@@ -42,9 +55,10 @@ export const TRICKY_NAMES = new Set([
     "泥水", "油水混合物", "氢氧化铁胶体", "有色玻璃",
 ]);
 export const TRICKY_POOL = HLGX_SUBSTANCES.filter((s) => TRICKY_NAMES.has(s.n));
+/* v1.1.4: 标准难度取消 30% 易错掺入(改为纯 7 类均衡), 混合物卡不再出现在标准难度 */
 
 const BY_CAT: Record<Category, Substance[]> = Object.fromEntries(
-    CATS.map((c) => [c, HLGX_SUBSTANCES.filter((s) => s.c === c)]),
+    ALL_CATS.map((c) => [c, HLGX_SUBSTANCES.filter((s) => s.c === c)]),
 ) as Record<Category, Substance[]>;
 
 /** 该物质可接受的类别集合 = 主类 + multi(有机酸双身份) */
@@ -68,27 +82,28 @@ function pickUnused(list: Substance[], used: Set<string>, rng: () => number): Su
 
 /**
  * 构建一局的 20 张物质(顺序即出牌顺序)。
- * 简单/标准: 前 16 张按 8 类两轮洗牌保证均衡(每类恰 2 张), 后 4 张随机类别;
- * 标准: 每张 30% 概率改为从易错池抽取; 困难: 完全随机。
+ * 简单/标准: 前 2×N 张按该难度类别两轮洗牌保证均衡(每类恰 2 张), 其余随机类别;
+ * 困难: 全 8 类完全随机。
+ * 类别范围(v1.1.4): 简单无有机物/混合物, 标准无混合物。
  * rng 可注入(测试用)。
  */
 export function buildDeck(mode: FlglMode, rng: () => number = Math.random): Substance[] {
     const used = new Set<string>();
     const deck: Substance[] = [];
+    const cats = CATS_OF[mode];
     let seq: Category[];
     if (mode === "hard") {
-        seq = Array.from({ length: ROUND_TOTAL }, () => CATS[Math.floor(rng() * CATS.length)]);
+        seq = Array.from({ length: ROUND_TOTAL }, () => cats[Math.floor(rng() * cats.length)]);
     } else {
-        const two: Category[] = [...CATS, ...CATS];
+        const two: Category[] = [...cats, ...cats];
         for (let i = two.length - 1; i > 0; i--) {
             const j = Math.floor(rng() * (i + 1));
             [two[i], two[j]] = [two[j], two[i]];
         }
-        seq = [...two, ...Array.from({ length: ROUND_TOTAL - two.length }, () => CATS[Math.floor(rng() * CATS.length)])];
+        seq = [...two, ...Array.from({ length: ROUND_TOTAL - two.length }, () => cats[Math.floor(rng() * cats.length)])];
     }
     for (const cat of seq) {
-        const list = mode === "normal" && rng() < 0.3 && TRICKY_POOL.length > 0 ? TRICKY_POOL : BY_CAT[cat];
-        const s = pickUnused(list, used, rng);
+        const s = pickUnused(BY_CAT[cat], used, rng);
         if (s) { used.add(s.n); deck.push(s); }
     }
     while (deck.length < ROUND_TOTAL) {

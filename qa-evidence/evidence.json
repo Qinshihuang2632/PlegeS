@@ -1,0 +1,4389 @@
+{
+  "log": [
+    {
+      "step": "开局卡牌总数",
+      "data": {
+        "total": 140,
+        "removed": 0,
+        "blocked": 139
+      }
+    },
+    {
+      "step": "棋盘中心",
+      "data": {
+        "bcx": 630,
+        "bcy": 335
+      }
+    },
+    {
+      "step": "步骤1-目标卡牌(中心最顶层)",
+      "data": {
+        "i": 0,
+        "formula": "Br₂",
+        "name": "溴",
+        "removed": false,
+        "blocked": false,
+        "faceClass": "hlgx-tile hlgx-tile-board",
+        "parentClass": "pointer-events-none absolute",
+        "parentInlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+        "parentZ": "16",
+        "parentPE": "none",
+        "facePE": "auto",
+        "faceTransform": "none",
+        "faceOpacity": "1",
+        "parentRect": {
+          "x": 605,
+          "y": 310,
+          "w": 50,
+          "h": 50,
+          "cx": 630,
+          "cy": 335
+        },
+        "faceRect": {
+          "w": 50,
+          "h": 50
+        }
+      }
+    },
+    {
+      "step": "步骤1-结果",
+      "data": {
+        "formula": "Br₂",
+        "trayBefore": 0,
+        "trayAfter": 1,
+        "success": true
+      }
+    },
+    {
+      "step": "步骤1-被移除卡牌的DOM残留(幽灵容器)",
+      "data": {
+        "i": 0,
+        "formula": "Br₂",
+        "name": "溴",
+        "removed": true,
+        "blocked": false,
+        "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-removed",
+        "parentClass": "pointer-events-none absolute",
+        "parentInlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+        "parentZ": "16",
+        "parentPE": "none",
+        "facePE": "none",
+        "faceTransform": "matrix(0, 0, 0, 0, 0, 0)",
+        "faceOpacity": "0",
+        "parentRect": {
+          "x": 605,
+          "y": 310,
+          "w": 50,
+          "h": 50,
+          "cx": 630,
+          "cy": 335
+        },
+        "faceRect": {
+          "w": 0,
+          "h": 0
+        }
+      }
+    },
+    {
+      "step": "步骤2-候选: 被幽灵容器覆盖且已解锁的卡牌",
+      "data": [
+        {
+          "i": 1,
+          "f": "HClO₄",
+          "z": "15",
+          "cx": 601,
+          "cy": 306
+        },
+        {
+          "i": 2,
+          "f": "C₆H₆",
+          "z": "15",
+          "cx": 659,
+          "cy": 306
+        },
+        {
+          "i": 3,
+          "f": "CrO₂",
+          "z": "15",
+          "cx": 601,
+          "cy": 364
+        },
+        {
+          "i": 4,
+          "f": "KBr",
+          "z": "15",
+          "cx": 659,
+          "cy": 364
+        }
+      ]
+    },
+    {
+      "step": "点击卡牌 HClO₄",
+      "data": {
+        "formula": "HClO₄",
+        "name": "高氯酸",
+        "z": "15",
+        "point": [
+          601,
+          306
+        ],
+        "trayBefore": 1,
+        "trayAfter": 2,
+        "success": true,
+        "elementFromPoint": {
+          "hitTag": "span",
+          "hitClass": "hlgx-tile-f",
+          "hitPE": "auto",
+          "hitZ": "auto",
+          "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 13px;\">HClO₄</span>",
+          "hitIsBareAbsoluteContainer": false,
+          "containerHoldsRemovedTile": false,
+          "containerChildFormula": null,
+          "stack": [
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "HClO₄高氯酸"
+            },
+            {
+              "tag": "span",
+              "cls": "hlgx-tile-f",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "NO"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "NO一氧化氮"
+            },
+            {
+              "tag": "span",
+              "cls": "hlgx-tile-f",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "N₂O₄"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "N₂O₄四氧化二氮"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "点击卡牌 C₆H₆",
+      "data": {
+        "formula": "C₆H₆",
+        "name": "苯",
+        "z": "15",
+        "point": [
+          659,
+          306
+        ],
+        "trayBefore": 2,
+        "trayAfter": 3,
+        "success": true,
+        "elementFromPoint": {
+          "hitTag": "span",
+          "hitClass": "hlgx-tile-f",
+          "hitPE": "auto",
+          "hitZ": "auto",
+          "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 15px;\">C₆H₆</span>",
+          "hitIsBareAbsoluteContainer": false,
+          "containerHoldsRemovedTile": false,
+          "containerChildFormula": null,
+          "stack": [
+            {
+              "tag": "span",
+              "cls": "hlgx-tile-f",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "C₆H₆"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "C₆H₆苯"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "CH₂Cl₂二氯甲烷"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "Fe₃O₄四氧化三铁"
+            },
+            {
+              "tag": "div",
+              "cls": "absolute left-1/2 top-0",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "Br₂溴HClO₄高氯酸C₆H₆苯CrO₂二氧化"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "点击卡牌 CrO₂",
+      "data": {
+        "formula": "CrO₂",
+        "name": "二氧化铬",
+        "z": "15",
+        "point": [
+          601,
+          364
+        ],
+        "trayBefore": 3,
+        "trayAfter": 4,
+        "success": true,
+        "elementFromPoint": {
+          "hitTag": "span",
+          "hitClass": "hlgx-tile-f",
+          "hitPE": "auto",
+          "hitZ": "auto",
+          "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 15px;\">CrO₂</span>",
+          "hitIsBareAbsoluteContainer": false,
+          "containerHoldsRemovedTile": false,
+          "containerChildFormula": null,
+          "stack": [
+            {
+              "tag": "span",
+              "cls": "hlgx-tile-f",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "CrO₂"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "CrO₂二氧化铬"
+            },
+            {
+              "tag": "span",
+              "cls": "hlgx-tile-n",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "醋酸"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "CH₃COOH醋酸"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "AlCl₃氯化铝"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "点击卡牌 KBr",
+      "data": {
+        "formula": "KBr",
+        "name": "溴化钾",
+        "z": "15",
+        "point": [
+          659,
+          364
+        ],
+        "trayBefore": 4,
+        "trayAfter": 5,
+        "success": true,
+        "elementFromPoint": {
+          "hitTag": "span",
+          "hitClass": "hlgx-tile-f",
+          "hitPE": "auto",
+          "hitZ": "auto",
+          "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 15px;\">KBr</span>",
+          "hitIsBareAbsoluteContainer": false,
+          "containerHoldsRemovedTile": false,
+          "containerChildFormula": null,
+          "stack": [
+            {
+              "tag": "span",
+              "cls": "hlgx-tile-f",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "KBr"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "KBr溴化钾"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "HClO₃氯酸"
+            },
+            {
+              "tag": "span",
+              "cls": "hlgx-tile-f",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "BaO"
+            },
+            {
+              "tag": "div",
+              "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+              "z": "auto",
+              "pe": "auto",
+              "txt": "BaO氧化钡"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "results": [
+    {
+      "formula": "HClO₄",
+      "name": "高氯酸",
+      "z": "15",
+      "point": [
+        601,
+        306
+      ],
+      "trayBefore": 1,
+      "trayAfter": 2,
+      "success": true,
+      "elementFromPoint": {
+        "hitTag": "span",
+        "hitClass": "hlgx-tile-f",
+        "hitPE": "auto",
+        "hitZ": "auto",
+        "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 13px;\">HClO₄</span>",
+        "hitIsBareAbsoluteContainer": false,
+        "containerHoldsRemovedTile": false,
+        "containerChildFormula": null,
+        "stack": [
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "HClO₄高氯酸"
+          },
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-f",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "NO"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "NO一氧化氮"
+          },
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-f",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "N₂O₄"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "N₂O₄四氧化二氮"
+          }
+        ]
+      }
+    },
+    {
+      "formula": "C₆H₆",
+      "name": "苯",
+      "z": "15",
+      "point": [
+        659,
+        306
+      ],
+      "trayBefore": 2,
+      "trayAfter": 3,
+      "success": true,
+      "elementFromPoint": {
+        "hitTag": "span",
+        "hitClass": "hlgx-tile-f",
+        "hitPE": "auto",
+        "hitZ": "auto",
+        "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 15px;\">C₆H₆</span>",
+        "hitIsBareAbsoluteContainer": false,
+        "containerHoldsRemovedTile": false,
+        "containerChildFormula": null,
+        "stack": [
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-f",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "C₆H₆"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "C₆H₆苯"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "CH₂Cl₂二氯甲烷"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "Fe₃O₄四氧化三铁"
+          },
+          {
+            "tag": "div",
+            "cls": "absolute left-1/2 top-0",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "Br₂溴HClO₄高氯酸C₆H₆苯CrO₂二氧化"
+          }
+        ]
+      }
+    },
+    {
+      "formula": "CrO₂",
+      "name": "二氧化铬",
+      "z": "15",
+      "point": [
+        601,
+        364
+      ],
+      "trayBefore": 3,
+      "trayAfter": 4,
+      "success": true,
+      "elementFromPoint": {
+        "hitTag": "span",
+        "hitClass": "hlgx-tile-f",
+        "hitPE": "auto",
+        "hitZ": "auto",
+        "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 15px;\">CrO₂</span>",
+        "hitIsBareAbsoluteContainer": false,
+        "containerHoldsRemovedTile": false,
+        "containerChildFormula": null,
+        "stack": [
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-f",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "CrO₂"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "CrO₂二氧化铬"
+          },
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-n",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "醋酸"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "CH₃COOH醋酸"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "AlCl₃氯化铝"
+          }
+        ]
+      }
+    },
+    {
+      "formula": "KBr",
+      "name": "溴化钾",
+      "z": "15",
+      "point": [
+        659,
+        364
+      ],
+      "trayBefore": 4,
+      "trayAfter": 5,
+      "success": true,
+      "elementFromPoint": {
+        "hitTag": "span",
+        "hitClass": "hlgx-tile-f",
+        "hitPE": "auto",
+        "hitZ": "auto",
+        "hitOuterHTML": "<span class=\"hlgx-tile-f\" style=\"font-size: 15px;\">KBr</span>",
+        "hitIsBareAbsoluteContainer": false,
+        "containerHoldsRemovedTile": false,
+        "containerChildFormula": null,
+        "stack": [
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-f",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "KBr"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "KBr溴化钾"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "HClO₃氯酸"
+          },
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-f",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "BaO"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "BaO氧化钡"
+          }
+        ]
+      }
+    }
+  ],
+  "finalTiles": [
+    {
+      "i": 0,
+      "formula": "Br₂",
+      "name": "溴",
+      "removed": true,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-removed",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+      "parentZ": "16",
+      "parentPE": "none",
+      "facePE": "none",
+      "faceTransform": "matrix(0, 0, 0, 0, 0, 0)",
+      "faceOpacity": "0",
+      "parentRect": {
+        "x": 605,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 1,
+      "formula": "HClO₄",
+      "name": "高氯酸",
+      "removed": true,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-removed",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 145px; width: 50px; height: 50px; z-index: 15;",
+      "parentZ": "15",
+      "parentPE": "none",
+      "facePE": "none",
+      "faceTransform": "matrix(0, 0, 0, 0, 0, 0)",
+      "faceOpacity": "0",
+      "parentRect": {
+        "x": 576,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 2,
+      "formula": "C₆H₆",
+      "name": "苯",
+      "removed": true,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-removed",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 145px; width: 50px; height: 50px; z-index: 15;",
+      "parentZ": "15",
+      "parentPE": "none",
+      "facePE": "none",
+      "faceTransform": "matrix(0, 0, 0, 0, 0, 0)",
+      "faceOpacity": "0",
+      "parentRect": {
+        "x": 634,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 3,
+      "formula": "CrO₂",
+      "name": "二氧化铬",
+      "removed": true,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-removed",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 203px; width: 50px; height: 50px; z-index: 15;",
+      "parentZ": "15",
+      "parentPE": "none",
+      "facePE": "none",
+      "faceTransform": "matrix(0, 0, 0, 0, 0, 0)",
+      "faceOpacity": "0",
+      "parentRect": {
+        "x": 576,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 4,
+      "formula": "KBr",
+      "name": "溴化钾",
+      "removed": true,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-removed",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 203px; width: 50px; height: 50px; z-index: 15;",
+      "parentZ": "15",
+      "parentPE": "none",
+      "facePE": "none",
+      "faceTransform": "matrix(0, 0, 0, 0, 0, 0)",
+      "faceOpacity": "0",
+      "parentRect": {
+        "x": 634,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 0,
+        "h": 0
+      }
+    },
+    {
+      "i": 5,
+      "formula": "Fe₂(SO₄)₃",
+      "name": "硫酸铁",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 116px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 6,
+      "formula": "BaCO₃",
+      "name": "碳酸钡",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 116px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 7,
+      "formula": "F₂",
+      "name": "氟气",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 116px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 8,
+      "formula": "NaI",
+      "name": "碘化钠",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 174px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 9,
+      "formula": "ZnSO₄",
+      "name": "硫酸锌",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 10,
+      "formula": "C₆H₅CHO",
+      "name": "苯甲醛",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 174px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 11,
+      "formula": "H₂SO₃",
+      "name": "亚硫酸",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 232px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 12,
+      "formula": "Na₂O",
+      "name": "氧化钠",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 232px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 13,
+      "formula": "C₂H₄",
+      "name": "乙烯",
+      "removed": false,
+      "blocked": false,
+      "faceClass": "hlgx-tile hlgx-tile-board",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 232px; width: 50px; height: 50px; z-index: 14;",
+      "parentZ": "14",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 14,
+      "formula": "CoCl₂",
+      "name": "氯化钴",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 87px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 15,
+      "formula": "KClO₃",
+      "name": "氯酸钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 87px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 16,
+      "formula": "NiSO₄",
+      "name": "硫酸镍",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 87px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 17,
+      "formula": "C₆H₅CH₃",
+      "name": "甲苯",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 87px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 18,
+      "formula": "NH₄NO₃",
+      "name": "硝酸铵",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 145px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 19,
+      "formula": "NO",
+      "name": "一氧化氮",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 145px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 20,
+      "formula": "CH₂Cl₂",
+      "name": "二氯甲烷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 145px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 21,
+      "formula": "As",
+      "name": "砷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 145px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 22,
+      "formula": "SO₃",
+      "name": "三氧化硫",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 203px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 23,
+      "formula": "CH₃COOH",
+      "name": "醋酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 203px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 24,
+      "formula": "HClO₃",
+      "name": "氯酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 203px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 25,
+      "formula": "Be(OH)₂",
+      "name": "氢氧化铍",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 203px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 26,
+      "formula": "KCl",
+      "name": "氯化钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 261px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 27,
+      "formula": "HNO₂",
+      "name": "亚硝酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 261px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 28,
+      "formula": "CH₃COCH₃",
+      "name": "丙酮",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 261px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 29,
+      "formula": "Sn",
+      "name": "锡",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 261px; width: 50px; height: 50px; z-index: 13;",
+      "parentZ": "13",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 30,
+      "formula": "Na₂SiO₃",
+      "name": "硅酸钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 58px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 31,
+      "formula": "Zn",
+      "name": "锌",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 58px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 32,
+      "formula": "HClO",
+      "name": "次氯酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 58px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 33,
+      "formula": "O₃",
+      "name": "臭氧",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 58px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 34,
+      "formula": "CH₃CHO",
+      "name": "乙醛",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 58px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 35,
+      "formula": "NH₄Cl",
+      "name": "氯化铵",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 116px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 36,
+      "formula": "PbSO₄",
+      "name": "硫酸铅",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 116px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 37,
+      "formula": "Mn",
+      "name": "锰",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 116px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 38,
+      "formula": "P₄",
+      "name": "白磷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 116px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 39,
+      "formula": "Ca(OH)₂",
+      "name": "氢氧化钙",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 116px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 40,
+      "formula": "Ga",
+      "name": "镓",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 174px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 41,
+      "formula": "C₃H₆",
+      "name": "丙烯",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 174px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 42,
+      "formula": "Fe₂O₃",
+      "name": "氧化铁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 43,
+      "formula": "Al(OH)₃",
+      "name": "氢氧化铝",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 174px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 44,
+      "formula": "As₂O₃",
+      "name": "三氧化二砷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 174px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 45,
+      "formula": "Cr",
+      "name": "铬",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 232px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 46,
+      "formula": "CCl₄",
+      "name": "四氯化碳",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 232px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 47,
+      "formula": "C",
+      "name": "石墨烯",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 232px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 48,
+      "formula": "K₂O₂",
+      "name": "过氧化钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 232px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 49,
+      "formula": "Cr(OH)₃",
+      "name": "氢氧化铬",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 232px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 50,
+      "formula": "CO",
+      "name": "一氧化碳",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 290px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 51,
+      "formula": "Sr",
+      "name": "锶",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 290px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 52,
+      "formula": "H₂CO₃",
+      "name": "碳酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 290px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 53,
+      "formula": "NaBr",
+      "name": "溴化钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 290px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 54,
+      "formula": "As₃O₄",
+      "name": "四氧化三砷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 290px; width: 50px; height: 50px; z-index: 12;",
+      "parentZ": "12",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 55,
+      "formula": "FeCl₃",
+      "name": "氯化铁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 29px; top: 29px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 460,
+        "y": 165,
+        "w": 50,
+        "h": 50,
+        "cx": 485,
+        "cy": 190
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 56,
+      "formula": "OF₂",
+      "name": "二氟化氧",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 29px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 165,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 190
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 57,
+      "formula": "MgCl₂",
+      "name": "氯化镁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 29px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 165,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 190
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 58,
+      "formula": "MgO",
+      "name": "氧化镁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 29px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 165,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 190
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 59,
+      "formula": "H₂",
+      "name": "氢气",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 29px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 165,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 190
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 60,
+      "formula": "Mn(OH)₂",
+      "name": "氢氧化锰",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 319px; top: 29px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 750,
+        "y": 165,
+        "w": 50,
+        "h": 50,
+        "cx": 775,
+        "cy": 190
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 61,
+      "formula": "Ca",
+      "name": "钙",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 29px; top: 87px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 460,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 485,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 62,
+      "formula": "KI",
+      "name": "碘化钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 87px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 63,
+      "formula": "HCl",
+      "name": "盐酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 87px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 64,
+      "formula": "FeCl₂",
+      "name": "氯化亚铁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 87px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 65,
+      "formula": "NaOH",
+      "name": "氢氧化钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 87px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 66,
+      "formula": "K₂CrO₄",
+      "name": "铬酸钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 319px; top: 87px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 750,
+        "y": 223,
+        "w": 50,
+        "h": 50,
+        "cx": 775,
+        "cy": 248
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 67,
+      "formula": "H₃PO₄",
+      "name": "磷酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 29px; top: 145px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 460,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 485,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 68,
+      "formula": "MnSO₄",
+      "name": "硫酸锰",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 145px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 69,
+      "formula": "N₂O₄",
+      "name": "四氧化二氮",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 145px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 70,
+      "formula": "Fe₃O₄",
+      "name": "四氧化三铁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 145px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 71,
+      "formula": "CuSO₄·5H₂O",
+      "name": "五水硫酸铜",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 145px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 72,
+      "formula": "Ca(ClO)₂",
+      "name": "次氯酸钙",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 319px; top: 145px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 750,
+        "y": 281,
+        "w": 50,
+        "h": 50,
+        "cx": 775,
+        "cy": 306
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 73,
+      "formula": "C₂H₆",
+      "name": "乙烷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 29px; top: 203px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 460,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 485,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 74,
+      "formula": "NO₂",
+      "name": "二氧化氮",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 203px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 75,
+      "formula": "AlCl₃",
+      "name": "氯化铝",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 203px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 76,
+      "formula": "BaO",
+      "name": "氧化钡",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 203px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 77,
+      "formula": "Fe",
+      "name": "铁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 203px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 78,
+      "formula": "Ag",
+      "name": "银",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 319px; top: 203px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 750,
+        "y": 339,
+        "w": 50,
+        "h": 50,
+        "cx": 775,
+        "cy": 364
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 79,
+      "formula": "Al₂O₃",
+      "name": "氧化铝",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 29px; top: 261px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 460,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 485,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 80,
+      "formula": "I₂",
+      "name": "碘",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 261px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 81,
+      "formula": "SiO₂",
+      "name": "二氧化硅",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 261px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 82,
+      "formula": "Mg",
+      "name": "镁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 261px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 83,
+      "formula": "Al",
+      "name": "铝",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 261px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 84,
+      "formula": "Se",
+      "name": "硒",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 319px; top: 261px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 750,
+        "y": 397,
+        "w": 50,
+        "h": 50,
+        "cx": 775,
+        "cy": 422
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 85,
+      "formula": "LiOH",
+      "name": "氢氧化锂",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 29px; top: 319px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 460,
+        "y": 455,
+        "w": 50,
+        "h": 50,
+        "cx": 485,
+        "cy": 480
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 86,
+      "formula": "Rb",
+      "name": "铷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 87px; top: 319px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 518,
+        "y": 455,
+        "w": 50,
+        "h": 50,
+        "cx": 543,
+        "cy": 480
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 87,
+      "formula": "NH₃·H₂O",
+      "name": "氨水",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 145px; top: 319px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 576,
+        "y": 455,
+        "w": 50,
+        "h": 50,
+        "cx": 601,
+        "cy": 480
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 88,
+      "formula": "CuO",
+      "name": "氧化铜",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 203px; top: 319px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 634,
+        "y": 455,
+        "w": 50,
+        "h": 50,
+        "cx": 659,
+        "cy": 480
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 89,
+      "formula": "C₁₂H₂₂O₁₁",
+      "name": "蔗糖",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 261px; top: 319px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 692,
+        "y": 455,
+        "w": 50,
+        "h": 50,
+        "cx": 717,
+        "cy": 480
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 90,
+      "formula": "CaCO₃",
+      "name": "碳酸钙",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 319px; top: 319px; width: 50px; height: 50px; z-index: 11;",
+      "parentZ": "11",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 750,
+        "y": 455,
+        "w": 50,
+        "h": 50,
+        "cx": 775,
+        "cy": 480
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 91,
+      "formula": "CH₄",
+      "name": "甲烷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 0px; top: 0px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 431,
+        "y": 136,
+        "w": 50,
+        "h": 50,
+        "cx": 456,
+        "cy": 161
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 92,
+      "formula": "CH₃COOC₂H₅",
+      "name": "乙酸乙酯",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 0px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 136,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 161
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 93,
+      "formula": "Ba(OH)₂",
+      "name": "氢氧化钡",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 0px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 136,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 161
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 94,
+      "formula": "MnO₂",
+      "name": "二氧化锰",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 0px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 136,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 161
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 95,
+      "formula": "AgBr",
+      "name": "溴化银",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 0px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 136,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 161
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 96,
+      "formula": "C₂H₂",
+      "name": "乙炔",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 0px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 136,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 161
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 97,
+      "formula": "Zn(OH)₂",
+      "name": "氢氧化锌",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 348px; top: 0px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 779,
+        "y": 136,
+        "w": 50,
+        "h": 50,
+        "cx": 804,
+        "cy": 161
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 98,
+      "formula": "Na₂B₄O₇",
+      "name": "硼砂",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 0px; top: 58px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 431,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 456,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 99,
+      "formula": "NaCl",
+      "name": "氯化钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 58px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 100,
+      "formula": "K₂Cr₂O₇",
+      "name": "重铬酸钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 58px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 101,
+      "formula": "C₆H₅COOH",
+      "name": "苯甲酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 58px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 102,
+      "formula": "Ni",
+      "name": "镍",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 58px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 103,
+      "formula": "[Cu(NH₃)₄]SO₄",
+      "name": "硫酸四氨合铜",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 58px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 104,
+      "formula": "HBr",
+      "name": "溴化氢",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 348px; top: 58px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 779,
+        "y": 194,
+        "w": 50,
+        "h": 50,
+        "cx": 804,
+        "cy": 219
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 105,
+      "formula": "C₂H₆O₂",
+      "name": "乙二醇",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 0px; top: 116px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 431,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 456,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 106,
+      "formula": "B",
+      "name": "硼",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 116px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 107,
+      "formula": "CaO",
+      "name": "氧化钙",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 116px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 108,
+      "formula": "HCHO",
+      "name": "甲醛",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 116px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 109,
+      "formula": "C₆₀",
+      "name": "富勒烯",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 116px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 110,
+      "formula": "NH₄HCO₃",
+      "name": "碳酸氢铵",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 116px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 111,
+      "formula": "Fe(OH)₃",
+      "name": "氢氧化铁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 348px; top: 116px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 779,
+        "y": 252,
+        "w": 50,
+        "h": 50,
+        "cx": 804,
+        "cy": 277
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 112,
+      "formula": "HBrO",
+      "name": "次溴酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 0px; top: 174px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 431,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 456,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 113,
+      "formula": "SO₂",
+      "name": "二氧化硫",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 174px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 114,
+      "formula": "Mg(OH)₂",
+      "name": "氢氧化镁",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 174px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 115,
+      "formula": "NaNO₃",
+      "name": "硝酸钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 116,
+      "formula": "H₂O₂",
+      "name": "过氧化氢",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 174px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 117,
+      "formula": "O₂",
+      "name": "氧气",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 174px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 118,
+      "formula": "Ag₂O",
+      "name": "氧化银",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 348px; top: 174px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 779,
+        "y": 310,
+        "w": 50,
+        "h": 50,
+        "cx": 804,
+        "cy": 335
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 119,
+      "formula": "KMnO₄",
+      "name": "高锰酸钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 0px; top: 232px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 431,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 456,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 120,
+      "formula": "P₂O₅",
+      "name": "五氧化二磷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 232px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 121,
+      "formula": "(C₂H₅)₂O",
+      "name": "乙醚",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 232px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 122,
+      "formula": "Cl₂",
+      "name": "氯气",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 232px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 123,
+      "formula": "CH₃Cl",
+      "name": "一氯甲烷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 232px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 124,
+      "formula": "NaClO₃",
+      "name": "氯酸钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 232px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 125,
+      "formula": "H₂SO₄",
+      "name": "硫酸",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 348px; top: 232px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 779,
+        "y": 368,
+        "w": 50,
+        "h": 50,
+        "cx": 804,
+        "cy": 393
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 126,
+      "formula": "P",
+      "name": "红磷",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 0px; top: 290px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 431,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 456,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 127,
+      "formula": "KAl(SO₄)₂",
+      "name": "明矾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 290px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 128,
+      "formula": "Na",
+      "name": "钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 290px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 129,
+      "formula": "Cu",
+      "name": "铜",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 290px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 130,
+      "formula": "S",
+      "name": "硫",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 290px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 131,
+      "formula": "Ti",
+      "name": "钛",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 290px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 132,
+      "formula": "V",
+      "name": "钒",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 348px; top: 290px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 779,
+        "y": 426,
+        "w": 50,
+        "h": 50,
+        "cx": 804,
+        "cy": 451
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 133,
+      "formula": "K",
+      "name": "钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 0px; top: 348px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 431,
+        "y": 484,
+        "w": 50,
+        "h": 50,
+        "cx": 456,
+        "cy": 509
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 134,
+      "formula": "Na₂CO₃",
+      "name": "碳酸钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 58px; top: 348px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 489,
+        "y": 484,
+        "w": 50,
+        "h": 50,
+        "cx": 514,
+        "cy": 509
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 135,
+      "formula": "CH₃OH",
+      "name": "甲醇",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 116px; top: 348px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 547,
+        "y": 484,
+        "w": 50,
+        "h": 50,
+        "cx": 572,
+        "cy": 509
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 136,
+      "formula": "CuCl₂",
+      "name": "氯化铜",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 174px; top: 348px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 605,
+        "y": 484,
+        "w": 50,
+        "h": 50,
+        "cx": 630,
+        "cy": 509
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 137,
+      "formula": "CrCl₃",
+      "name": "氯化铬",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 232px; top: 348px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 663,
+        "y": 484,
+        "w": 50,
+        "h": 50,
+        "cx": 688,
+        "cy": 509
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 138,
+      "formula": "Na₂SO₃",
+      "name": "亚硫酸钠",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 290px; top: 348px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 721,
+        "y": 484,
+        "w": 50,
+        "h": 50,
+        "cx": 746,
+        "cy": 509
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    },
+    {
+      "i": 139,
+      "formula": "KNO₃",
+      "name": "硝酸钾",
+      "removed": false,
+      "blocked": true,
+      "faceClass": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+      "parentClass": "pointer-events-none absolute",
+      "parentInlineStyle": "left: 348px; top: 348px; width: 50px; height: 50px; z-index: 10;",
+      "parentZ": "10",
+      "parentPE": "none",
+      "facePE": "auto",
+      "faceTransform": "none",
+      "faceOpacity": "1",
+      "parentRect": {
+        "x": 779,
+        "y": 484,
+        "w": 50,
+        "h": 50,
+        "cx": 804,
+        "cy": 509
+      },
+      "faceRect": {
+        "w": 50,
+        "h": 50
+      }
+    }
+  ]
+}

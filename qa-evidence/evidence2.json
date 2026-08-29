@@ -1,0 +1,745 @@
+{
+  "steps": [
+    {
+      "step": "点击#1 顶层牌(第0层) Fe₂(SO₄)₃",
+      "data": {
+        "seq": 1,
+        "label": "顶层牌(第0层)",
+        "formula": "Fe₂(SO₄)₃",
+        "name": "硫酸铁",
+        "z": "16",
+        "point": [
+          630,
+          335
+        ],
+        "removedBefore": 0,
+        "removedAfter": 1,
+        "success": true
+      }
+    },
+    {
+      "step": "点击#2 第1层-左上 C₂H₄",
+      "data": {
+        "seq": 2,
+        "label": "第1层-左上",
+        "formula": "C₂H₄",
+        "name": "乙烯",
+        "z": "15",
+        "point": [
+          601,
+          306
+        ],
+        "removedBefore": 1,
+        "removedAfter": 2,
+        "success": true
+      }
+    },
+    {
+      "step": "点击#3 第1层-右上 NiSO₄",
+      "data": {
+        "seq": 3,
+        "label": "第1层-右上",
+        "formula": "NiSO₄",
+        "name": "硫酸镍",
+        "z": "15",
+        "point": [
+          659,
+          306
+        ],
+        "removedBefore": 2,
+        "removedAfter": 3,
+        "success": true
+      }
+    },
+    {
+      "step": "点击#4 第1层-左下 I₂",
+      "data": {
+        "seq": 4,
+        "label": "第1层-左下",
+        "formula": "I₂",
+        "name": "碘",
+        "z": "15",
+        "point": [
+          601,
+          364
+        ],
+        "removedBefore": 3,
+        "removedAfter": 4,
+        "success": true
+      }
+    },
+    {
+      "step": "点击#5 第1层-右下 Br₂",
+      "data": {
+        "seq": 5,
+        "label": "第1层-右下",
+        "formula": "Br₂",
+        "name": "溴",
+        "z": "15",
+        "point": [
+          659,
+          364
+        ],
+        "removedBefore": 4,
+        "removedAfter": 5,
+        "success": true
+      }
+    },
+    {
+      "step": "扫描-已解锁卡牌总数",
+      "data": {
+        "unlocked": 9,
+        "中心被拦截": 1,
+        "存在死区": 9
+      }
+    },
+    {
+      "step": "扫描-中心完全被拦截的卡牌",
+      "data": [
+        {
+          "formula": "C₆H₁₂O₆",
+          "name": "葡萄糖",
+          "z": "14",
+          "center": [
+            630,
+            335
+          ],
+          "centerClickable": false,
+          "deadAreaPct": 100,
+          "centerHitBy": {
+            "cls": "absolute",
+            "style": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+            "z": "16",
+            "pe": "auto",
+            "holdsRemoved": true,
+            "childFormula": "Fe₂(SO₄)₃"
+          }
+        }
+      ]
+    },
+    {
+      "step": "扫描-死区占比TOP8",
+      "data": [
+        {
+          "f": "C₆H₁₂O₆",
+          "z": "14",
+          "dead": "100%",
+          "centerOK": false
+        },
+        {
+          "f": "HBrO",
+          "z": "14",
+          "dead": "28.1%",
+          "centerOK": true
+        },
+        {
+          "f": "C₆H₅CH₃",
+          "z": "14",
+          "dead": "28.1%",
+          "centerOK": true
+        },
+        {
+          "f": "Ga",
+          "z": "14",
+          "dead": "28.1%",
+          "centerOK": true
+        },
+        {
+          "f": "Mn(OH)₂",
+          "z": "14",
+          "dead": "28.1%",
+          "centerOK": true
+        },
+        {
+          "f": "KMnO₄",
+          "z": "14",
+          "dead": "14.1%",
+          "centerOK": true
+        },
+        {
+          "f": "ZnO",
+          "z": "14",
+          "dead": "14.1%",
+          "centerOK": true
+        },
+        {
+          "f": "Zn(OH)₂",
+          "z": "14",
+          "dead": "14.1%",
+          "centerOK": true
+        }
+      ]
+    },
+    {
+      "step": "DOM探针 elementFromPoint(630,335)  目标=C₆H₁₂O₆",
+      "data": {
+        "point": [
+          630,
+          335
+        ],
+        "topElement": {
+          "tag": "div",
+          "className": "absolute",
+          "inlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+          "outerHTML": "<div class=\"absolute\" style=\"left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸铁: 棕黄色\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), rgb(190, 18, 60));\"><span class=\"hlgx-tile-f\" style=\"font-size: 11px;\">Fe₂(SO₄)₃</span><span class=\"hlgx-tile-n\" style=\"font-size: 9px;\">硫酸铁</s",
+          "computed": {
+            "pointerEvents": "auto",
+            "zIndex": "16",
+            "position": "absolute",
+            "opacity": "1",
+            "transform": "none",
+            "visibility": "visible",
+            "display": "block"
+          }
+        },
+        "topElementParent": {
+          "tag": "div",
+          "className": "absolute left-1/2 top-0",
+          "inlineStyle": "width: 418px; height: 418px; transform: translateX(-50%) scale(1); transform-origin: center top;",
+          "outerHTML": "<div class=\"absolute left-1/2 top-0\" style=\"width: 418px; height: 418px; transform: translateX(-50%) scale(1); transform-origin: center top;\"><div class=\"absolute\" style=\"left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸铁: 棕黄色\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), r",
+          "computed": {
+            "pointerEvents": "auto",
+            "zIndex": "auto",
+            "position": "absolute",
+            "opacity": "1",
+            "transform": "matrix(1, 0, 0, 1, -209, 0)",
+            "visibility": "visible",
+            "display": "block"
+          }
+        },
+        "stack": [
+          {
+            "tag": "div",
+            "cls": "absolute",
+            "inline": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+            "z": "16",
+            "pe": "auto",
+            "txt": "Fe₂(SO₄)₃硫酸铁"
+          },
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-n",
+            "inline": "font-size: 9px;",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "葡萄糖"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board",
+            "inline": "width: 50px; height: 50px; background: linear-gradient(145deg, rgb(34, 211, 238), rgb(14, ",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "C₆H₁₂O₆葡萄糖"
+          },
+          {
+            "tag": "div",
+            "cls": "absolute",
+            "inline": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 14;",
+            "z": "14",
+            "pe": "auto",
+            "txt": "C₆H₁₂O₆葡萄糖"
+          },
+          {
+            "tag": "span",
+            "cls": "hlgx-tile-n",
+            "inline": "font-size: 9px;",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "丙酮"
+          },
+          {
+            "tag": "div",
+            "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+            "inline": "width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), rgb(190, ",
+            "z": "auto",
+            "pe": "auto",
+            "txt": "CH₃COCH₃丙酮"
+          }
+        ]
+      }
+    },
+    {
+      "step": "点击被拦截牌 C₆H₁₂O₆",
+      "data": {
+        "seq": "X",
+        "label": "中心被幽灵容器拦截的卡牌",
+        "formula": "C₆H₁₂O₆",
+        "name": "葡萄糖",
+        "z": "14",
+        "point": [
+          630,
+          335
+        ],
+        "removedBefore": 5,
+        "removedAfter": 5,
+        "success": false
+      }
+    },
+    {
+      "step": "对照组-该牌可点像素",
+      "data": {
+        "formula": "C₆H₁₂O₆",
+        "firstClickablePixel": null
+      }
+    },
+    {
+      "step": "全部幽灵容器(已消失卡牌)的两层 computed",
+      "data": [
+        {
+          "formula": "Fe₂(SO₄)₃",
+          "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸铁: 棕黄色\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), rgb(190, 18, 60));\"><span class=\"hlgx-tile-",
+          "父容器_computed": {
+            "pointerEvents": "auto",
+            "zIndex": "16",
+            "position": "absolute",
+            "width": "50px",
+            "height": "50px"
+          },
+          "卡牌视觉层_computed": {
+            "pointerEvents": "none",
+            "transform": "matrix(0, 0, 0, 0, 0, 0)",
+            "opacity": "0"
+          }
+        },
+        {
+          "formula": "C₂H₄",
+          "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 145px; top: 145px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"乙烯: 催熟果实\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(251, 146, 60), rgb(194, 65, 12));\"><span class=\"hlgx-tile",
+          "父容器_computed": {
+            "pointerEvents": "auto",
+            "zIndex": "15",
+            "position": "absolute",
+            "width": "50px",
+            "height": "50px"
+          },
+          "卡牌视觉层_computed": {
+            "pointerEvents": "none",
+            "transform": "matrix(0, 0, 0, 0, 0, 0)",
+            "opacity": "0"
+          }
+        },
+        {
+          "formula": "NiSO₄",
+          "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 203px; top: 145px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸镍: 镀镍原料\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(234, 179, 8), rgb(161, 98, 7));\"><span class=\"hlgx-tile-",
+          "父容器_computed": {
+            "pointerEvents": "auto",
+            "zIndex": "15",
+            "position": "absolute",
+            "width": "50px",
+            "height": "50px"
+          },
+          "卡牌视觉层_computed": {
+            "pointerEvents": "none",
+            "transform": "matrix(0, 0, 0, 0, 0, 0)",
+            "opacity": "0"
+          }
+        },
+        {
+          "formula": "I₂",
+          "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 145px; top: 203px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"碘: 易升华\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(234, 179, 8), rgb(161, 98, 7));\"><span class=\"hlgx-tile-f\" ",
+          "父容器_computed": {
+            "pointerEvents": "auto",
+            "zIndex": "15",
+            "position": "absolute",
+            "width": "50px",
+            "height": "50px"
+          },
+          "卡牌视觉层_computed": {
+            "pointerEvents": "none",
+            "transform": "matrix(0, 0, 0, 0, 0, 0)",
+            "opacity": "0"
+          }
+        },
+        {
+          "formula": "Br₂",
+          "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 203px; top: 203px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"溴: 唯一液态非金属\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(74, 222, 128), rgb(21, 128, 61));\"><span class=\"hlgx-ti",
+          "父容器_computed": {
+            "pointerEvents": "auto",
+            "zIndex": "15",
+            "position": "absolute",
+            "width": "50px",
+            "height": "50px"
+          },
+          "卡牌视觉层_computed": {
+            "pointerEvents": "none",
+            "transform": "matrix(0, 0, 0, 0, 0, 0)",
+            "opacity": "0"
+          }
+        }
+      ]
+    }
+  ],
+  "clicks": [
+    {
+      "seq": 1,
+      "label": "顶层牌(第0层)",
+      "formula": "Fe₂(SO₄)₃",
+      "name": "硫酸铁",
+      "z": "16",
+      "point": [
+        630,
+        335
+      ],
+      "removedBefore": 0,
+      "removedAfter": 1,
+      "success": true
+    },
+    {
+      "seq": 2,
+      "label": "第1层-左上",
+      "formula": "C₂H₄",
+      "name": "乙烯",
+      "z": "15",
+      "point": [
+        601,
+        306
+      ],
+      "removedBefore": 1,
+      "removedAfter": 2,
+      "success": true
+    },
+    {
+      "seq": 3,
+      "label": "第1层-右上",
+      "formula": "NiSO₄",
+      "name": "硫酸镍",
+      "z": "15",
+      "point": [
+        659,
+        306
+      ],
+      "removedBefore": 2,
+      "removedAfter": 3,
+      "success": true
+    },
+    {
+      "seq": 4,
+      "label": "第1层-左下",
+      "formula": "I₂",
+      "name": "碘",
+      "z": "15",
+      "point": [
+        601,
+        364
+      ],
+      "removedBefore": 3,
+      "removedAfter": 4,
+      "success": true
+    },
+    {
+      "seq": 5,
+      "label": "第1层-右下",
+      "formula": "Br₂",
+      "name": "溴",
+      "z": "15",
+      "point": [
+        659,
+        364
+      ],
+      "removedBefore": 4,
+      "removedAfter": 5,
+      "success": true
+    },
+    {
+      "seq": "X",
+      "label": "中心被幽灵容器拦截的卡牌",
+      "formula": "C₆H₁₂O₆",
+      "name": "葡萄糖",
+      "z": "14",
+      "point": [
+        630,
+        335
+      ],
+      "removedBefore": 5,
+      "removedAfter": 5,
+      "success": false
+    }
+  ],
+  "dom": {
+    "C₆H₁₂O₆": {
+      "point": [
+        630,
+        335
+      ],
+      "topElement": {
+        "tag": "div",
+        "className": "absolute",
+        "inlineStyle": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+        "outerHTML": "<div class=\"absolute\" style=\"left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸铁: 棕黄色\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), rgb(190, 18, 60));\"><span class=\"hlgx-tile-f\" style=\"font-size: 11px;\">Fe₂(SO₄)₃</span><span class=\"hlgx-tile-n\" style=\"font-size: 9px;\">硫酸铁</s",
+        "computed": {
+          "pointerEvents": "auto",
+          "zIndex": "16",
+          "position": "absolute",
+          "opacity": "1",
+          "transform": "none",
+          "visibility": "visible",
+          "display": "block"
+        }
+      },
+      "topElementParent": {
+        "tag": "div",
+        "className": "absolute left-1/2 top-0",
+        "inlineStyle": "width: 418px; height: 418px; transform: translateX(-50%) scale(1); transform-origin: center top;",
+        "outerHTML": "<div class=\"absolute left-1/2 top-0\" style=\"width: 418px; height: 418px; transform: translateX(-50%) scale(1); transform-origin: center top;\"><div class=\"absolute\" style=\"left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸铁: 棕黄色\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), r",
+        "computed": {
+          "pointerEvents": "auto",
+          "zIndex": "auto",
+          "position": "absolute",
+          "opacity": "1",
+          "transform": "matrix(1, 0, 0, 1, -209, 0)",
+          "visibility": "visible",
+          "display": "block"
+        }
+      },
+      "stack": [
+        {
+          "tag": "div",
+          "cls": "absolute",
+          "inline": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+          "z": "16",
+          "pe": "auto",
+          "txt": "Fe₂(SO₄)₃硫酸铁"
+        },
+        {
+          "tag": "span",
+          "cls": "hlgx-tile-n",
+          "inline": "font-size: 9px;",
+          "z": "auto",
+          "pe": "auto",
+          "txt": "葡萄糖"
+        },
+        {
+          "tag": "div",
+          "cls": "hlgx-tile hlgx-tile-board",
+          "inline": "width: 50px; height: 50px; background: linear-gradient(145deg, rgb(34, 211, 238), rgb(14, ",
+          "z": "auto",
+          "pe": "auto",
+          "txt": "C₆H₁₂O₆葡萄糖"
+        },
+        {
+          "tag": "div",
+          "cls": "absolute",
+          "inline": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 14;",
+          "z": "14",
+          "pe": "auto",
+          "txt": "C₆H₁₂O₆葡萄糖"
+        },
+        {
+          "tag": "span",
+          "cls": "hlgx-tile-n",
+          "inline": "font-size: 9px;",
+          "z": "auto",
+          "pe": "auto",
+          "txt": "丙酮"
+        },
+        {
+          "tag": "div",
+          "cls": "hlgx-tile hlgx-tile-board hlgx-tile-blocked",
+          "inline": "width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), rgb(190, ",
+          "z": "auto",
+          "pe": "auto",
+          "txt": "CH₃COCH₃丙酮"
+        }
+      ]
+    }
+  },
+  "scan": [
+    {
+      "formula": "KMnO₄",
+      "name": "高锰酸钾",
+      "z": "14",
+      "center": [
+        572,
+        277
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 14.1,
+      "centerHitBy": null
+    },
+    {
+      "formula": "HBrO",
+      "name": "次溴酸",
+      "z": "14",
+      "center": [
+        630,
+        277
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 28.1,
+      "centerHitBy": null
+    },
+    {
+      "formula": "ZnO",
+      "name": "氧化锌",
+      "z": "14",
+      "center": [
+        688,
+        277
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 14.1,
+      "centerHitBy": null
+    },
+    {
+      "formula": "C₆H₅CH₃",
+      "name": "甲苯",
+      "z": "14",
+      "center": [
+        572,
+        335
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 28.1,
+      "centerHitBy": null
+    },
+    {
+      "formula": "C₆H₁₂O₆",
+      "name": "葡萄糖",
+      "z": "14",
+      "center": [
+        630,
+        335
+      ],
+      "centerClickable": false,
+      "deadAreaPct": 100,
+      "centerHitBy": {
+        "cls": "absolute",
+        "style": "left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;",
+        "z": "16",
+        "pe": "auto",
+        "holdsRemoved": true,
+        "childFormula": "Fe₂(SO₄)₃"
+      }
+    },
+    {
+      "formula": "Ga",
+      "name": "镓",
+      "z": "14",
+      "center": [
+        688,
+        335
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 28.1,
+      "centerHitBy": null
+    },
+    {
+      "formula": "Zn(OH)₂",
+      "name": "氢氧化锌",
+      "z": "14",
+      "center": [
+        572,
+        393
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 14.1,
+      "centerHitBy": null
+    },
+    {
+      "formula": "Mn(OH)₂",
+      "name": "氢氧化锰",
+      "z": "14",
+      "center": [
+        630,
+        393
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 28.1,
+      "centerHitBy": null
+    },
+    {
+      "formula": "C₂H₂",
+      "name": "乙炔",
+      "z": "14",
+      "center": [
+        688,
+        393
+      ],
+      "centerClickable": true,
+      "deadAreaPct": 14.1,
+      "centerHitBy": null
+    }
+  ],
+  "ghosts": [
+    {
+      "formula": "Fe₂(SO₄)₃",
+      "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 174px; top: 174px; width: 50px; height: 50px; z-index: 16;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸铁: 棕黄色\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(244, 63, 94), rgb(190, 18, 60));\"><span class=\"hlgx-tile-",
+      "父容器_computed": {
+        "pointerEvents": "auto",
+        "zIndex": "16",
+        "position": "absolute",
+        "width": "50px",
+        "height": "50px"
+      },
+      "卡牌视觉层_computed": {
+        "pointerEvents": "none",
+        "transform": "matrix(0, 0, 0, 0, 0, 0)",
+        "opacity": "0"
+      }
+    },
+    {
+      "formula": "C₂H₄",
+      "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 145px; top: 145px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"乙烯: 催熟果实\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(251, 146, 60), rgb(194, 65, 12));\"><span class=\"hlgx-tile",
+      "父容器_computed": {
+        "pointerEvents": "auto",
+        "zIndex": "15",
+        "position": "absolute",
+        "width": "50px",
+        "height": "50px"
+      },
+      "卡牌视觉层_computed": {
+        "pointerEvents": "none",
+        "transform": "matrix(0, 0, 0, 0, 0, 0)",
+        "opacity": "0"
+      }
+    },
+    {
+      "formula": "NiSO₄",
+      "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 203px; top: 145px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"硫酸镍: 镀镍原料\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(234, 179, 8), rgb(161, 98, 7));\"><span class=\"hlgx-tile-",
+      "父容器_computed": {
+        "pointerEvents": "auto",
+        "zIndex": "15",
+        "position": "absolute",
+        "width": "50px",
+        "height": "50px"
+      },
+      "卡牌视觉层_computed": {
+        "pointerEvents": "none",
+        "transform": "matrix(0, 0, 0, 0, 0, 0)",
+        "opacity": "0"
+      }
+    },
+    {
+      "formula": "I₂",
+      "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 145px; top: 203px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"碘: 易升华\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(234, 179, 8), rgb(161, 98, 7));\"><span class=\"hlgx-tile-f\" ",
+      "父容器_computed": {
+        "pointerEvents": "auto",
+        "zIndex": "15",
+        "position": "absolute",
+        "width": "50px",
+        "height": "50px"
+      },
+      "卡牌视觉层_computed": {
+        "pointerEvents": "none",
+        "transform": "matrix(0, 0, 0, 0, 0, 0)",
+        "opacity": "0"
+      }
+    },
+    {
+      "formula": "Br₂",
+      "父容器_outerHTML片段": "<div class=\"absolute\" style=\"left: 203px; top: 203px; width: 50px; height: 50px; z-index: 15;\"><div class=\"hlgx-tile hlgx-tile-board hlgx-tile-removed\" title=\"溴: 唯一液态非金属\" style=\"width: 50px; height: 50px; background: linear-gradient(145deg, rgb(74, 222, 128), rgb(21, 128, 61));\"><span class=\"hlgx-ti",
+      "父容器_computed": {
+        "pointerEvents": "auto",
+        "zIndex": "15",
+        "position": "absolute",
+        "width": "50px",
+        "height": "50px"
+      },
+      "卡牌视觉层_computed": {
+        "pointerEvents": "none",
+        "transform": "matrix(0, 0, 0, 0, 0, 0)",
+        "opacity": "0"
+      }
+    }
+  ]
+}
