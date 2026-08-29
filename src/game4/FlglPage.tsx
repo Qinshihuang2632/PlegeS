@@ -413,11 +413,10 @@ export function FlglPage() {
                                     width: "17.6%",
                                     top: "50%",
                                     transform: `translate(${enteredIds.includes(c.id) ? 0 : (beltRef.current?.offsetWidth ?? 420)}px, -50%)`,
-                                    /* 滑动时长按距离换算, 保证所有卡速度一致(约每秒行进 2 个卡片长, v1.1.5):
-                                       入场 = 1 卡宽(17.6% 带宽) → 0.5s;
-                                       补位 = 一格(20.6% 带宽 ≈ 1.17 卡宽) → 0.585s;
-                                       v1.1.0 起卡牌挂载即响应 pointerdown, 滑行途中即可拖走分类 */
-                                    transition: "left 0.585s linear, transform 0.5s linear",
+                                    /* 滑动时长(v1.1.6 用户指定): 入场(1 卡宽)2.5s 缓缓滑入,
+                                       滑行途中即可拖走分类; 补位(一格 ≈1.17 卡宽)0.5s 快速归位不拖沓;
+                                       v1.1.0 起卡牌挂载即响应 pointerdown, 无需等滑行结束 */
+                                    transition: "left 0.5s linear, transform 2.5s linear",
                                 }}
                                 aria-label={`物质卡:${c.sub.n}`}
                             >
