@@ -59,6 +59,7 @@ export function YlgyPage() {
     const [muted, setMuted] = useState(HLGX_Audio.isMuted());
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
     const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const badFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);   // v1.5.4: 错误格闪红 2s 后重绘
     const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
 
     const clearMeaningTip = () => {
@@ -208,8 +209,12 @@ export function YlgyPage() {
         const hpBefore = game.hp;
         const doneBefore = game.wordDone.filter(Boolean).length;
         if (game.fill(r, c, ch)) {
-            if (game.hp < hpBefore) HLGX_Audio.wrong();
-            else if (game.wordDone.filter(Boolean).length > doneBefore) HLGX_Audio.correct();
+            if (game.hp < hpBefore) {
+                HLGX_Audio.wrong();
+                // v1.5.4: 错误格闪红 2 秒后自动恢复无色(由 wordBadAt 时间戳驱动, 到时重绘)
+                badFlashTimerRef.current && clearTimeout(badFlashTimerRef.current);
+                badFlashTimerRef.current = setTimeout(() => refresh(), 2000);
+            } else if (game.wordDone.filter(Boolean).length > doneBefore) HLGX_Audio.correct();
             // 自动跳到下一个空格
             let moved = false;
             for (let rr = 0; rr < game.H && !moved; rr++) {
@@ -423,7 +428,8 @@ export function YlgyPage() {
                                 return cells.some(([rr, cc]) => rr === r && cc === c);
                             });
                             const isDone = wi >= 0 && game.wordDone[wi];
-                            const isBad = wi >= 0 && game.wordBad[wi];
+                            // v1.5.4: 错误格只闪红 2 秒, 之后恢复无色(仍可修改再重试); 正确格常绿
+                            const isBad = wi >= 0 && game.wordBad[wi] && (game.wordBadAt[wi] ?? 0) > Date.now() - 2000;
                             // 含义提示蓝圈: 该格属于被提示的词 → 整词圈出
                             const inTip = meaningTip !== null && game.wordCells(meaningTip.wi).some(([rr, cc]) => rr === r && cc === c);
                             return (

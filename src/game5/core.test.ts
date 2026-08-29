@@ -8,7 +8,7 @@ import { parseFormula } from "./parse";
 import {
     HINT_LIMIT, ROUND_TOTAL,
     appendDigit, backspace, currentEquation, gcdList, isScaledVersion,
-    mcOptions, newGame, setBlank, submit, tick, useHint,
+    clearBlank, mcOptions, newGame, setBlank, submit, tick, useHint,
     type PlgpState,
 } from "./core";
 
@@ -190,6 +190,41 @@ describe("配了个平 · 游戏逻辑", () => {
         expect(s.blanks[0]).toBe(null);
         s = backspace(s, 0);
         expect(s.blanks[0]).toBe(null);
+    });
+
+    it("v1.0.4 清除键: 一键清空当前格全部数字; 提示锁定位不可清", () => {
+        let s = newGame("normal", seedRng(17));
+        s = appendDigit(s, 0, 1);
+        s = appendDigit(s, 0, 2);
+        expect(s.blanks[0]).toBe(12);
+        s = clearBlank(s, 0);
+        expect(s.blanks[0]).toBe(null);
+        s = clearBlank(s, 0);          // 空位清除无副作用
+        expect(s.blanks[0]).toBe(null);
+        s = useHint(s);
+        const li = s.locked.findIndex((v) => v);
+        s = clearBlank(s, li);
+        expect(s.blanks[li]).toBe(currentEquation(s).coefs[li]);
+    });
+
+    it("v1.0.4 提示位置随机: 同一局面多种子提示, 锁定位置覆盖多个候选位", () => {
+        // 全空局面: 候选位 = 全部系数位; 恒 0 → 只命中第一个, 恒 0.99 → 只命中最后一个
+        let s = newGame("normal", seedRng(18));
+        const n = currentEquation(s).coefs.length;
+        expect(n).toBeGreaterThanOrEqual(3);
+        let st = useHint(s, () => 0);
+        let li = st.locked.findIndex((v) => v);
+        expect(li).toBe(0);
+        st = useHint(s, () => 0.99);
+        li = st.locked.findIndex((v) => v);
+        expect(li).toBe(n - 1);
+        // 新局面多次随机提示: 锁定位置应出现不止一个不同索引(种子间隔大, 避免相邻 LCG 值过近)
+        const seen = new Set<number>();
+        for (let k = 0; k < 12; k++) {
+            const ss = useHint(newGame("normal", seedRng(19)), seedRng(70000 + k * 977));
+            seen.add(ss.locked.findIndex((v) => v));
+        }
+        expect(seen.size).toBeGreaterThan(1);
     });
 
     it("简单难度选择题: 3 组互异选项且恰含一组正确答案", () => {

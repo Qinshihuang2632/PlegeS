@@ -22,7 +22,7 @@ import { HLGX_Audio } from "@/game/audio";
 import { PLGP_VERSION } from "./version";
 import {
     HINT_LIMIT, PLGP_MODES, ROUND_TOTAL,
-    appendDigit, backspace, currentEquation, mcOptions, newGame, setBlank, submit, tick, useHint,
+    appendDigit, backspace, clearBlank, currentEquation, mcOptions, newGame, setBlank, submit, tick, useHint,
     type PlgpMode, type PlgpState,
 } from "./core";
 
@@ -182,7 +182,7 @@ export function PlgpPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [st?.phase]);
 
-    /* 标准/困难: 物理键盘(数字/退格/回车提交/左右切换空位) */
+    /* 标准/困难: 物理键盘(数字/退格/Delete 清空/回车提交/左右切换空位) */
     useEffect(() => {
         if (phase !== "playing" || mode === "easy") return;
         const onKey = (e: KeyboardEvent) => {
@@ -192,6 +192,7 @@ export function PlgpPage() {
                 const i = Math.min(selIdx, n - 1);
                 if (/^[0-9]$/.test(e.key)) { e.preventDefault(); return appendDigit(prev, i, Number(e.key)); }
                 if (e.key === "Backspace") { e.preventDefault(); return backspace(prev, i); }
+                if (e.key === "Delete") { e.preventDefault(); return clearBlank(prev, i); }
                 if (e.key === "Enter") { e.preventDefault(); return submit(prev); }
                 if (e.key === "ArrowLeft") { setSelIdx((v) => (v - 1 + n) % n); return prev; }
                 if (e.key === "ArrowRight") { setSelIdx((v) => (v + 1) % n); return prev; }
@@ -417,9 +418,17 @@ export function PlgpPage() {
                                     ))}
                                     <button
                                         onClick={() => setSt((prev) => (prev ? backspace(prev, Math.min(selIdx, n - 1)) : prev))}
-                                        className="col-span-2 h-11 rounded-lg border bg-secondary font-bold shadow-sm transition hover:bg-muted active:scale-[0.97]"
+                                        className="h-11 rounded-lg border bg-secondary font-bold shadow-sm transition hover:bg-muted active:scale-[0.97]"
+                                        title="退格:删去当前格最后一位数字"
                                     >
                                         ⌫
+                                    </button>
+                                    <button
+                                        onClick={() => setSt((prev) => (prev ? clearBlank(prev, Math.min(selIdx, n - 1)) : prev))}
+                                        className="h-11 rounded-lg border bg-secondary font-bold shadow-sm transition hover:bg-muted active:scale-[0.97]"
+                                        title="清除:一键清空当前格的全部数字"
+                                    >
+                                        清除
                                     </button>
                                 </div>
                             </div>

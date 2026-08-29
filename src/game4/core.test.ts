@@ -95,6 +95,17 @@ describe("分了个类 · 核心", () => {
         expect(st.lastJudge?.ok).toBe(true);
     });
 
+    it("v1.1.5 补足池限定难度类别: 多种子下简单/标准 deck 不出现被排除类别的卡", () => {
+        for (let seed = 0; seed < 20; seed++) {
+            for (const s of buildDeck("easy", seedRng(seed))) {
+                expect(s.c !== "organic" && s.c !== "mix").toBe(true);
+            }
+            for (const s of buildDeck("normal", seedRng(seed))) {
+                expect(s.c !== "mix").toBe(true);
+            }
+        }
+    });
+
     it("血量归零判负(hp)", () => {
         let st = newGame("easy", seedRng(11));
         st = tick(st, 0.1);

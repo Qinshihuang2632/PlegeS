@@ -236,6 +236,7 @@ export class YlgyGame {
     grid: (string | null)[][] = []; // 当前填写
     wordDone: boolean[] = [];
     wordBad: boolean[] = [];
+    wordBadAt: (number | null)[] = [];   // 该词最近一次判错的时间戳(UI 据此闪红 2 秒后变无色)
     selected: { r: number; c: number } | null = null;
     gameOver = false;
     win = false;
@@ -277,9 +278,11 @@ export class YlgyGame {
         this.grid = gen.grid.map(row => [...row]);
         this.wordDone = [];
         this.wordBad = [];
+        this.wordBadAt = [];
         for (let i = 0; i < this.words.length; i++) {
             this.wordDone.push(this.wordCells(i).every(([r, c]) => this.grid[r][c] !== null));
             this.wordBad.push(false);
+            this.wordBadAt.push(null);
         }
         this.startAt = Date.now();
     }
@@ -404,13 +407,14 @@ export class YlgyGame {
         return n;
     }
 
-    /* 填空提示(v1.4.0 更名): 向随机空位填一个正确字母(每局 HINT_LIMIT 次) */
+    /* 填空提示(v1.4.0 更名): 向随机空位填一个正确字母(每局 HINT_LIMIT 次)。
+       v1.5.4: 跳过已被正确词锁定的格子, 避免提示落空 */
     hint(): boolean {
         if (this.gameOver || this.win || this.hints >= HINT_LIMIT) return false;
         const blanks: [number, number][] = [];
         for (let r = 0; r < this.H; r++)
             for (let c = 0; c < this.W; c++)
-                if (this.occupied[r][c] && this.grid[r][c] === null) blanks.push([r, c]);
+                if (this.occupied[r][c] && this.grid[r][c] === null && !this.cellLocked(r, c)) blanks.push([r, c]);
         if (!blanks.length) return false;
         const [r, c] = blanks[Math.floor(Math.random() * blanks.length)];
         this.hints++;
@@ -444,6 +448,7 @@ export class YlgyGame {
         if (this.gameOver || this.win) return false;
         if (!this.occupied[r][c]) return false;               // 非占用格不可填
         if (this.puzzle[r][c] !== null) return false;
+        if (this.cellLocked(r, c)) return false;              // v1.5.4: 正确词的格子锁定禁止改动
         if (!/^[a-z]$/.test(ch)) return false;
         this.grid[r][c] = ch;
         this.fills++;
@@ -455,11 +460,20 @@ export class YlgyGame {
     erase(r: number, c: number): boolean {
         if (this.gameOver || this.win) return false;
         if (!this.occupied[r][c] || this.puzzle[r][c] !== null) return false;
+        if (this.cellLocked(r, c)) return false;              // v1.5.4: 正确词的格子锁定禁止改动
         this.grid[r][c] = null;
         return true;
     }
 
-    /* 校验经过该格的所有词(至多一横一竖) */
+    /** 该格是否已被某个「已完成(正确)」的词锁定 */
+    private cellLocked(r: number, c: number): boolean {
+        return this.words.some((_, i) => this.wordDone[i] &&
+            this.wordCells(i).some(([rr, cc]) => rr === r && cc === c));
+    }
+
+    /* 校验经过该格的所有词(至多一横一竖)。
+       v1.5.4: 填满即重新检测——已判错的词被修改后再次填满, 仍按当前内容重新判定;
+       错误则每次填满都扣血(不是只扣第一次), 并记录判错时间戳供 UI 闪红 2 秒 */
     private checkCellWords(r: number, c: number) {
         for (let i = 0; i < this.words.length; i++) {
             const cells = this.wordCells(i);
@@ -471,8 +485,10 @@ export class YlgyGame {
             if (this.dictSet.has(word)) {
                 this.wordDone[i] = true;
                 this.wordBad[i] = false;
-            } else if (!this.wordBad[i]) {
+                this.wordBadAt[i] = null;
+            } else {
                 this.wordBad[i] = true;
+                this.wordBadAt[i] = Date.now();
                 this.hp--;
             }
         }

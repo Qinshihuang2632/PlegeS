@@ -3,7 +3,8 @@
  * ========================
  * 玩法: 传送带式物质分类(类似植物大战僵尸的传送带)——物质卡从右向左匀速进入,
  *       传送带位于屏幕偏上方、最多容纳 5 张;玩家拖动物质卡,放入屏幕中间的
- *       8 类按钮完成分类。归对得分,归错扣血;新卡该出现时传送带满载 → 直接判负。
+ *       类别按钮(随难度增减: 简单 6 / 标准 7 / 困难 8)完成分类。归对得分,归错扣血;
+ *       新卡该出现时传送带满载 → 直接判负。
  * 榜单: 独立 API /flgl/api/rank, 排序 正确数↓ → 用时↑。
  */
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +23,7 @@ import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartTogg
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
 import {
-    BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
+    BELT_CAPACITY, CATS_OF, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
     type FlglCard, type FlglMode, type FlglState,
 } from "./core";
 
@@ -34,7 +35,9 @@ const MODE_TABS: { mode: FlglMode; label: string }[] = [
     { mode: "hard", label: "困难" },
 ];
 
-const CAT_LIST = Object.entries(HLGX_CATS) as [Category, { label: string; color: string }][];
+/* 分类按钮按难度动态生成(v1.1.5): 简单 6 类(无有机物/混合物)、标准 7 类(无混合物)、困难 8 类 */
+const CAT_LIST_OF = (mode: FlglMode): [Category, { label: string; color: string }][] =>
+    CATS_OF[mode].map((c) => [c, HLGX_CATS[c]] as [Category, { label: string; color: string }]);
 
 interface ResultInfo {
     win: boolean;
@@ -410,10 +413,11 @@ export function FlglPage() {
                                     width: "17.6%",
                                     top: "50%",
                                     transform: `translate(${enteredIds.includes(c.id) ? 0 : (beltRef.current?.offsetWidth ?? 420)}px, -50%)`,
-                                    /* v1.1.0: 滑动速度降为一半(0.7s→1.4s 入场, 0.6s→1.2s 补位);
-                                       v1.1.4: 再降 50%(1.4s→2.8s 入场, 1.2s→2.4s 补位), 滑行阶段即可拖走分类,
-                                       卡牌挂载即响应 pointerdown, 无需等滑行结束 */
-                                    transition: "left 2.4s linear, transform 2.8s linear",
+                                    /* 滑动时长按距离换算, 保证所有卡速度一致(约每秒行进 2 个卡片长, v1.1.5):
+                                       入场 = 1 卡宽(17.6% 带宽) → 0.5s;
+                                       补位 = 一格(20.6% 带宽 ≈ 1.17 卡宽) → 0.585s;
+                                       v1.1.0 起卡牌挂载即响应 pointerdown, 滑行途中即可拖走分类 */
+                                    transition: "left 0.585s linear, transform 0.5s linear",
                                 }}
                                 aria-label={`物质卡:${c.sub.n}`}
                             >
@@ -423,22 +427,22 @@ export function FlglPage() {
                         ))}
                     </div>
 
-                    {/* 直接弹出下一张(v1.1.0): 内置 1s 冷却防误触连点 */}
+                    {/* 直接弹出下一张(v1.1.0): 冷却期间只闪出「防误触冷却」, 不显示秒数(v1.1.5) */}
                     <div className="flex justify-center">
                         <Button
                             variant="outline"
                             size="sm"
                             disabled={st.spawnCd > 0 || st.spawned >= st.deck.length}
                             onClick={() => setSt((prev) => (prev ? spawnNow(prev) : prev))}
-                            title="立即让下一张物质卡从右侧出现(冷却 1 秒);传送带满载时点击会直接判负"
+                            title="立即让下一张物质卡从右侧出现;传送带满载时点击会直接判负"
                         >
-                            ⏩ 直接弹出下一张{st.spawnCd > 0 ? `(冷却 ${Math.ceil(st.spawnCd)}s)` : ""}
+                            ⏩ 直接弹出下一张{st.spawnCd > 0 ? " · 防误触冷却" : ""}
                         </Button>
                     </div>
 
-                    {/* 类别按钮(屏幕中间, 8 类 2×4) */}
-                    <div className="grid grid-cols-4 gap-2">
-                        {CAT_LIST.map(([cat, info]) => {
+                    {/* 类别按钮(屏幕中间): 数量随难度 —— 简单 6 / 标准 7 / 困难 8 */}
+                    <div className={cn("grid gap-2", st.mode === "easy" ? "grid-cols-3" : "grid-cols-4")}>
+                        {CAT_LIST_OF(st.mode).map(([cat, info]) => {
                             const isFlash = flash?.cat === cat;
                             const isHover = hoverCat === cat;
                             return (

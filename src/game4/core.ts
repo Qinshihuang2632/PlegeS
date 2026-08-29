@@ -106,8 +106,11 @@ export function buildDeck(mode: FlglMode, rng: () => number = Math.random): Subs
         const s = pickUnused(BY_CAT[cat], used, rng);
         if (s) { used.add(s.n); deck.push(s); }
     }
+    /* 补足池也限定在该难度类别范围内(v1.1.5): 简单/标准不会补入不存在的类别(有机物/混合物),
+       否则会出「无对应按钮可分类」的死卡 */
+    const pool = mode === "hard" ? HLGX_SUBSTANCES : cats.flatMap((c) => BY_CAT[c]);
     while (deck.length < ROUND_TOTAL) {
-        const s = pickUnused(HLGX_SUBSTANCES, used, rng) ?? HLGX_SUBSTANCES[deck.length % HLGX_SUBSTANCES.length];
+        const s = pickUnused(pool, used, rng) ?? pool[deck.length % pool.length];
         if (!used.has(s.n)) { used.add(s.n); deck.push(s); }
     }
     return deck;

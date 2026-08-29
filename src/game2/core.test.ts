@@ -249,6 +249,81 @@ describe("游戏流程", () => {
         expect(g2.win).toBe(false);
     });
 
+    it("v1.5.4 改错重填重新检测: 修改字母再填满仍非法 → 继续扣血; 改对 → 变绿通关", () => {
+        const g = new YlgyGame("easy");
+        const pickSingleBlank = (): [number, number] => {
+            for (let r = 0; r < g.H; r++)
+                for (let c = 0; c < g.W; c++) {
+                    if (!(g.occupied[r][c] && g.grid[r][c] === null && g.puzzle[r][c] === null)) continue;
+                    const cnt = g.words.filter((_, i) =>
+                        g.wordCells(i).some(([rr, cc]) => rr === r && cc === c)).length;
+                    if (cnt === 1) return [r, c];
+                }
+            return [-1, -1];
+        };
+        const [br, bc] = pickSingleBlank();
+        expect(br, "应存在非交叉空格").toBeGreaterThanOrEqual(0);
+        const wi = g.words.findIndex((_, i) => g.wordCells(i).some(([rr, cc]) => rr === br && cc === bc));
+        const ans = g.cellAnswer(br, bc);
+        // 先按答案填满该词其余格, 使词处于「仅 1 格待定」; 再对 br,bc 逐个试字母直到整词非法(避免恰好组成词库中另一个词)
+        for (const [rr, cc] of g.wordCells(wi)) if (rr !== br || cc !== bc) g.fill(rr, cc, g.cellAnswer(rr, cc));
+        let wrong1 = ans;
+        for (let k = 0; k < 26; k++) {
+            const ch = String.fromCharCode(97 + ((ans.charCodeAt(0) - 97 + 1 + k) % 26));
+            if (!g.fill(br, bc, ch)) continue;
+            if (g.hp < 3) { wrong1 = ch; break; }   // 非法 → 已扣血, 停止试错
+            g.erase(br, bc);
+        }
+        expect(wrong1).not.toBe(ans);
+        // 第 1 次填满非法 → 扣 1 血, 记录判错时间戳
+        expect(g.hp).toBe(2);
+        expect(g.wordBad[wi]).toBe(true);
+        expect(g.wordBadAt[wi]).not.toBeNull();
+        expect(Date.now() - (g.wordBadAt[wi] ?? 0)).toBeLessThan(5000);
+        // 修改另一格(仍填错)再填满 → 重新检测仍非法 → 再扣 1 血
+        const other = g.wordCells(wi).find(([rr, cc]) => g.puzzle[rr][cc] === null && (rr !== br || cc !== bc) && g.grid[rr][cc] !== null)!;
+        const ans2 = g.cellAnswer(other[0], other[1]);
+        g.erase(other[0], other[1]);
+        expect(g.hp).toBe(2);                       // 词不再满 → 不检测
+        let wrong2 = ans2;
+        for (let k = 0; k < 26; k++) {
+            const ch = String.fromCharCode(97 + ((ans2.charCodeAt(0) - 97 + 1 + k) % 26));
+            if (!g.fill(other[0], other[1], ch)) continue;
+            if (g.hp < 2) { wrong2 = ch; break; }
+            g.erase(other[0], other[1]);
+        }
+        expect(wrong2).not.toBe(ans2);
+        expect(g.hp).toBe(1);                       // 重新填满 → 再次扣血
+        expect(g.wordBadAt[wi]).not.toBeNull();
+        // 全部擦除后按答案重新填满 → 检测通过 → 词完成变绿(最后一次填满不再扣血)
+        g.erase(br, bc);
+        g.erase(other[0], other[1]);
+        g.fill(other[0], other[1], ans2);
+        g.fill(br, bc, ans);
+        expect(g.wordBad[wi]).toBe(false);
+        expect(g.wordDone[wi]).toBe(true);
+    });
+
+    it("v1.5.4 正确词格子锁定: 已完成的词所在格不可再改(填/擦都拒绝)", () => {
+        const g = new YlgyGame("easy");
+        // 按答案填完第一个词 → 该词完成
+        let wi = 0;
+        for (const [rr, cc] of g.wordCells(wi)) {
+            if (g.grid[rr][cc] === null) g.fill(rr, cc, g.cellAnswer(rr, cc));
+        }
+        expect(g.wordDone[wi]).toBe(true);
+        // 找一个属于该词的格子(预填空格亦可, 关键是锁定后内容不再变化)
+        const [r0, c0] = g.wordCells(wi)[0];
+        const before = g.grid[r0][c0];
+        expect(g.erase(r0, c0)).toBe(false);
+        expect(g.grid[r0][c0]).toBe(before);
+        // 若该格是非预填空格, fill 也应被拒绝
+        if (g.puzzle[r0][c0] === null) {
+            expect(g.fill(r0, c0, before === "a" ? "b" : "a")).toBe(false);
+            expect(g.grid[r0][c0]).toBe(before);
+        }
+    });
+
     it("提示道具: 每局最多 2 次, 向占用空位填正确字母", () => {
         const g = new YlgyGame("normal");
         expect(HINT_LIMIT).toBe(2);

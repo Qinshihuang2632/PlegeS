@@ -123,6 +123,13 @@ export function backspace(st: PlgpState, i: number): PlgpState {
     return setBlank(st, i, cur >= 10 ? Math.floor(cur / 10) : null);
 }
 
+/** 清除键(v1.0.4): 一键清空某位的全部数字(提示锁定位不可清) */
+export function clearBlank(st: PlgpState, i: number): PlgpState {
+    const cur = st.blanks[i];
+    if (cur === null || cur === undefined) return st;
+    return setBlank(st, i, null);
+}
+
 function gcd(a: number, b: number): number {
     while (b) { [a, b] = [b, a % b]; }
     return a;
@@ -167,16 +174,17 @@ export function submit(st: PlgpState): PlgpState {
     };
 }
 
-/** 提示道具: 把第一个「未锁定且为空或错误」的位填成正确系数并锁定; 用尽/无目标则原样返回 */
-export function useHint(st: PlgpState): PlgpState {
+/** 提示道具(v1.0.4): 在所有「未锁定且为空或错误」的位中随机选一个填成正确系数并锁定; 用尽/无目标则原样返回 */
+export function useHint(st: PlgpState, rng: () => number = Math.random): PlgpState {
     if (st.phase !== "playing" || st.hintsLeft <= 0) return st;
     const eq = currentEquation(st);
-    let target = -1;
+    const cands: number[] = [];
     for (let i = 0; i < eq.coefs.length; i++) {
         if (st.locked[i]) continue;
-        if (st.blanks[i] === null || st.blanks[i] !== eq.coefs[i]) { target = i; break; }
+        if (st.blanks[i] === null || st.blanks[i] !== eq.coefs[i]) cands.push(i);
     }
-    if (target < 0) return st;
+    if (cands.length === 0) return st;
+    const target = cands[Math.floor(rng() * cands.length)];
     const blanks = [...st.blanks];
     blanks[target] = eq.coefs[target];
     const locked = [...st.locked];
