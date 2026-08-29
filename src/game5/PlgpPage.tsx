@@ -18,6 +18,7 @@ import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartTogg
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
 import { PlgpRules } from "./PlgpRules";
+import { HLGX_Audio } from "@/game/audio";
 import { PLGP_VERSION } from "./version";
 import {
     HINT_LIMIT, PLGP_MODES, ROUND_TOTAL,
@@ -74,6 +75,7 @@ export function PlgpPage() {
     const [resInfo, setResInfo] = useState<ResultInfo | null>(null);
     const [platform] = useState<Platform>(() => detectPlatform());
     const [rulesOpen, setRulesOpen] = useState(false);
+    const [muted, setMuted] = useState(HLGX_Audio.isMuted());
 
     /* 昵称与排行参与(与各游戏一致) */
     const [name, setName] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");
@@ -131,6 +133,9 @@ export function PlgpPage() {
     useEffect(() => {
         if (!st || st.phase === "playing" || submittedRef.current) return;
         submittedRef.current = true;
+        // v1.0.2 音效: 通关/通关失败
+        if (st.phase === "win") HLGX_Audio.win();
+        else HLGX_Audio.lose();
         setPhase("result");
         const time = Math.max(1, Math.ceil(st.elapsed));
         const info: ResultInfo = {
@@ -198,6 +203,15 @@ export function PlgpPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [phase, mode, selIdx]);
 
+    /* 判定音效(v1.0.2): 提交正确 → 正确音; 比例解/配错 → 错误音(incomplete 不响) */
+    useEffect(() => {
+        const lj = st?.lastJudge;
+        if (!lj) return;
+        if (lj.ok) HLGX_Audio.correct();
+        else if (lj.reason === "ratio" || lj.reason === "wrong") HLGX_Audio.wrong();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [st?.lastJudge]);
+
     const doHint = () => setSt((prev) => (prev ? useHint(prev) : prev));
     const doSubmit = () => setSt((prev) => (prev ? submit(prev) : prev));
     const chooseOption = (opt: number[]) => {
@@ -245,7 +259,19 @@ export function PlgpPage() {
                     <Link to="/">← 返回大厅</Link>
                 </Button>
                 <h1 className="flex-1 whitespace-nowrap text-center text-lg font-extrabold">配了个平</h1>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => start(mode)} aria-label="重新开始">⟳</Button>
+                <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }}
+                        aria-label="静音开关"
+                        title={muted ? "已静音" : "音效"}
+                    >
+                        {muted ? "🔇" : "🔊"}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => start(mode)} aria-label="重新开始">⟳</Button>
+                </div>
             </header>
 
             {/* 难度 + 玩法 */}

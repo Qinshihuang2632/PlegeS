@@ -15,6 +15,7 @@ import { fmtTime } from "@/game/core";
 import { detectPlatform, PLATFORM_LABEL, type Platform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { HLGX_CATS, type Category, type Substance } from "@/game/substances";
+import { HLGX_Audio } from "@/game/audio";
 import { FlglRules } from "./FlglRules";
 import { FLGL_VERSION } from "./version";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
@@ -65,6 +66,7 @@ export function FlglPage() {
     const [result, setResult] = useState<ResultInfo | null>(null);
     const [platform] = useState<Platform>(() => detectPlatform());
     const [rulesOpen, setRulesOpen] = useState(false);
+    const [muted, setMuted] = useState(HLGX_Audio.isMuted());
 
     /* 昵称(与三游戏一致: 编辑 → ✓ → 二次确认 → 保存并重开本局) */
     const [name, setName] = useState(() => localStorage.getItem(NAME_KEY)?.trim() || "");
@@ -134,6 +136,9 @@ export function FlglPage() {
     useEffect(() => {
         if (!st || st.phase === "playing" || submittedRef.current) return;
         submittedRef.current = true;
+        // v1.1.2 音效: 通关/通关失败
+        if (st.phase === "win") HLGX_Audio.win();
+        else HLGX_Audio.lose();
         setPhase("result");
         setDrag(null);
         const time = Math.max(1, Math.ceil(st.elapsed));
@@ -175,10 +180,12 @@ export function FlglPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [st?.phase]);
 
-    /* 判定反馈: 类别按钮闪烁 + 归错提示 */
+    /* 判定反馈: 类别按钮闪烁 + 归错提示 + 音效(v1.1.2 正确/答错) */
     useEffect(() => {
         const lj = st?.lastJudge;
         if (!lj) return;
+        if (lj.ok) HLGX_Audio.correct();
+        else HLGX_Audio.wrong();
         setFlash({ cat: lj.cat, ok: lj.ok });
         if (flashTimer.current) clearTimeout(flashTimer.current);
         flashTimer.current = setTimeout(() => setFlash(null), 650);
@@ -280,7 +287,19 @@ export function FlglPage() {
                     <Link to="/">← 返回大厅</Link>
                 </Button>
                 <h1 className="flex-1 whitespace-nowrap text-center text-lg font-extrabold">分了个类</h1>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => start(mode)} aria-label="重新开始" title="重新开始本局">⟳</Button>
+                <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }}
+                        aria-label="静音开关"
+                        title={muted ? "已静音" : "音效"}
+                    >
+                        {muted ? "🔇" : "🔊"}
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => start(mode)} aria-label="重新开始" title="重新开始本局">⟳</Button>
+                </div>
             </header>
 
             {/* 难度切换 + 玩法入口 */}

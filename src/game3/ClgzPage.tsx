@@ -18,6 +18,7 @@ import { detectPlatform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
+import { HLGX_Audio } from "@/game/audio";
 import { fetchRankToken } from "@/lib/rankToken";
 import { CLGZ_VERSION } from "./version";
 
@@ -62,6 +63,7 @@ export function ClgzPage() {
     const [wrong, setWrong] = useState<string[]>([]);
     const [result, setResult] = useState<ResultInfo | null>(null);
     const [rulesOpen, setRulesOpen] = useState(false);
+    const [muted, setMuted] = useState(HLGX_Audio.isMuted());
     const startAtRef = useRef(0);
     const submittedRef = useRef(false);
     const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
@@ -106,7 +108,10 @@ export function ClgzPage() {
         const time = Math.floor((Date.now() - startAtRef.current) / 1000);
         setElapsed(time);
         setPhase("result");
+        // v1.0.8 音效: 全对 → 通关音, 否则 → 失败音(错了个字无血量/胜负机制, 以是否全对判定)
         const finalScore = score;   // 分数已逐题累计, 无需再加
+        if (finalScore >= queue.length) HLGX_Audio.win();
+        else HLGX_Audio.lose();
         const nm = name.trim();
         if (!nm || skipRank) {
             setResult({ score: finalScore, time, skipped: true, surpassed: null, failed: false });
@@ -179,6 +184,16 @@ export function ClgzPage() {
                 <Link to="/" className="shrink-0 text-sm text-muted-foreground hover:text-foreground">← 返回大厅</Link>
                 <h1 className="flex-1 text-center text-xl font-bold">错了个字</h1>
                 <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }}
+                        aria-label="静音开关"
+                        title={muted ? "已静音" : "音效"}
+                    >
+                        {muted ? "🔇" : "🔊"}
+                    </Button>
                     <input
                         value={nameDraft}
                         maxLength={10}
@@ -244,8 +259,13 @@ export function ClgzPage() {
                         <p className="text-xs text-muted-foreground">在下方画框内手写(请写规范,潦草不得分)</p>
                     </div>
                     {/* key=idx 强制重挂载: 切换下一题时自动清空画布(与在下雨共同更新) */}
-                    <HandwritingPad key={idx} target={cur.ch} onResult={(r) => { if (r.pass) setTimeout(() => next(true), 300); }} />
-                    <Button variant="outline" className="w-full" onClick={() => next(false)}>
+                    <HandwritingPad key={idx} target={cur.ch} onResult={(r) => {
+                        // v1.0.8 音效: 识别成功 → 正确音, 失败 → 错误音
+                        if (r.pass) HLGX_Audio.correct();
+                        else HLGX_Audio.wrong();
+                        if (r.pass) setTimeout(() => next(true), 300);
+                    }} />
+                    <Button variant="outline" className="w-full" onClick={() => { HLGX_Audio.wrong(); next(false); }}>
                         认不出/写不出,下一题
                     </Button>
                 </div>

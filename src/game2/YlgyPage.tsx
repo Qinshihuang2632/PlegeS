@@ -20,6 +20,7 @@ import { YlgyRules } from "./YlgyRules";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
+import { HLGX_Audio } from "@/game/audio";
 import { fetchRankToken } from "@/lib/rankToken";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
@@ -55,6 +56,7 @@ export function YlgyPage() {
     const entryOpenRef = useRef(entryOpen);
     const [elapsed, setElapsed] = useState(0);
     const [rulesOpen, setRulesOpen] = useState(false);
+    const [muted, setMuted] = useState(HLGX_Audio.isMuted());
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
     const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
@@ -150,6 +152,9 @@ export function YlgyPage() {
         } else {
             setResult({ win: game.win, hp: game.hp, time, surpassed: null, failed: false, skipped: true });
         }
+        // v1.5.2 音效: 通关/通关失败
+        if (game.win) HLGX_Audio.win();
+        else HLGX_Audio.lose();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [game.gameOver]);
 
@@ -199,7 +204,12 @@ export function YlgyPage() {
         clearMeaningTip();   // 输入行为消除含义提示
         const { r, c } = game.selected;
         if (ch === "⌫") { game.erase(r, c); refresh(); return; }
+        // v1.5.2 音效: 通过 hp/完成词数变化判断 答对(补全合法词) / 答错(非法词扣血) —— 放在 fill 之前取样
+        const hpBefore = game.hp;
+        const doneBefore = game.wordDone.filter(Boolean).length;
         if (game.fill(r, c, ch)) {
+            if (game.hp < hpBefore) HLGX_Audio.wrong();
+            else if (game.wordDone.filter(Boolean).length > doneBefore) HLGX_Audio.correct();
             // 自动跳到下一个空格
             let moved = false;
             for (let rr = 0; rr < game.H && !moved; rr++) {
@@ -322,7 +332,19 @@ export function YlgyPage() {
                     <Link to="/">← 返回大厅</Link>
                 </Button>
                 <h1 className="flex-1 text-center text-lg font-extrabold">英了个语</h1>
-                <div className="w-16" aria-hidden />
+                <div className="flex shrink-0 items-center gap-1">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => { setMuted(!muted); HLGX_Audio.setMuted(!muted); }}
+                    aria-label="静音开关"
+                    title={muted ? "已静音" : "音效"}
+                >
+                    {muted ? "🔇" : "🔊"}
+                </Button>
+                <div className="w-12" aria-hidden />
+            </div>
             </header>
 
             {/* 难度 + 玩法 + 昵称(玩法入口在改名栏左侧) */}

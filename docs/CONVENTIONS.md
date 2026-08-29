@@ -119,6 +119,12 @@ npx wrangler pages deploy dist --project-name=hua-liao-ge-xue --branch=main   # 
 5. `docs/xxx_summary_report.md` 独立日志(正序)+ platform_log.md 追加行 + make_docx 生成 docx;
 6. 前端跳转/直链参数用该游戏缩写(如 `?game=clgz`)。
 
+## 九、音效约定(五游戏统一)
+
+1. 全站共用一套 Web Audio 合成引擎 `src/game/audio.ts`(零音频文件), 静音状态(`HLGX_Audio.isMuted()`)全站共享, 各游戏顶栏都有 🔊/🔇 切换按钮。
+2. 新增游戏必须接入四类语义音: 答对 → `correct()`、答错/扣血 → `wrong()`、通关 → `win()`、失败 → `lose()`(语义别名映射到 clear/hurt/win/lose); 流程上避免重复触发(如不可在未填满时播错误音)。
+3. 该引擎为化了个学 v1.0 迁移而来, 新音效直接在此文件扩展。
+
 ## 十、约定变更记录
 
 | 日期 | 约定 | 说明 |
