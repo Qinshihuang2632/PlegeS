@@ -54,7 +54,7 @@ export function DashboardPage() {
     return (
         <div className="mx-auto max-w-4xl space-y-6">
             <header>
-                <h1 className="text-xl font-extrabold">📊 数据看板</h1>
+                <h1 className="text-xl font-extrabold">数据看板</h1>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                     管理员 · 登录于 {me ? fmtTs(me.loginAt) : "—"}(IP {me?.ip ?? "—"})
                 </p>
@@ -87,9 +87,9 @@ export function DashboardPage() {
                         <p className="text-xs text-muted-foreground">全部榜单累计记录</p>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
-                        <p>🎮 游戏: 化了个学 / 英了个语 / 错了个字 / 分了个类 / 配了个平</p>
-                        <p>🕑 管理会话有效期: 24 小时</p>
-                        <p>🗂 审计日志上限: 500 条(自动滚动)</p>
+                        <p>游戏: 化了个学 / 英了个语 / 错了个字 / 分了个类 / 配了个平</p>
+                        <p>管理会话有效期: 24 小时</p>
+                        <p>审计日志上限: 500 条(自动滚动)</p>
                     </div>
                 </CardContent>
             </Card>

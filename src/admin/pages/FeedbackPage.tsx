@@ -103,7 +103,7 @@ export function FeedbackPage() {
                                                 )}
                                                 title="建议被采纳后是否愿以该昵称进入特别鸣谢榜"
                                             >
-                                                {e.credit ? "🏆 愿入鸣谢" : "不入鸣谢"}
+                                                {e.credit ? "愿入鸣谢" : "不入鸣谢"}
                                             </span>
                                         )}
                                     </div>

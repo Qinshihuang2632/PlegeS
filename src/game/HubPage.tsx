@@ -284,8 +284,7 @@ export function HubPage() {
                     </DialogHeader>
                     {fbOk ? (
                         <div className="py-6 text-center">
-                            <p className="text-2xl" aria-hidden>🎉</p>
-                            <p className="mt-2 font-semibold text-success">反馈已提交,感谢你的建议!</p>
+                                                        <p className="mt-2 font-semibold text-success">反馈已提交,感谢你的建议!</p>
                             <Button className="mt-4" onClick={closeFeedback}>关闭</Button>
                         </div>
                     ) : (

@@ -52,7 +52,7 @@ export function SessionsPage() {
         <div className="mx-auto max-w-4xl space-y-4">
             <header className="flex flex-wrap items-end justify-between gap-2">
                 <div>
-                    <h1 className="text-xl font-extrabold">👥 会话管理</h1>
+                    <h1 className="text-xl font-extrabold">会话管理</h1>
                     <p className="mt-0.5 text-sm text-muted-foreground">
                         查看在线会话,可强制下线(会话有效期 24 小时)
                     </p>

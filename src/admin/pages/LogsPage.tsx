@@ -40,7 +40,7 @@ export function LogsPage() {
     return (
         <div className="mx-auto max-w-4xl space-y-4">
             <header>
-                <h1 className="text-xl font-extrabold">📜 审计日志</h1>
+                <h1 className="text-xl font-extrabold">审计日志</h1>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                     登录/登出/删榜/清榜/下线等管理操作全程留痕(最多保留 500 条)
                 </p>

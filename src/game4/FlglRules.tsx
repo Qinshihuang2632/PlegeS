@@ -6,7 +6,6 @@ import { FLGL_VERSION } from "./version";
 
 export const FLGL_RULE_SECTIONS = [
     {
-        icon: "🎯",
         title: "怎么玩",
         points: [
             "传送带每隔一段时间送出一张物质卡(化了个学物质库 259 种),从右侧匀速进入;",
@@ -16,7 +15,6 @@ export const FLGL_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🚚",
         title: "传送带与判负",
         points: [
             "出牌间隔:简单 6 秒 / 标准 4.5 秒 / 困难 3 秒(传送带右上有下一张倒计时);",
@@ -27,7 +25,6 @@ export const FLGL_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "♻️",
         title: "双类别物质",
         points: [
             "有机酸(醋酸、甲酸、草酸、苯甲酸、甘氨酸)既是「酸」也是「有机物」——放两者之一都算对(与化了个学的双身份消除一致);",
@@ -35,7 +32,6 @@ export const FLGL_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "📚",
         title: "难度与题库",
         points: [
             "下方分类按钮数量随难度变化:简单 6 个(无有机物、混合物)/ 标准 7 个(无混合物)/ 困难 8 个——不存在的类别不会出现在本局卡牌里;",
@@ -46,7 +42,6 @@ export const FLGL_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🏆",
         title: "排名规则",
         points: [
             "通关或失败都会上榜(不填昵则不上榜);局内昵称旁有「☑ 参与排行」开关,点击二次确认后可不参与排行榜(重开本局,昵称保留);",
@@ -62,7 +57,6 @@ export function FlglRules({ compact = false }: { compact?: boolean }) {
             {FLGL_RULE_SECTIONS.map((s) => (
                 <section key={s.title}>
                     <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-foreground">
-                        <span aria-hidden>{s.icon}</span>
                         {s.title}
                     </h3>
                     <ul className="space-y-1 text-[13px] leading-relaxed text-muted-foreground">

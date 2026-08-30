@@ -6,7 +6,6 @@ import { CLGZ_VERSION } from "./version";
 
 export const CLGZ_RULE_SECTIONS = [
     {
-        icon: "✍️",
         title: "怎么玩",
         points: [
             "开局先选考察科目(可单选,也可化学+生物多选);",
@@ -17,7 +16,6 @@ export const CLGZ_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "📝",
         title: "书写判定",
         points: [
             "判定原理: 你的墨迹与标准字形做像素重合度比对;",
@@ -27,7 +25,6 @@ export const CLGZ_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "📚",
         title: "考察内容",
         points: [
             "覆盖高中各科易写错的字: 化学仪器与物质名(锥形瓶/坩埚/羧基)、生物术语(睾丸/吞噬/哺乳)、语文高频易错字(羸弱/窠臼/斡旋)、数学(菱形/椭圆/幂函数)、物理(砝码/衍射/惯性)、史地(嬴政/张骞/莫高窟);",
@@ -36,7 +33,6 @@ export const CLGZ_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🏆",
         title: "排名规则",
         points: [
             "按 得分多 → 用时短 排序, 同分用时短者靠前;",
@@ -52,7 +48,6 @@ export function ClgzRules({ compact = false }: { compact?: boolean }) {
             {CLGZ_RULE_SECTIONS.map((s) => (
                 <section key={s.title}>
                     <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-foreground">
-                        <span aria-hidden>{s.icon}</span>
                         {s.title}
                     </h3>
                     <ul className="space-y-1 text-[13px] leading-relaxed text-muted-foreground">

@@ -280,25 +280,22 @@ describe("游戏流程", () => {
         expect(g.wordBad[wi]).toBe(true);
         expect(g.wordBadAt[wi]).not.toBeNull();
         expect(Date.now() - (g.wordBadAt[wi] ?? 0)).toBeLessThan(5000);
-        // 修改另一格(仍填错)再填满 → 重新检测仍非法 → 再扣 1 血
-        const other = g.wordCells(wi).find(([rr, cc]) => g.puzzle[rr][cc] === null && (rr !== br || cc !== bc) && g.grid[rr][cc] !== null)!;
-        const ans2 = g.cellAnswer(other[0], other[1]);
-        g.erase(other[0], other[1]);
+        // 擦除再填另一个错误字母 → 词重新填满 → 重新检测仍非法 → 再扣 1 血
+        g.erase(br, bc);
         expect(g.hp).toBe(2);                       // 词不再满 → 不检测
-        let wrong2 = ans2;
+        let wrong2 = wrong1;
         for (let k = 0; k < 26; k++) {
-            const ch = String.fromCharCode(97 + ((ans2.charCodeAt(0) - 97 + 1 + k) % 26));
-            if (!g.fill(other[0], other[1], ch)) continue;
-            if (g.hp < 2) { wrong2 = ch; break; }
-            g.erase(other[0], other[1]);
+            const ch = String.fromCharCode(97 + ((wrong1.charCodeAt(0) - 97 + 1 + k) % 26));
+            if (ch === ans) continue;
+            if (!g.fill(br, bc, ch)) continue;
+            if (g.hp < 2) { wrong2 = ch; break; }   // 重新填满非法 → 再扣 1 血
+            g.erase(br, bc);
         }
-        expect(wrong2).not.toBe(ans2);
+        expect(wrong2).not.toBe(ans);
         expect(g.hp).toBe(1);                       // 重新填满 → 再次扣血
         expect(g.wordBadAt[wi]).not.toBeNull();
-        // 全部擦除后按答案重新填满 → 检测通过 → 词完成变绿(最后一次填满不再扣血)
+        // 改回正确 → 检测通过 → 词完成变绿(最后一次填满不再扣血)
         g.erase(br, bc);
-        g.erase(other[0], other[1]);
-        g.fill(other[0], other[1], ans2);
         g.fill(br, bc, ans);
         expect(g.wordBad[wi]).toBe(false);
         expect(g.wordDone[wi]).toBe(true);

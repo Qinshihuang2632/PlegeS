@@ -381,7 +381,7 @@ export function PlgpPage() {
                                             : "配平错误,扣 1 血;填写已保留,改一改再交"}
                                 </p>
                             )}
-                            {eq.note && <p className="mt-2 text-center text-[11px] text-muted-foreground">💡 {eq.note}</p>}
+                            {eq.note && <p className="mt-2 text-center text-[11px] text-muted-foreground">{eq.note}</p>}
                         </div>
 
                         {/* 作答区: 简单=选项 / 标准·困难=数字条 */}
@@ -402,7 +402,7 @@ export function PlgpPage() {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-center gap-2">
                                     <Button variant="outline" size="sm" disabled={st.hintsLeft <= 0} onClick={doHint} title="自动填入一个正确系数并锁定">
-                                        💡 提示({st.hintsLeft})
+                                        提示({st.hintsLeft})
                                     </Button>
                                     <Button size="sm" disabled={!allFilled} onClick={doSubmit}>提交本题</Button>
                                 </div>
@@ -439,7 +439,7 @@ export function PlgpPage() {
 
             {phase === "result" && result && (
                 <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
-                    <p className="text-lg font-bold">{result.win ? "🎉 配平大师!" : "落败 · 血量耗尽"}</p>
+                    <p className="text-lg font-bold">{result.win ? "配平大师!" : "落败 · 血量耗尽"}</p>
                     <p className="mt-1 text-sm font-bold tracking-widest text-primary">{starsOf(result.mistakes)}</p>
                     <p className="mt-2 text-3xl font-extrabold text-primary">{result.score} / {ROUND_TOTAL} 题</p>
                     <p className="mt-1 text-sm text-muted-foreground">

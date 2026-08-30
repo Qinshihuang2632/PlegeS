@@ -32,7 +32,6 @@ export function AdminLayout() {
             {/* 桌面侧边栏 */}
             <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r bg-card p-4 md:flex">
                 <div className="mb-6 flex items-center gap-2 px-1">
-                    <span className="text-2xl" aria-hidden>🧪</span>
                     <div>
                         <p className="text-sm font-bold leading-tight">p了个s</p>
                         <p className="text-xs text-muted-foreground">管理后台</p>
@@ -58,7 +57,7 @@ export function AdminLayout() {
 
             {/* 移动端顶栏 */}
             <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-card/90 px-4 py-3 backdrop-blur md:hidden">
-                <p className="text-sm font-bold">🧪 p了个s · 管理后台</p>
+                <p className="text-sm font-bold">p了个s · 管理后台</p>
                 <Button variant="ghost" size="sm" onClick={() => void logout()}>
                     <LogOut className="h-4 w-4" /> 退出
                 </Button>

@@ -6,7 +6,6 @@ import { PLGP_VERSION } from "./version";
 
 export const PLGP_RULE_SECTIONS = [
     {
-        icon: "🎯",
         title: "怎么玩",
         points: [
             "每局 8 道未配平的化学方程式,把每个物质前的系数补齐;",
@@ -16,7 +15,6 @@ export const PLGP_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "⚖️",
         title: "判定规则",
         points: [
             "所有空位填满才能提交;提交正确 → 得 1 分进入下一题;",
@@ -25,7 +23,6 @@ export const PLGP_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🧰",
         title: "道具",
         points: [
             "「提示」每局 2 次:自动把一个空位/错位填成正确系数并锁定;",
@@ -33,7 +30,6 @@ export const PLGP_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "📚",
         title: "题库与难度",
         points: [
             "题库来自高中化学课标经典反应 111 条,按难度分三档:",
@@ -43,7 +39,6 @@ export const PLGP_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🏆",
         title: "排名规则",
         points: [
             "答完 8 题或血量归零即结算,通关失败都会上榜(不填昵称则不上榜);局内昵称旁有「☑ 参与排行」开关;",
@@ -60,7 +55,6 @@ export function PlgpRules({ compact = false }: { compact?: boolean }) {
             {PLGP_RULE_SECTIONS.map((s) => (
                 <section key={s.title}>
                     <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-foreground">
-                        <span aria-hidden>{s.icon}</span>
                         {s.title}
                     </h3>
                     <ul className="space-y-1 text-[13px] leading-relaxed text-muted-foreground">

@@ -6,7 +6,6 @@ import { APP_VERSION } from "@/version";
 
 export const RULE_SECTIONS = [
     {
-        icon: "🎯",
         title: "怎么玩",
         points: [
             "点击棋盘上「没有被压住」的卡牌,它会滑入底部的手牌槽;",
@@ -19,7 +18,6 @@ export const RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🧰",
         title: "道具(每局各 3 次)",
         points: [
             "撤回: 把槽内最后一张卡放回棋盘(原位被占会自动挪到空位);",
@@ -28,7 +26,6 @@ export const RULE_SECTIONS = [
         ],
     },
     {
-        icon: "❤️",
         title: "血量与胜负",
         points: [
             "共 3 点血量。误选 3 张不同类的卡点「消除选中」,扣 1 点血;",
@@ -37,7 +34,6 @@ export const RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🏆",
         title: "排名规则",
         points: [
             "通关或失败都会上榜(可勾选「不参与排行榜」);",
@@ -54,7 +50,6 @@ export function GameRules({ compact = false }: { compact?: boolean }) {
             {RULE_SECTIONS.map((s) => (
                 <section key={s.title}>
                     <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-foreground">
-                        <span aria-hidden>{s.icon}</span>
                         {s.title}
                     </h3>
                     <ul className="space-y-1 text-[13px] leading-relaxed text-muted-foreground">

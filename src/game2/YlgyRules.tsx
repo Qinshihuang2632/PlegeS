@@ -6,7 +6,6 @@ import { YLGY_VERSION } from "./version";
 
 export const YLGY_RULE_SECTIONS = [
     {
-        icon: "🎯",
         title: "怎么玩",
         points: [
             "横竖单词交叉成一张拼图:每行、每列都是一个单词,相交处共享同一个字母;",
@@ -17,7 +16,6 @@ export const YLGY_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🧰",
         title: "道具(每局有限次数)",
         points: [
             "填空提示(每局 2 次):自动在某个空格填上一个正确的字母;",
@@ -26,7 +24,6 @@ export const YLGY_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "❤️",
         title: "血量与胜负",
         points: [
             "共 3 点血量,填出一个非法单词扣 1 点血;",
@@ -35,7 +32,6 @@ export const YLGY_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "📚",
         title: "难度与词库",
         points: [
             "简单:4 个 4 字母基础词,首词全提示,其余词各留 2 个字母;",
@@ -45,7 +41,6 @@ export const YLGY_RULE_SECTIONS = [
         ],
     },
     {
-        icon: "🏆",
         title: "排名规则",
         points: [
             "通关或失败都会上榜(不填昵称则不上榜);",
@@ -61,7 +56,6 @@ export function YlgyRules({ compact = false }: { compact?: boolean }) {
             {YLGY_RULE_SECTIONS.map((s) => (
                 <section key={s.title}>
                     <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-foreground">
-                        <span aria-hidden>{s.icon}</span>
                         {s.title}
                     </h3>
                     <ul className="space-y-1 text-[13px] leading-relaxed text-muted-foreground">

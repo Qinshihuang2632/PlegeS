@@ -113,17 +113,14 @@ export function HuaPage() {
 
     const TUTORIAL_STEPS = [
         {
-            icon: "🎯",
             title: "怎么玩",
             body: "点击棋盘上「没有被压住」的卡牌,它会滑入底部手牌槽。槽里凑齐 3 张同类卡牌,点「消除选中」即可消掉。「同类」指物质类别相同,与化学式无关。",
         },
         {
-            icon: "🧰",
             title: "道具救场",
             body: "卡关时用道具:撤回(最后一张放回棋盘)、移出(移除当前选中的至多 3 张卡,无伤消除)、洗牌(打乱场上卡牌)。每种每局最多 3 次,优先救急用。",
         },
         {
-            icon: "❤️",
             title: "胜负规则",
             body: "全部卡牌拾取完、且手牌槽没有可消的三消组合 → 通关(最后一步消除也算)。误选 3 张不同类会扣 1 点血;手牌槽满了又凑不出三消 → 失败。",
         },
@@ -566,7 +563,7 @@ export function HuaPage() {
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button variant="secondary" disabled={toolLeft("shuffle") <= 0} onClick={() => useTool("shuffle")}>
-                            🔀 洗牌({toolLeft("shuffle")})
+                            洗牌({toolLeft("shuffle")})
                         </Button>
                     </TooltipTrigger>
                     <TooltipContent>打乱场上剩余卡牌,死局救急</TooltipContent>
@@ -582,7 +579,7 @@ export function HuaPage() {
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>
-                            {TUTORIAL_STEPS[tutorialStep].icon} {TUTORIAL_STEPS[tutorialStep].title}
+                            {TUTORIAL_STEPS[tutorialStep].title}
                         </DialogTitle>
                         <DialogDescription>
                             新手引导 {tutorialStep + 1}/{TUTORIAL_STEPS.length}

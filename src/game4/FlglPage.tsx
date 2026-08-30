@@ -435,7 +435,7 @@ export function FlglPage() {
                             onClick={() => setSt((prev) => (prev ? spawnNow(prev) : prev))}
                             title="立即让下一张物质卡从右侧出现;传送带满载时点击会直接判负"
                         >
-                            ⏩ 直接弹出下一张{st.spawnCd > 0 ? " · 防误触冷却" : ""}
+                            直接弹出下一张{st.spawnCd > 0 ? " · 防误触冷却" : ""}
                         </Button>
                     </div>
 
@@ -473,7 +473,7 @@ export function FlglPage() {
             {phase === "result" && result && (
                 <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
                     <p className="text-lg font-bold">
-                        {result.win ? "🎉 全部分类正确!" : `落败 · ${LOSE_TEXT[result.loseReason ?? "hp"]}`}
+                        {result.win ? "全部分类正确!" : `落败 · ${LOSE_TEXT[result.loseReason ?? "hp"]}`}
                     </p>
                     <p className="mt-2 text-3xl font-extrabold text-primary">{result.score} / {ROUND_TOTAL} 张</p>
                     <p className="mt-1 text-sm text-muted-foreground">
