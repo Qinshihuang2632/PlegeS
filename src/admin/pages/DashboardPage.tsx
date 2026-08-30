@@ -87,7 +87,7 @@ export function DashboardPage() {
                         <p className="text-xs text-muted-foreground">全部榜单累计记录</p>
                     </div>
                     <div className="text-right text-xs text-muted-foreground">
-                        <p>🎮 游戏: 化了个学 / 英了个语 / 错了个字</p>
+                        <p>🎮 游戏: 化了个学 / 英了个语 / 错了个字 / 分了个类 / 配了个平</p>
                         <p>🕑 管理会话有效期: 24 小时</p>
                         <p>🗂 审计日志上限: 500 条(自动滚动)</p>
                     </div>

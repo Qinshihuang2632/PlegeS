@@ -1,5 +1,5 @@
 /*
- * 化了个学 · 管理后台布局
+ * p了个s · 管理后台布局
  * 桌面: 左侧边栏导航 + 顶栏(管理员标识/退出登录)
  * 移动端: 顶栏 + 底部导航(微信小程序风格), 内容区留出底部空间
  */
@@ -34,7 +34,7 @@ export function AdminLayout() {
                 <div className="mb-6 flex items-center gap-2 px-1">
                     <span className="text-2xl" aria-hidden>🧪</span>
                     <div>
-                        <p className="text-sm font-bold leading-tight">化了个学</p>
+                        <p className="text-sm font-bold leading-tight">p了个s</p>
                         <p className="text-xs text-muted-foreground">管理后台</p>
                     </div>
                 </div>
@@ -58,7 +58,7 @@ export function AdminLayout() {
 
             {/* 移动端顶栏 */}
             <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-card/90 px-4 py-3 backdrop-blur md:hidden">
-                <p className="text-sm font-bold">🧪 化了个学 · 管理后台</p>
+                <p className="text-sm font-bold">🧪 p了个s · 管理后台</p>
                 <Button variant="ghost" size="sm" onClick={() => void logout()}>
                     <LogOut className="h-4 w-4" /> 退出
                 </Button>

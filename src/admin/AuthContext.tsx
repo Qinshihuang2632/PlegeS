@@ -1,5 +1,5 @@
 /*
- * 化了个学 · 管理后台登录态(上下文)
+ * p了个s · 管理后台登录态(上下文)
  */
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import { apiLogin, apiLogout, apiMe, type AdminMe } from "./api";

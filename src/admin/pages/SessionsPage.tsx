@@ -1,5 +1,5 @@
 /*
- * 化了个学 · 管理后台会话管理
+ * p了个s · 管理后台会话管理
  * 活跃会话列表 / 强制下线(确认弹窗, ✕ 可关), 下线当前会话会立即退出
  */
 import { useCallback, useEffect, useState } from "react";

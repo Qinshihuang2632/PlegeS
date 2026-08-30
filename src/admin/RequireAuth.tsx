@@ -1,5 +1,5 @@
 /*
- * 化了个学 · 管理后台路由守卫
+ * p了个s · 管理后台路由守卫
  * 挂载时请求 /admin/api/auth, 未登录重定向 /admin/login
  */
 import { useEffect, useState } from "react";

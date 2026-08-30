@@ -1,5 +1,5 @@
 /*
- * 化了个学 · 管理后台登录页
+ * p了个s · 管理后台登录页
  * 输入管理员令牌登录(错误提示/剩余次数/锁定提示), 登录成功跳看板
  */
 import { useState, type FormEvent } from "react";
@@ -42,8 +42,8 @@ export function LoginPage() {
         <div className="flex min-h-dvh items-center justify-center bg-background px-4">
             <div className="w-full max-w-sm">
                 <div className="mb-6 text-center">
-                    <p className="text-4xl" aria-hidden>化</p>
-                    <h1 className="mt-2 text-xl font-extrabold">化了个学 · 管理后台</h1>
+                    <p className="text-4xl" aria-hidden>🧪</p>
+                    <h1 className="mt-2 text-xl font-extrabold">p了个s · 管理后台</h1>
                     <p className="mt-1 text-sm text-muted-foreground">请输入管理员令牌后进入</p>
                 </div>
                 <form onSubmit={submit} className="space-y-4 rounded-2xl border bg-card p-6 shadow-sm">

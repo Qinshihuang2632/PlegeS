@@ -1,5 +1,5 @@
 /*
- * 化了个学 · 管理后台确认弹窗
+ * p了个s · 管理后台确认弹窗
  * 统一封装 AlertDialog: 标题/说明/确认(危险操作红色)/取消, 右上角 ✕ 可关闭(Esc 亦可)
  */
 import { X } from "lucide-react";
