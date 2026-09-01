@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-    BELT_CAPACITY, FLGL_INTERVAL, ROUND_TOTAL, SPAWN_NOW_CD, TRICKY_NAMES, TRICKY_POOL,
+    BELT_CAPACITY_OF, FLGL_INTERVAL, ROUND_TOTAL, SPAWN_NOW_CD, TRICKY_NAMES, TRICKY_POOL,
     acceptCats, buildDeck, judge, newGame, spawnNow, tick, wrongHint,
     type FlglState,
 } from "./core";
@@ -50,19 +50,19 @@ describe("分了个类 · 核心", () => {
         expect(st.belt[0].sub).toBe(st.deck[0]);
     });
 
-    it("传送带可容纳 5 张: 满 5 张时仍不判负(用户规则: 满载 ≠ 判负)", () => {
+    it("v1.1.7 传送带容量按难度(困难 4 张): 满载时仍不判负(用户规则: 满载 ≠ 判负)", () => {
         let st = newGame("hard", seedRng(7));
-        for (let i = 0; i < BELT_CAPACITY; i++) {
+        for (let i = 0; i < BELT_CAPACITY_OF.hard; i++) {
             st = tick(st, FLGL_INTERVAL.hard + 0.01);
         }
-        expect(st.belt).toHaveLength(BELT_CAPACITY);
-        expect(st.spawned).toBe(BELT_CAPACITY);
+        expect(st.belt).toHaveLength(BELT_CAPACITY_OF.hard);
+        expect(st.spawned).toBe(BELT_CAPACITY_OF.hard);
         expect(st.phase).toBe("playing");
     });
 
     it("满载后撑到「新卡该出现」时刻才判负(overflow)", () => {
         let st = newGame("hard", seedRng(7));
-        for (let i = 0; i < BELT_CAPACITY; i++) {
+        for (let i = 0; i < BELT_CAPACITY_OF.hard; i++) {
             st = tick(st, FLGL_INTERVAL.hard + 0.01);
         }
         // 距下一张还差 0.01s: 仍存活
@@ -169,14 +169,14 @@ describe("分了个类 · 核心", () => {
 
     it("20 张出完后: 不再出牌也不判负, 剩余卡可慢慢分完", () => {
         let st = newGame("hard", seedRng(9));
-        // 前 15 张出现后立即正确分类, 最后 5 张故意留在带上
+        // 前 16 张出现后立即正确分类, 最后 4 张(困难容量)故意留在带上
         while (st.spawned < ROUND_TOTAL) {
             st = tick(st, FLGL_INTERVAL.hard + 0.01);
             if (st.phase !== "playing") break;
-            if (st.spawned <= 15) for (const c of [...st.belt]) st = judgeRight(st, c.id);
+            if (st.spawned <= ROUND_TOTAL - BELT_CAPACITY_OF.hard) for (const c of [...st.belt]) st = judgeRight(st, c.id);
         }
         expect(st.spawned).toBe(ROUND_TOTAL);
-        expect(st.belt).toHaveLength(BELT_CAPACITY);   // 满载…
+        expect(st.belt).toHaveLength(BELT_CAPACITY_OF.hard);   // 满载…
         st = tick(st, 999);                            // …但已无新卡 → 不判负
         expect(st.phase).toBe("playing");
         // 分完剩余 → 胜利
@@ -200,9 +200,10 @@ describe("分了个类 · 核心", () => {
         expect(st.elapsed).toBeGreaterThan(0);
     });
 
-    it("v1.1.4 出牌间隔: 三档各为 6/4.5/3 秒; 弹卡冷却 0.5s", () => {
-        expect(FLGL_INTERVAL).toEqual({ easy: 6, normal: 4.5, hard: 3 });
+    it("v1.1.7 出牌间隔: 三档各为 5.5/4/2.5 秒; 弹卡冷却 0.5s; 传送带容量 5/5/4", () => {
+        expect(FLGL_INTERVAL).toEqual({ easy: 5.5, normal: 4, hard: 2.5 });
         expect(SPAWN_NOW_CD).toBe(0.5);
+        expect(BELT_CAPACITY_OF).toEqual({ easy: 5, normal: 5, hard: 4 });
     });
 
     it("直接弹出下一张: 立即出牌并重置间隔与冷却", () => {
@@ -237,8 +238,8 @@ describe("分了个类 · 核心", () => {
 
     it("直接弹出下一张: 满载时点击 = 新卡到达 → 判负(overflow)", () => {
         let st = newGame("hard", seedRng(23));
-        for (let i = 0; i < BELT_CAPACITY; i++) st = tick(st, FLGL_INTERVAL.hard + 0.01);
-        expect(st.belt).toHaveLength(BELT_CAPACITY);
+        for (let i = 0; i < BELT_CAPACITY_OF.hard; i++) st = tick(st, FLGL_INTERVAL.hard + 0.01);
+        expect(st.belt).toHaveLength(BELT_CAPACITY_OF.hard);
         st = spawnNow(st);
         expect(st.phase).toBe("lose");
         expect(st.loseReason).toBe("overflow");

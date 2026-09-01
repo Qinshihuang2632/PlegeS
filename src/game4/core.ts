@@ -18,7 +18,8 @@ import { HLGX_CATS, HLGX_SUBSTANCES, type Category, type Substance } from "../ga
 
 export type FlglMode = "easy" | "normal" | "hard";
 
-export const BELT_CAPACITY = 5;   // 流水线容量(满载后新卡到点即判负)
+/** 流水线容量(v1.1.7 按难度区分): 满载后新卡到点即判负 —— 简单/标准 5 张, 困难 4 张 */
+export const BELT_CAPACITY_OF: Record<FlglMode, number> = { easy: 5, normal: 5, hard: 4 };
 export const ROUND_TOTAL = 20;    // 每局物质总数
 export const SPAWN_NOW_CD = 0.5;  // 「直接弹出下一张」冷却(秒, 防误触连点; v1.1.4 由 1s 收紧到 0.5s)
 
@@ -28,8 +29,8 @@ export const FLGL_MODES: { mode: FlglMode; label: string }[] = [
     { mode: "hard", label: "困难" },
 ];
 
-/** 出牌间隔(秒): 也即满载后留给玩家的清理时间(v1.1.4: 简单 6 / 标准 4.5 / 困难 3) */
-export const FLGL_INTERVAL: Record<FlglMode, number> = { easy: 6, normal: 4.5, hard: 3 };
+/** 出牌间隔(秒): 也即满载后留给玩家的清理时间(v1.1.7: 简单 5.5 / 标准 4 / 困难 2.5) */
+export const FLGL_INTERVAL: Record<FlglMode, number> = { easy: 5.5, normal: 4, hard: 2.5 };
 
 const ALL_CATS: Category[] = ["metal", "nonmetal", "oxide", "acid", "base", "salt", "organic", "mix"];
 
@@ -176,8 +177,8 @@ export function tick(st: FlglState, dt: number): FlglState {
     elapsed += dt;
     spawnIn -= dt;
     if (spawnIn <= 0 && spawned < st.deck.length) {
-        if (belt.length >= BELT_CAPACITY) {
-            // 用户规则: 不是满 5 张立刻判负 —— 拖到「新卡该出现」这一刻才判负
+        if (belt.length >= BELT_CAPACITY_OF[st.mode]) {
+            // 用户规则: 不是满载立刻判负 —— 拖到「新卡该出现」这一刻才判负
             phase = "lose";
             loseReason = "overflow";
         } else {
@@ -198,7 +199,7 @@ export function tick(st: FlglState, dt: number): FlglState {
 export function spawnNow(st: FlglState): FlglState {
     if (st.phase !== "playing" || st.spawnCd > 0 || st.spawned >= st.deck.length) return st;
     const base = { ...st, spawnCd: SPAWN_NOW_CD };
-    if (st.belt.length >= BELT_CAPACITY) {
+    if (st.belt.length >= BELT_CAPACITY_OF[st.mode]) {
         return { ...base, phase: "lose", loseReason: "overflow" as LoseReason };
     }
     return {

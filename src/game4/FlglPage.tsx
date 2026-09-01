@@ -23,7 +23,7 @@ import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartTogg
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
 import {
-    BELT_CAPACITY, CATS_OF, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
+    BELT_CAPACITY_OF, CATS_OF, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
     type FlglCard, type FlglMode, type FlglState,
 } from "./core";
 
@@ -349,7 +349,7 @@ export function FlglPage() {
                         <div className="mb-2 text-4xl" aria-hidden>类</div>
                         <h2 className="text-lg font-bold">开始分类</h2>
                         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                            每局 {ROUND_TOTAL} 张物质卡,传送带容量 {BELT_CAPACITY} 张(出牌间隔 {FLGL_INTERVAL[mode]} 秒)。<br />
+                            每局 {ROUND_TOTAL} 张物质卡,传送带容量 {BELT_CAPACITY_OF[mode]} 张(出牌间隔 {FLGL_INTERVAL[mode]} 秒)。<br />
                             拖动物质卡放入下方类别按钮;归错扣血(共 3 点),新卡出现时传送带满载则直接落败。
                         </p>
                         <Button className="mt-5" size="lg" onClick={() => start(mode)}>开始分类({ROUND_TOTAL} 张)</Button>
@@ -361,7 +361,12 @@ export function FlglPage() {
                 </div>
             )}
 
-            {playing && st && (
+            {playing && st && (() => {
+                /* 传送带视觉宽度(外层百分比): 容量 5 → 100%, 4 → 79.4%;
+                   beltScale 用于把卡牌百分比反向放大, 卡牌像素尺寸/间距不随传送带变窄 */
+                const beltPct = (BELT_CAPACITY_OF[st.mode] - 1) * 20.6 + 17.6;
+                const beltScale = beltPct / 100;
+                return (
                 <div className="space-y-3">
                     {/* 状态栏 */}
                     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-xl bg-muted/50 px-4 py-2 text-sm">
@@ -373,12 +378,17 @@ export function FlglPage() {
                         <span>已分 <b>{st.score}</b>/{ROUND_TOTAL}</span>
                     </div>
 
-                    {/* 传送带(屏幕偏上方): 满载后新卡到点即判负 */}
+                    {/* 传送带(屏幕偏上方): 满载后新卡到点即判负。
+                        v1.1.7: 宽度随容量变化(困难 4 张 → 只留 4 卡视觉长度, 避免误导);
+                        卡牌百分比按 beltPct 反向缩放, 保证卡牌实际像素尺寸与间距不随传送带变窄 */}
                     <div
                         ref={beltRef}
+                        style={{
+                            width: `${beltPct}%`,
+                        }}
                         className={cn(
-                            "relative h-24 overflow-hidden rounded-2xl border-2 transition-colors",
-                            st.belt.length >= BELT_CAPACITY ? "border-destructive" : "border-border",
+                            "relative mx-auto h-24 overflow-hidden rounded-2xl border-2 transition-colors",
+                            st.belt.length >= BELT_CAPACITY_OF[st.mode] ? "border-destructive" : "border-border",
                         )}
                     >
                         {/* 底纹: 向左匀速滚动 */}
@@ -395,7 +405,7 @@ export function FlglPage() {
                                 下一张 {Math.max(0, Math.ceil(st.spawnIn))}s
                             </span>
                         )}
-                        {st.belt.length >= BELT_CAPACITY && (
+                        {st.belt.length >= BELT_CAPACITY_OF[st.mode] && (
                             <span className="absolute left-2 top-1.5 z-10 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive">
                                 已满载!下一张出现前必须分类
                             </span>
@@ -409,8 +419,8 @@ export function FlglPage() {
                                     drag?.id === c.id ? "opacity-40" : "cursor-grab border-border active:cursor-grabbing",
                                 )}
                                 style={{
-                                    left: `${i * 20.6}%`,
-                                    width: "17.6%",
+                                    left: `${(i * 20.6) / beltScale}%`,
+                                    width: `${17.6 / beltScale}%`,
                                     top: "50%",
                                     transform: `translate(${enteredIds.includes(c.id) ? 0 : (beltRef.current?.offsetWidth ?? 420)}px, -50%)`,
                                     /* 滑动时长(v1.1.6 用户指定): 入场(1 卡宽)2.5s 缓缓滑入,
@@ -468,7 +478,8 @@ export function FlglPage() {
                         {lastWrongHint || "占位"}
                     </p>
                 </div>
-            )}
+                );
+            })()}
 
             {phase === "result" && result && (
                 <div className="rounded-2xl border bg-card p-6 text-center shadow-sm">
