@@ -232,7 +232,7 @@ export function HubPage() {
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
                             <span className="font-semibold">@在下雨</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
-                                化了个学 v2.0.0-cloudflare~v2.1.2(云端迁移 / 工程化重构 / 安全处置);英了个语 v1.1.0~v1.4.0(算法重构优化);错了个字 v1.0.1、v1.0.2(识别算法与判定修复)
+                                化了个学 v2.0.0-cloudflare~v2.1.2(云端迁移 / 工程化重构 / 安全处置);英了个语 v1.1.0~v1.4.0(算法重构优化);错了个字 v1.0.1、v1.0.2(识别算法与判定修复);分了个类 v1.1.1、配了个平 v1.0.1(排行榜会话令牌)
                             </span>
                         </li>
                         <li className="rounded-lg bg-muted/40 px-3 py-2">
@@ -269,6 +269,12 @@ export function HubPage() {
                             <span className="font-semibold">@绝艺如君</span>
                             <span className="block text-xs leading-relaxed text-muted-foreground">
                                 化了个学 v2.1.6(玩法介绍完善)
+                            </span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                            <span className="font-semibold">@楠鸢</span>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                                化了个学 v2.3.13(物质库扩容至 296 种);分了个类 v1.1.7(出牌间隔与传送带容量调整)
                             </span>
                         </li>
                     </ul>
