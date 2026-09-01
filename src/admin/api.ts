@@ -1,7 +1,9 @@
 /*
  * 化了个学 · 管理后台 API 客户端
  */
-import type { AuditPage, FeedbackList, RankList, SessionInfo } from "./types";
+import type { AiConfig, AiProvider, AuditPage, FeedbackList, RankList, SessionInfo } from "./types";
+
+interface AiConfigResponse { config: AiConfig; providers: AiProvider[] }
 
 async function j<T>(res: Response): Promise<T> {
     try { return (await res.json()) as T; } catch { return {} as T; }
@@ -90,4 +92,29 @@ export interface AdminMe {
     loginAt: number;
     expiresAt: number;
     ip: string;
+}
+
+/* ---------- AI 检测设置(v2.8.4) ---------- */
+
+export async function apiGetAiConfig(): Promise<(AiConfigResponse & { ok: boolean }) | null> {
+    const res = await fetch("/admin/api/ai");
+    return res.ok ? j(res) : null;
+}
+
+export async function apiSaveAiConfig(payload: { enabled: boolean; provider: string; model: string; apiKey?: string }): Promise<{ ok: boolean; msg?: string }> {
+    const res = await fetch("/admin/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    return j(res);
+}
+
+export async function apiTestAi(word = "apple"): Promise<{ ok: boolean; isWord?: boolean; pos?: string; zh?: string; msg?: string; ms?: number }> {
+    const res = await fetch("/admin/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test", word }),
+    });
+    return j(res);
 }

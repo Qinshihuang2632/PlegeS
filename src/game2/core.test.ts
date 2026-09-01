@@ -244,12 +244,19 @@ describe("游戏流程", () => {
         for (const [rr, cc] of g2.wordCells(wi)) {
             if (g2.grid[rr][cc] === null) g2.fill(rr, cc, g2.cellAnswer(rr, cc));
         }
+        // v1.6.0: 填满但非参考答案 → 不锁定不扣血(是否真实单词待 AI 检测)
+        expect(g2.wordDone[wi]).toBe(false);
+        expect(g2.wordBad[wi]).toBe(false);
+        expect(g2.hp).toBe(3);
+        expect(g2.win).toBe(false);
+        // AI 判定为非法(confirmWord false) → 扣 1 血 + 判错时间戳
+        g2.confirmWord(wi, false);
         expect(g2.wordBad[wi]).toBe(true);
         expect(g2.hp).toBe(2);
         expect(g2.win).toBe(false);
     });
 
-    it("v1.5.4 改错重填重新检测: 修改字母再填满仍非法 → 继续扣血; 改对 → 变绿通关", () => {
+    it("v1.6.0 参考答案比对: 非参考词待 AI 检测不扣血; confirmWord(false) 扣血红2s; confirmWord(true) 锁定; 改对 → 变绿通关", () => {
         const g = new YlgyGame("easy");
         const pickSingleBlank = (): [number, number] => {
             for (let r = 0; r < g.H; r++)
@@ -265,40 +272,47 @@ describe("游戏流程", () => {
         expect(br, "应存在非交叉空格").toBeGreaterThanOrEqual(0);
         const wi = g.words.findIndex((_, i) => g.wordCells(i).some(([rr, cc]) => rr === br && cc === bc));
         const ans = g.cellAnswer(br, bc);
-        // 先按答案填满该词其余格, 使词处于「仅 1 格待定」; 再对 br,bc 逐个试字母直到整词非法(避免恰好组成词库中另一个词)
-        for (const [rr, cc] of g.wordCells(wi)) if (rr !== br || cc !== bc) g.fill(rr, cc, g.cellAnswer(rr, cc));
-        let wrong1 = ans;
-        for (let k = 0; k < 26; k++) {
-            const ch = String.fromCharCode(97 + ((ans.charCodeAt(0) - 97 + 1 + k) % 26));
-            if (!g.fill(br, bc, ch)) continue;
-            if (g.hp < 3) { wrong1 = ch; break; }   // 非法 → 已扣血, 停止试错
-            g.erase(br, bc);
-        }
-        expect(wrong1).not.toBe(ans);
-        // 第 1 次填满非法 → 扣 1 血, 记录判错时间戳
+        // 换一个不同于答案的字母填满 → 待 AI 检测: 不锁定不扣血
+        const wrongCh = ans === "a" ? "b" : "a";
+        g.fill(br, bc, wrongCh);
+        for (const [rr, cc] of g.wordCells(wi)) if (g.grid[rr][cc] === null) g.fill(rr, cc, g.cellAnswer(rr, cc));
+        expect(g.wordDone[wi]).toBe(false);
+        expect(g.hp).toBe(3);
+        // AI 判非法 → confirmWord(false): 扣 1 血 + 判错时间戳(红 2 秒)
+        g.confirmWord(wi, false);
         expect(g.hp).toBe(2);
         expect(g.wordBad[wi]).toBe(true);
         expect(g.wordBadAt[wi]).not.toBeNull();
         expect(Date.now() - (g.wordBadAt[wi] ?? 0)).toBeLessThan(5000);
-        // 擦除再填另一个错误字母 → 词重新填满 → 重新检测仍非法 → 再扣 1 血
+        // 擦除重填另一个非参考字母再填满 → 重新待检测(不自动扣血); AI 再判非法 → 再扣 1 血
         g.erase(br, bc);
-        expect(g.hp).toBe(2);                       // 词不再满 → 不检测
-        let wrong2 = wrong1;
-        for (let k = 0; k < 26; k++) {
-            const ch = String.fromCharCode(97 + ((wrong1.charCodeAt(0) - 97 + 1 + k) % 26));
-            if (ch === ans) continue;
-            if (!g.fill(br, bc, ch)) continue;
-            if (g.hp < 2) { wrong2 = ch; break; }   // 重新填满非法 → 再扣 1 血
-            g.erase(br, bc);
-        }
-        expect(wrong2).not.toBe(ans);
-        expect(g.hp).toBe(1);                       // 重新填满 → 再次扣血
+        expect(g.hp).toBe(2);
+        g.fill(br, bc, wrongCh);
+        expect(g.hp).toBe(2);                       // 重填非参考词 → 等待 AI, 不同步扣血
+        g.confirmWord(wi, false);
+        expect(g.hp).toBe(1);                       // AI 再次判非法 → 继续扣血
         expect(g.wordBadAt[wi]).not.toBeNull();
-        // 改回正确 → 检测通过 → 词完成变绿(最后一次填满不再扣血)
+        // AI 判合法但非参考(confirmWord(true)) → 锁定变绿, 但那是降级路径; 正常路径改回参考答案
         g.erase(br, bc);
         g.fill(br, bc, ans);
         expect(g.wordBad[wi]).toBe(false);
         expect(g.wordDone[wi]).toBe(true);
+        // 降级路径(AI 不可用): 词库词 confirmWord(true) → 锁定, 格子不可再改
+        const g2 = new YlgyGame("easy");
+        const wi2 = 0;
+        const cells2 = g2.wordCells(wi2);
+        const blank2 = cells2.find(([rr, cc]) => g2.puzzle[rr][cc] === null && g2.grid[rr][cc] === null);
+        if (blank2) {
+            const [xr, xc] = blank2;
+            const ans2 = g2.cellAnswer(xr, xc);
+            const wrong2 = ans2 === "a" ? "b" : "a";
+            g2.fill(xr, xc, wrong2);
+            for (const [rr, cc] of cells2) if (g2.grid[rr][cc] === null) g2.fill(rr, cc, g2.cellAnswer(rr, cc));
+            expect(g2.wordDone[wi2]).toBe(false);   // 非参考词 → 未完成
+            g2.confirmWord(wi2, true);              // 降级: 视为合法锁定
+            expect(g2.wordDone[wi2]).toBe(true);
+            expect(g2.erase(xr, xc)).toBe(false);   // 锁定后不可擦除
+        }
     });
 
     it("v1.5.4 正确词格子锁定: 已完成的词所在格不可再改(填/擦都拒绝)", () => {

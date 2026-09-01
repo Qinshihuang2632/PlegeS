@@ -60,8 +60,27 @@ export interface FeedbackList {
     feedback: FeedbackEntry[];
 }
 
+/* AI 检测配置(v2.8.4 管理端可配, Key 永不下发明文) */
+export interface AiConfig {
+    enabled: boolean;
+    provider: string;
+    model: string;
+    apiKeyMasked: string;
+    hasKey: boolean;
+    source: string;
+    updatedAt: string;
+}
+
+export interface AiProvider {
+    id: string;
+    label: string;
+    defaultModel: string;
+}
+
 /* 审计动作 → 中文标签(文案统一, 展示用) */
 export const ACTION_LABELS: Record<string, string> = {
+    ai_config_update: "AI 配置更新",
+    ai_config_test: "AI 连接测试",
     login_success: "登录成功",
     login_fail: "登录失败",
     logout: "退出登录",

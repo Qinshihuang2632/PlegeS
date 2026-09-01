@@ -25,6 +25,15 @@ import { fetchRankToken } from "@/lib/rankToken";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
 
+/** AI 单词检测结果(v1.6.0): ok=false 表示 AI 不可用(前端降级词库判定) */
+interface AiCheckResult {
+    ok: boolean;
+    isWord?: boolean;
+    pos?: string;
+    zh?: string;
+    msg?: string;
+}
+
 function readName(): string {
     try { return localStorage.getItem(NAME_KEY) ?? ""; } catch { return ""; }
 }
@@ -62,6 +71,16 @@ export function YlgyPage() {
     const badFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);   // v1.5.4: 错误格闪红 2s 后重绘
     const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
 
+    /* v1.6.0 AI 单词检测: 填满的词与参考答案不同时, 调 /ylgy/api/ai(DeepSeek)判断是否真实单词。
+       aiTip: 合法但非参考答案词的释义提示(不锁定, 可删改); aiChecking: 检测进行中;
+       aiCache: 词 → 检测结果缓存(避免同词重复消耗 AI); aiPending: 进行中的词内容(防过期结果) */
+    const [aiTip, setAiTip] = useState<string | null>(null);
+    const aiTipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [aiChecking, setAiChecking] = useState(false);
+    const aiCacheRef = useRef<Map<string, AiCheckResult | null>>(new Map());
+    const gameRef = useRef(game);
+    gameRef.current = game;
+
     const clearMeaningTip = () => {
         if (tipTimerRef.current) clearTimeout(tipTimerRef.current);
         setMeaningTip(null);
@@ -92,6 +111,10 @@ export function YlgyPage() {
         // v2.8.0: 开局申领成绩提交凭证(失败不阻塞游戏, 提交时补领)
         rankTokenRef.current = "";
         void fetchRankToken("ylgy", m).then((t) => { rankTokenRef.current = t; });
+        // v1.6.0: 清理上一局的 AI 检测状态与提示
+        setAiTip(null);
+        setAiChecking(false);
+        if (aiTipTimerRef.current) clearTimeout(aiTipTimerRef.current);
     };
 
     /* 局内改昵称(v1.4.8): 输入框编辑(实时校验) → ✓ 二次确认弹窗 → 保存并重启本局 */
@@ -200,21 +223,77 @@ export function YlgyPage() {
         refresh();
     };
 
+    /* v1.6.0: 展示 AI 释义提示(合法但非参考答案词), 8 秒后自动消除 */
+    const showAiTip = (msg: string) => {
+        if (aiTipTimerRef.current) clearTimeout(aiTipTimerRef.current);
+        setAiTip(msg);
+        aiTipTimerRef.current = setTimeout(() => setAiTip(null), 8000);
+    };
+
+    /* v1.6.0: AI 检测结果应用。
+       真实单词(非参考答案) → 仅展示释义提示, 不锁定不扣血, 玩家可删掉重填;
+       非真实单词 → 非法处理(扣血 + 红 2 秒);
+       AI 不可用(ok=false) → 降级词库判定: 词库词按合法锁定(旧行为), 否则扣血。 */
+    const applyAiResult = (wi: number, word: string, result: AiCheckResult | null) => {
+        setAiChecking(false);
+        const g = gameRef.current;
+        if (g.gameOver || g.wordDone[wi]) return;
+        // 结果应用前再校验该词当前内容(检测期间玩家可能已修改)
+        const now = g.wordCells(wi).map(([rr, cc]) => g.grid[rr][cc]).join("").toLowerCase();
+        if (now !== word) return;
+        if (result && result.ok && result.isWord === true) {
+            showAiTip(`本单词释义为 ${(result.pos ?? "").trim()} ${(result.zh ?? "").trim()}。但「${word}」不符合本局参考答案,可能导致其他交叉单词无法正确填出,请更换答案(该词未被锁定,可删除重填)。`);
+            return;
+        }
+        const isLegal = !!(result && result.ok) ? result!.isWord === true : g.isDictWord(word);
+        const hpBefore = g.hp;
+        g.confirmWord(wi, isLegal);
+        if (g.hp < hpBefore) {
+            HLGX_Audio.wrong();
+            badFlashTimerRef.current && clearTimeout(badFlashTimerRef.current);
+            badFlashTimerRef.current = setTimeout(() => refresh(), 2000);
+        }
+        refresh();
+    };
+
+    /* v1.6.0: 对「填满且未完成」的词发起 AI 检测(带结果缓存与过期丢弃) */
+    const scheduleAiCheck = (wi: number) => {
+        const g = gameRef.current;
+        if (g.gameOver || g.win || g.wordDone[wi]) return;
+        const cells = g.wordCells(wi);
+        if (cells.some(([rr, cc]) => g.grid[rr][cc] === null)) return;
+        const word = cells.map(([rr, cc]) => g.grid[rr][cc]).join("").toLowerCase();
+        if (!word) return;
+        const cached = aiCacheRef.current.get(word);
+        if (cached !== undefined) { applyAiResult(wi, word, cached); return; }
+        setAiChecking(true);
+        void (async () => {
+            let result: AiCheckResult | null = null;
+            try {
+                const resp = await fetch("/ylgy/api/ai", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ word }),
+                });
+                result = await resp.json();
+            } catch { result = null; }
+            aiCacheRef.current.set(word, result);
+            // 检测期间开局换局 / 玩家修改该词 → 丢弃过期结果
+            const cur = gameRef.current;
+            if (cur !== g || cur.wordDone[wi]) { setAiChecking(false); return; }
+            applyAiResult(wi, word, result);
+        })();
+    };
+
     const typeChar = (ch: string) => {
         if (game.gameOver || game.win || !game.selected) return;
         clearMeaningTip();   // 输入行为消除含义提示
         const { r, c } = game.selected;
         if (ch === "⌫") { game.erase(r, c); refresh(); return; }
-        // v1.5.2 音效: 通过 hp/完成词数变化判断 答对(补全合法词) / 答错(非法词扣血) —— 放在 fill 之前取样
-        const hpBefore = game.hp;
+        // v1.6.0 音效: 完成词数变化判断 答对(填出参考答案词); 扣血改由 AI 检测回调处理
         const doneBefore = game.wordDone.filter(Boolean).length;
         if (game.fill(r, c, ch)) {
-            if (game.hp < hpBefore) {
-                HLGX_Audio.wrong();
-                // v1.5.4: 错误格闪红 2 秒后自动恢复无色(由 wordBadAt 时间戳驱动, 到时重绘)
-                badFlashTimerRef.current && clearTimeout(badFlashTimerRef.current);
-                badFlashTimerRef.current = setTimeout(() => refresh(), 2000);
-            } else if (game.wordDone.filter(Boolean).length > doneBefore) HLGX_Audio.correct();
+            if (game.wordDone.filter(Boolean).length > doneBefore) HLGX_Audio.correct();
             // 自动跳到下一个空格
             let moved = false;
             for (let rr = 0; rr < game.H && !moved; rr++) {
@@ -225,6 +304,14 @@ export function YlgyPage() {
                         break;
                     }
                 }
+            }
+            // v1.6.0: 刚好被这次输入填满、且未完成的词(= 非参考答案) → 异步 AI 检测
+            for (let wi = 0; wi < game.words.length; wi++) {
+                if (game.wordDone[wi]) continue;
+                const cells = game.wordCells(wi);
+                if (!cells.some(([rr, cc]) => rr === r && cc === c)) continue;
+                if (cells.some(([rr, cc]) => game.grid[rr][cc] === null)) continue;
+                scheduleAiCheck(wi);
             }
             refresh();
         }
@@ -481,6 +568,17 @@ export function YlgyPage() {
             {meaningTip && (
                 <p className="mx-auto mt-2 max-w-md text-center text-sm font-semibold leading-relaxed text-blue-600">
                     含义提示: [{meaningTip.meaning.pos}] {meaningTip.meaning.zh}
+                </p>
+            )}
+            {/* v1.6.0 AI 单词检测: 检测中 / 释义提示(合法但非参考答案, 不锁定可删改) */}
+            {aiChecking && (
+                <p className="mx-auto mt-2 max-w-md text-center text-sm font-semibold text-muted-foreground" role="status">
+                    AI 检测中…
+                </p>
+            )}
+            {aiTip && (
+                <p className="mx-auto mt-2 max-w-md rounded-lg bg-amber-500/10 px-3 py-2 text-center text-sm font-semibold leading-relaxed text-amber-600">
+                    {aiTip}
                 </p>
             )}
 

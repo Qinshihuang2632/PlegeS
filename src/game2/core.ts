@@ -248,6 +248,11 @@ export class YlgyGame {
 
     private dictSet: Set<string> = new Set();
 
+    /** 词库判定(降级用, v1.6.0): AI 不可用时回退到「是否为词库单词」的旧逻辑 */
+    isDictWord(word: string): boolean {
+        return this.dictSet.has(word);
+    }
+
     constructor(mode: YlgyMode = "normal") {
         this.applyMode(mode);
         this.newGame();
@@ -472,8 +477,13 @@ export class YlgyGame {
     }
 
     /* 校验经过该格的所有词(至多一横一竖)。
-       v1.5.4: 填满即重新检测——已判错的词被修改后再次填满, 仍按当前内容重新判定;
-       错误则每次填满都扣血(不是只扣第一次), 并记录判错时间戳供 UI 闪红 2 秒 */
+       v1.6.0 重构: 填满即检测改为「与生成时参考答案比对」——
+       填满且与参考答案一致 → 完成(变绿锁定, 同步零延迟);
+       填满但与参考答案不同 → 不再同步扣血/锁定, 是否为真实单词由页面异步调用 AI 检测:
+         AI 判非法 → 页面调 confirmWord(i, false)(扣血+红 2 秒);
+         AI 判为真实单词 → 页面仅展示释义提示(不锁定, 玩家可删改换答案);
+         AI 不可用 → 页面回退词库判定 isDictWord()。
+       (此前的多解法死锁问题: 玩家填出词库外/非参考词被锁定后交叉格无法再正确填写) */
     private checkCellWords(r: number, c: number) {
         for (let i = 0; i < this.words.length; i++) {
             const cells = this.wordCells(i);
@@ -482,15 +492,28 @@ export class YlgyGame {
             const missing = cells.some(([rr, cc]) => this.grid[rr][cc] === null);
             if (missing) continue;
             const word = cells.map(([rr, cc]) => this.grid[rr][cc]).join("");
-            if (this.dictSet.has(word)) {
+            if (word === this.words[i].word) {
                 this.wordDone[i] = true;
                 this.wordBad[i] = false;
                 this.wordBadAt[i] = null;
-            } else {
-                this.wordBad[i] = true;
-                this.wordBadAt[i] = Date.now();
-                this.hp--;
             }
+        }
+    }
+
+    /** AI 检测结果落定(v1.6.0): ok=true → 词完成变绿锁定(合法词, 含降级词库词);
+        ok=false → 非法单词, 扣血并记录判错时间戳(红 2 秒)。由页面在 AI/降级判定后调用 */
+    confirmWord(i: number, ok: boolean) {
+        if (this.gameOver || this.win || this.wordDone[i]) return;
+        if (ok) {
+            this.wordDone[i] = true;
+            this.wordBad[i] = false;
+            this.wordBadAt[i] = null;
+            this.checkEnd();
+        } else {
+            this.wordBad[i] = true;
+            this.wordBadAt[i] = Date.now();
+            this.hp--;
+            this.checkEnd();
         }
     }
 
