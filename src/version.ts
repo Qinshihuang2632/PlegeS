@@ -7,4 +7,4 @@
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
 export const APP_VERSION = "v2.3.13";     // 化了个学(物质库扩容至 296 种, 新增钪钯镉等 37 种)
-export const PLATFORM_VERSION = "v2.8.0";  // 平台 p了个s(安全加固: 5 游戏排行榜会话令牌防刷 / 反馈 XSS+IP 脱敏 / 管理端 CSRF 防护 / 会话 ID 脱敏 / 成绩物理上限)
+export const PLATFORM_VERSION = "v2.8.5";  // 平台 p了个s(v2.8.5: 后台游玩记录/反馈真实 IP/主界面介绍更新/全站防横向滚动)

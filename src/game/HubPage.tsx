@@ -85,7 +85,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>化</div>
                     <h2 className="text-lg font-bold">化了个学</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        消除同类物质,玩法类似「羊了个羊」。覆盖高考化学 200+ 种常见物质,支持血量 / 计时 / 排行榜。
+                        消除同类物质,玩法类似「羊了个羊」。物质库 296 种,简单 / 标准 / 困难 / 挑战四档布局,血量 / 计时 / 排行榜 / 有机酸双身份一应俱全。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
@@ -100,7 +100,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>词</div>
                     <h2 className="text-lg font-bold">英了个语</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        每行拼成一个完整单词,与前一行依重复字母重叠成不规则拼图。高考课标词库,简单 / 标准 / 困难三档。
+                        横竖单词交叉成不规则拼图。课标词库三档难度;填出与答案不同的真实单词时,AI 会提示释义并允许换答案,不再死锁。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
@@ -127,7 +127,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>类</div>
                     <h2 className="text-lg font-bold">分了个类</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        传送带送来 259 种物质,拖进 8 大类别。手速与化学功底的双重考验,满载即败。
+                        传送带送来 296 种物质,拖进类别按钮(难度越高类别越全、出牌越快,困难只有 4 个卡位)。手速与化学功底的双重考验,满载即败。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
@@ -142,7 +142,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>平</div>
                     <h2 className="text-lg font-bold">配了个平</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        111 道课标方程式等你配平:选系数、填系数,比例解也算错——最简整数比才是化学的浪漫。
+                        111 道课标方程式等你配平:简单点选系数,标准 / 困难手填系数;比例解也算错——最简整数比才是化学的浪漫。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩

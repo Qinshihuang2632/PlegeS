@@ -4,7 +4,7 @@
  * 移动端: 顶栏 + 底部导航(微信小程序风格), 内容区留出底部空间
  */
 import { NavLink, Outlet } from "react-router";
-import { Bot, LayoutDashboard, LogOut, MessageSquare, ScrollText, Trophy, Users } from "lucide-react";
+import { Bot, History, LayoutDashboard, LogOut, MessageSquare, ScrollText, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "./AuthContext";
@@ -17,6 +17,7 @@ const NAV = [
     { to: "/logs", label: "审计日志", icon: ScrollText },
     { to: "/sessions", label: "会话管理", icon: Users },
     { to: "/ai", label: "AI 检测", icon: Bot },
+    { to: "/playlog", label: "游玩记录", icon: History },
 ];
 
 export function AdminLayout() {

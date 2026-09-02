@@ -8,6 +8,7 @@ import { FeedbackPage } from "./pages/FeedbackPage";
 import { LogsPage } from "./pages/LogsPage";
 import { SessionsPage } from "./pages/SessionsPage";
 import { AiSettingsPage } from "./pages/AiSettingsPage";
+import { PlayLogPage } from "./pages/PlayLogPage";
 import { AdminLayout } from "./AdminLayout";
 import { RequireAuth } from "./RequireAuth";
 
@@ -25,6 +26,7 @@ export default function AdminApp() {
                         <Route path="/logs" element={<LogsPage />} />
                         <Route path="/sessions" element={<SessionsPage />} />
                         <Route path="/ai" element={<AiSettingsPage />} />
+                        <Route path="/playlog" element={<PlayLogPage />} />
                     </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

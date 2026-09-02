@@ -78,7 +78,8 @@ export async function detectWord(env, word) {
     }
 
     const cfg = await loadAiConfig(env);
-    if (!cfg.enabled || !cfg.apiKey) return { ok: false, msg: "AI 服务未配置" };
+    if (!cfg.apiKey) return { ok: false, msg: "AI 服务未配置, 请先在管理后台「AI 检测」页填写 API Key 并启用" };
+    if (!cfg.enabled) return { ok: false, msg: "AI 检测已停用, 请在管理后台「AI 检测」页勾选「启用」并保存" };
     const provider = AI_PROVIDERS[cfg.provider];
     if (!provider) return { ok: false, msg: "不支持的 AI 提供商" };
 

@@ -20,11 +20,8 @@ export async function onRequestGet({ request, env }) {
     if (!(await authed(env, request))) return unauthorized();
     const url = new URL(request.url);
     const list = await loadFeedback(env);
-    // v2.8.0 隐私合规: 历史条目中的真实 IP 一律不下发, 只展示匿名化 ipHash
-    const withKey = list.map((e, i) => {
-        const { ip: _ip, ...rest } = e;
-        return { ...rest, key: i };
-    });
+    // v2.8.5: 下发真实 IP 供管理端展示(管理端受会话保护); 历史条目(无 ip)显示「—」
+    const withKey = list.map((e, i) => ({ ...e, ip: e.ip ?? "", key: i }));
     const q = (url.searchParams.get("q") || "").trim();
     const filtered = q
         ? withKey.filter((e) => String(e.name).includes(q) || String(e.content).includes(q))

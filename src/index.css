@@ -98,6 +98,8 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
+    /* v2.8.5: 全站禁止横向滚动(各游戏页内均已自适应, 此为兜底防误触左右划动) */
+    overflow-x: hidden;
   }
 }
 

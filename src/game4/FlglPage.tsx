@@ -22,6 +22,7 @@ import { FLGL_VERSION } from "./version";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
+import { reportPlayLog } from "@/game/playlog";
 import {
     BELT_CAPACITY_OF, CATS_OF, FLGL_INTERVAL, ROUND_TOTAL, judge, newGame, spawnNow, tick, wrongHint,
     type FlglCard, type FlglMode, type FlglState,
@@ -155,7 +156,15 @@ export function FlglPage() {
             failed: false,
         };
         const nm = name.trim();
-        if (!nm || skipRank) { setResult({ ...info, skipped: true }); return; }
+        if (!nm || skipRank) {
+            setResult({ ...info, skipped: true });
+            // v2.8.5: 未参与排行榜的游玩也上报记录(后台查看, 静默失败)
+            void reportPlayLog({
+                game: "flgl", mode, name: nm || undefined,
+                win: st.phase === "win", score: st.score, time, version: FLGL_VERSION,
+            });
+            return;
+        }
         (async () => {
             try {
                 // v2.8.0: 携带开局申领的一次性凭证; 缺失时补领(如开局时离线)

@@ -40,11 +40,18 @@ export function AiSettingsPage() {
     useEffect(() => { void load(); }, [load]);
 
     const doSave = async () => {
+        if (!enabled && !apiKey.trim() && !cfg?.hasKey) {
+            toast.warning("未填写 API Key 且未勾选「启用」,保存后 AI 不会生效");
+        }
         setBusy(true);
         try {
             const r = await apiSaveAiConfig({ enabled, provider, model: model.trim(), apiKey: apiKey.trim() });
             if (r.ok) {
-                toast.success(r.msg ?? "已保存");
+                if (!enabled) {
+                    toast.warning("已保存,但未勾选「启用」——AI 检测仍处于停用状态");
+                } else {
+                    toast.success(r.msg ?? "已保存");
+                }
                 setApiKey("");
                 void load();
             } else {
@@ -58,6 +65,10 @@ export function AiSettingsPage() {
     };
 
     const doTest = async () => {
+        if (!enabled) {
+            setTestResult("AI 检测当前处于停用状态,请先勾选「启用」并保存后再测试");
+            return;
+        }
         setTesting(true);
         setTestResult("");
         try {

@@ -49,7 +49,8 @@ export interface FeedbackEntry {
     name: string;
     content: string;
     credit?: boolean; // v2.5.5: 鸣谢意愿(建议被采纳后是否愿入特别鸣谢榜); 旧条目无此字段
-    ipHash?: string;  // v2.8.0: 匿名化 IP 哈希(真实 IP 不再存储/下发); 旧条目无此字段
+    ip?: string;      // v2.8.5: 真实 IP(管理后台可见); 旧条目无此字段
+    ipHash?: string;  // v2.8.0: 匿名化 IP 哈希(防刷对照); 旧条目无此字段
     date: string;
     ts: number;
     key: number; // 管理用索引(存储数组下标)
@@ -58,6 +59,27 @@ export interface FeedbackEntry {
 export interface FeedbackList {
     total: number;
     feedback: FeedbackEntry[];
+}
+
+/* 游玩记录(未参与排行榜的游玩上报, v2.8.5) */
+export interface PlayLogEntry {
+    game: string;
+    mode: string;
+    name: string;
+    win: number;
+    score: number;
+    time: number;
+    tools: number;
+    version: string;
+    platform: string;
+    ip: string;
+    date: string;
+    key: number;
+}
+
+export interface PlayLogList {
+    total: number;
+    list: PlayLogEntry[];
 }
 
 /* AI 检测配置(v2.8.4 管理端可配, Key 永不下发明文) */
@@ -81,6 +103,7 @@ export interface AiProvider {
 export const ACTION_LABELS: Record<string, string> = {
     ai_config_update: "AI 配置更新",
     ai_config_test: "AI 连接测试",
+    playlog_clear: "清空游玩记录",
     login_success: "登录成功",
     login_fail: "登录失败",
     logout: "退出登录",

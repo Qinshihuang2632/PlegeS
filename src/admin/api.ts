@@ -1,7 +1,7 @@
 /*
  * 化了个学 · 管理后台 API 客户端
  */
-import type { AiConfig, AiProvider, AuditPage, FeedbackList, RankList, SessionInfo } from "./types";
+import type { AiConfig, AiProvider, AuditPage, FeedbackList, PlayLogList, RankList, SessionInfo } from "./types";
 
 interface AiConfigResponse { config: AiConfig; providers: AiProvider[] }
 
@@ -116,5 +116,20 @@ export async function apiTestAi(word = "apple"): Promise<{ ok: boolean; isWord?:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "test", word }),
     });
+    return j(res);
+}
+
+/* ---------- 游玩记录(v2.8.5) ---------- */
+
+export async function apiPlayLogs(game = "", q = ""): Promise<PlayLogList | null> {
+    const p = new URLSearchParams();
+    if (game) p.set("game", game);
+    if (q) p.set("q", q);
+    const res = await fetch(`/admin/api/playlog?${p}`);
+    return res.ok ? j<PlayLogList>(res) : null;
+}
+
+export async function apiClearPlayLog(): Promise<{ ok: boolean; msg?: string }> {
+    const res = await fetch("/admin/api/playlog?clear=1", { method: "DELETE" });
     return j(res);
 }

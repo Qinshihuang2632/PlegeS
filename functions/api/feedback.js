@@ -8,6 +8,7 @@
  * KV 键: feedback(数组 JSON, 上限 500 条, 新提交在前)
  * 校验: 昵称清洗(同榜单规则: ≤10 字/违禁词/< >过滤) + 内容 1~500 字 + 违禁词 + < >过滤。
  * v2.8.0: 不再存储真实 IP, 只存 SHA-256 截断哈希(ipHash); 旧条目的 ip 字段管理端不再展示。
+ * v2.8.5: 应平台主需求恢复存储真实 IP(ip 字段, 仅管理后台会话可见); ipHash 保留用于防刷对照。
  */
 import { fmtDate, clampInt, json } from "../_lib/ranklib.js";
 import { countIncr, clientIp } from "../_lib/ratelimit.js";
@@ -52,7 +53,7 @@ export async function onRequestPost({ request, env }) {
     // v2.8.0: 内容与昵称同标准过滤 < >(防存储型 XSS / 钓鱼链接注入)
     if (/[<>]/.test(content)) return json({ ok: false, msg: "反馈内容包含非法字符" }, 400);
 
-    // v2.8.0 隐私合规: 不再存储真实 IP, 只存 SHA-256 截断哈希(用于防刷排查, 无法反推)
+    // v2.8.0: SHA-256 截断哈希(防刷对照); v2.8.5 起同时存储真实 IP 供管理后台查看(受会话保护)
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(ip ?? "")));
     const ipHash = [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 
@@ -62,6 +63,7 @@ export async function onRequestPost({ request, env }) {
         content,
         ...(body.credit === undefined ? {} : { credit: body.credit === true }),
         ipHash,
+        ip,                                  // v2.8.5: 真实 IP(仅管理后台会话可见)
         date: fmtDate(),
         ts: Date.now(),
     });

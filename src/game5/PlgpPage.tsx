@@ -17,6 +17,7 @@ import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
 import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartToggle";
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { fetchRankToken } from "@/lib/rankToken";
+import { reportPlayLog } from "@/game/playlog";
 import { PlgpRules } from "./PlgpRules";
 import { HLGX_Audio } from "@/game/audio";
 import { PLGP_VERSION } from "./version";
@@ -149,7 +150,16 @@ export function PlgpPage() {
             failed: false,
         };
         const nm = name.trim();
-        if (!nm || skipRank) { setResInfo({ ...info }); return; }
+        if (!nm || skipRank) {
+            setResInfo({ ...info });
+            // v2.8.5: 未参与排行榜的游玩也上报记录(后台查看, 静默失败)
+            void reportPlayLog({
+                game: "plgp", mode, name: nm || undefined,
+                win: st.phase === "win", score: st.score, time,
+                tools: st.toolsUsed, version: PLGP_VERSION,
+            });
+            return;
+        }
         (async () => {
             try {
                 // v2.8.0: 携带开局申领的一次性凭证; 缺失时补领(如开局时离线)

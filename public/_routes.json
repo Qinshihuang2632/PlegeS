@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/hlgx/api/*", "/hlgx/hua", "/hlgx/rank", "/ylgy/api/*", "/ylgy", "/ws", "/clgz/api/*", "/clgz", "/flgl/api/*", "/flgl", "/plgp/api/*", "/plgp", "/api/feedback", "/admin/*"],
+  "include": ["/hlgx/api/*", "/hlgx/hua", "/hlgx/rank", "/ylgy/api/*", "/ylgy", "/ws", "/clgz/api/*", "/clgz", "/flgl/api/*", "/flgl", "/plgp/api/*", "/plgp", "/api/feedback", "/api/playlog", "/admin/*"],
   "exclude": []
 }

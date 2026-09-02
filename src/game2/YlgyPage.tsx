@@ -22,6 +22,7 @@ import { RankPartToggle, readSkipRank, storeSkipRank } from "@/game/RankPartTogg
 import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { HLGX_Audio } from "@/game/audio";
 import { fetchRankToken } from "@/lib/rankToken";
+import { reportPlayLog } from "@/game/playlog";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(与化了个学共享)
 
@@ -47,7 +48,8 @@ const MODE_TABS: { mode: YlgyMode; label: string }[] = [
     { mode: "hard", label: "困难" },
 ];
 
-const LETTERS = "abcdefghijklmnopqrstuvwxyz".split("");
+/* v1.6.1: 局内键盘按真实 QWERTY 布局分行, 不再按字母表顺序 */
+const KB_ROWS = ["qwertyuiop".split(""), "asdfghjkl".split(""), "zxcvbnm".split("")];
 
 export function YlgyPage() {
     const [game, setGame] = useState(() => new YlgyGame("easy"));
@@ -175,6 +177,12 @@ export function YlgyPage() {
             void submitScore(game, time);
         } else {
             setResult({ win: game.win, hp: game.hp, time, surpassed: null, failed: false, skipped: true });
+            // v2.8.5: 未参与排行榜的游玩也上报记录(后台查看, 静默失败)
+            void reportPlayLog({
+                game: "ylgy", mode: game.mode, name: n || undefined,
+                win: game.win, score: game.fills, time,
+                tools: game.hints + game.meaningHints, version: YLGY_VERSION,
+            });
         }
         // v1.5.2 音效: 通关/通关失败
         if (game.win) HLGX_Audio.win();
@@ -439,12 +447,12 @@ export function YlgyPage() {
             </div>
             </header>
 
-            {/* 难度 + 玩法 + 昵称(玩法入口在改名栏左侧) */}
+            {/* 难度 + 玩法入口 */}
             <div className="mb-2 flex items-center gap-2">
                 <div className="flex flex-1 justify-center gap-1 rounded-full bg-muted p-1">
                     {MODE_TABS.map(({ mode, label }) => (
                         <button key={mode} onClick={() => newGame(mode)}
-                            className={cn("flex-1 rounded-full px-3 py-1.5 text-sm font-semibold transition",
+                            className={cn("flex-1 rounded-full px-2 py-1.5 text-sm font-semibold transition",
                                 curMode === mode ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground")}>
                             {label}
                         </button>
@@ -453,14 +461,18 @@ export function YlgyPage() {
                 <Button variant="ghost" size="sm" onClick={() => setRulesOpen(true)} className="shrink-0">
                     玩法
                 </Button>
-                <div className="flex shrink-0 items-center gap-1">
+            </div>
+
+            {/* 昵称行: 输入 + 二次确认 + 排行参与开关 + 错误提示(独占一行, 窄屏自动换行, v1.6.1) */}
+            <div className="mb-2 flex flex-wrap items-center justify-center gap-2">
+                <div className="flex items-center gap-1">
                     <input
                         value={nameDraft}
                         maxLength={10}
                         placeholder="昵称"
                         onChange={(e) => onNameDraftChange(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") requestNameConfirm(); }}
-                        className="w-24 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        className="w-24 rounded-lg border bg-card px-2 py-1 text-sm outline-none focus:border-primary"
                         aria-label="当前昵称,点击直接修改"
                         title="当前昵称,修改后需二次确认并重开本局"
                     />
@@ -484,8 +496,8 @@ export function YlgyPage() {
             </div>
 
             {/* 规则提示 */}
-            <p className="mb-2 text-center text-xs text-muted-foreground">
-                横竖单词交叉拼图:每行/每列都是一个单词,相交处共享字母;灰色格不是单词成分,填满的非法词会扣血
+            <p className="mb-2 text-center text-xs leading-relaxed text-muted-foreground">
+                横竖单词交叉拼图:每行/每列都是一个单词,相交处共享字母;灰色格不是单词成分;填出的词若与本局答案不同,AI 会判断它是否为真实单词(真实则提示可换答案,非真实才扣血)
             </p>
 
             {/* 交叉单词网格(整个一张表格; v1.4.1: 未占用格保持浅色无边框,
@@ -582,18 +594,24 @@ export function YlgyPage() {
                 </p>
             )}
 
-            {/* 屏幕字母条(触屏友好) */}
-            <div className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-1">
-                {LETTERS.map(ch => (
-                    <button key={ch} onClick={() => typeChar(ch)}
-                        className="h-9 min-w-8 rounded-md border bg-card px-1.5 text-sm font-semibold shadow-sm transition hover:bg-muted">
-                        {ch}
-                    </button>
+            {/* 屏幕键盘(QWERTY 布局, v1.6.1: 三行贴近真实键盘, 末行附退格) */}
+            <div className="mx-auto mt-3 w-full max-w-md space-y-1.5">
+                {KB_ROWS.map((row, ri) => (
+                    <div key={ri} className="flex justify-center gap-1">
+                        {ri === 2 && (
+                            <button onClick={() => typeChar("⌫")}
+                                className="h-10 min-w-9 flex-1 max-w-12 rounded-md border bg-secondary text-[11px] font-semibold transition hover:bg-muted sm:text-sm">
+                                退格
+                            </button>
+                        )}
+                        {row.map(ch => (
+                            <button key={ch} onClick={() => typeChar(ch)}
+                                className="h-10 min-w-0 flex-1 max-w-9 rounded-md border bg-card text-sm font-semibold shadow-sm transition hover:bg-muted sm:max-w-11">
+                                {ch}
+                            </button>
+                        ))}
+                    </div>
                 ))}
-                <button onClick={() => typeChar("⌫")}
-                    className="h-9 min-w-10 rounded-md border bg-secondary px-2 text-sm font-semibold transition hover:bg-muted">
-                    退格
-                </button>
             </div>
 
             <p className="mt-3 text-center text-xs text-muted-foreground">

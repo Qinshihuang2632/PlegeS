@@ -26,6 +26,7 @@ import { fmtTime, TOOL_LIMIT, type Mode, type Tile } from "./core";
 import { detectPlatform, PLATFORM_LABEL } from "./platform";
 import { APP_VERSION } from "@/version";
 import { fetchRankToken } from "@/lib/rankToken";
+import { reportPlayLog } from "./playlog";
 import { BoardTile, TrayCell } from "./game-ui";
 import { GameRules } from "./GameRules";
 import { useGame } from "./useGame";
@@ -308,6 +309,11 @@ export function HuaPage() {
         if (!r) return;
         if (!inRankRef.current || !playerNameRef.current) {
             setResultInfo({ win: r.win, remain: r.remain, tools: r.tools, time, surpassed: null, failed: false, skipped: true });
+            // v2.8.5: 未参与排行榜的游玩也上报记录(后台查看, 静默失败)
+            void reportPlayLog({
+                game: "hlgx", mode: game.mode, name: playerNameRef.current ?? undefined,
+                win: r.win, score: r.clears, time, tools: r.tools, version: APP_VERSION,
+            });
             return;
         }
         try {

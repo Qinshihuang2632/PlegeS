@@ -93,7 +93,10 @@ export function FeedbackPage() {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <span className="font-semibold">{e.name}</span>
-                                        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground" title="匿名化标识(SHA-256 截断), 仅用于防刷排查, 无法反推真实 IP">{e.ipHash || "—"}</span>
+                                        <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-xs text-secondary-foreground" title="提交时的 IP 地址(管理员可见)">{e.ip || "—"}</span>
+                                        {e.ipHash && (
+                                            <span className="rounded-full bg-secondary/60 px-2 py-0.5 text-xs text-secondary-foreground" title="匿名化标识(SHA-256 截断), 用于防刷对照">{e.ipHash}</span>
+                                        )}
                                         <span className="text-xs text-muted-foreground tabular-nums">{e.date}</span>
                                         {e.credit !== undefined && (
                                             <span
