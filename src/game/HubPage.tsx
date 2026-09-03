@@ -345,10 +345,15 @@ export function HubPage() {
                             <Button className="w-full" size="lg" onClick={() => void submitFeedback()} disabled={fbSending}>
                                 {fbSending ? "提交中…" : "提交反馈"}
                             </Button>
-                            {/* v2.8.0 隐私告知: 只记录匿名化哈希, 不存真实 IP */}
-                            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-                                提交即表示知悉:为防恶意刷反馈,我们会记录经匿名化处理(SHA-256 哈希、无法反推)的网络标识,不保存你的真实 IP。
-                            </p>
+                            {/* v2.8.6: 提交知悉文案(不提 IP/匿名化; 强调勿提交无效反馈; 附件反馈指引加 wx) */}
+                            <div className="space-y-1.5">
+                                <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+                                    提交即表示知悉:反馈仅用于改进游戏,请勿提交空白、灌水或与游戏无关的无效反馈。
+                                </p>
+                                <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+                                    如需提供截图 / 录屏等附件反馈,请添加微信 PS_20080428xiao,并注明你的昵称与反馈内容。
+                                </p>
+                            </div>
                         </div>
                     )}
                 </DialogContent>
