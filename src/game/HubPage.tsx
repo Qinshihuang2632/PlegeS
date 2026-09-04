@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { GameRules } from "./GameRules";
 import { YlgyRules } from "@/game2/YlgyRules";
+import { LlgsRules } from "@/game7/LlgsRules";
 import { ClgzRules } from "@/game3/ClgzRules";
 import { FlglRules } from "@/game4/FlglRules";
 import { PlgpRules } from "@/game5/PlgpRules";
@@ -20,7 +21,7 @@ import { PLATFORM_VERSION } from "@/version";
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [thanksOpen, setThanksOpen] = useState(false);
-    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl" | "plgp">("hlgx");   // 玩法介绍: 五游戏子页(错了个字维护中仍保留)
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl" | "plgp" | "llgs">("hlgx");   // 玩法介绍: 六游戏子页(错了个字维护中仍保留)
     const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [fbName, setFbName] = useState(() => localStorage.getItem("hlgx_name")?.trim() || "");
     const [fbContent, setFbContent] = useState("");
@@ -149,17 +150,20 @@ export function HubPage() {
                     </span>
                 </Link>
 
-                {/* 开发中占位(下一批游戏) */}
-                <div className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
-                    <div className="mb-3 text-4xl" aria-hidden>待</div>
-                    <h2 className="text-lg font-bold">敬请期待</h2>
+                {/* 历了个史(v1.0.0 / 平台 v2.9.0 可玩): 时间轴排序 */}
+                <Link
+                    to="/llgs"
+                    className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                    <div className="mb-3 text-4xl" aria-hidden>史</div>
+                    <h2 className="text-lg font-bold">历了个史</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        更多高考知识小游戏正在开发中……
+                        把 5 张课标历史事件卡按时间先后排好:对则锁定、错则标红继续调,不扣血,多试几次也能通关。
                     </p>
-                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
-                        开发中
+                    <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+                        ● 可玩
                     </span>
-                </div>
+                </Link>
             </main>
 
             {/* 导航: 排行榜 + 玩法介绍 + 建议反馈 */}
@@ -200,6 +204,7 @@ export function HubPage() {
                             { key: "clgz", label: "错了个字" },
                             { key: "flgl", label: "分了个类" },
                             { key: "plgp", label: "配了个平" },
+                            { key: "llgs", label: "历了个史" },
                         ] as const).map(({ key, label }) => (
                             <button
                                 key={key}
@@ -217,7 +222,8 @@ export function HubPage() {
                         : rulesTab === "ylgy" ? <YlgyRules />
                             : rulesTab === "flgl" ? <FlglRules />
                                 : rulesTab === "plgp" ? <PlgpRules />
-                                    : <ClgzRules />}
+                                    : rulesTab === "llgs" ? <LlgsRules />
+                                        : <ClgzRules />}
                 </DialogContent>
             </Dialog>
 

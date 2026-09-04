@@ -47,6 +47,7 @@ const GAMES = [
     { key: "clgz", label: "错了个字" },
     { key: "flgl", label: "分了个类" },
     { key: "plgp", label: "配了个平" },
+    { key: "llgs", label: "历了个史" },
 ] as const;
 type GameKey = (typeof GAMES)[number]["key"];
 
@@ -135,7 +136,7 @@ export function RankPage() {
 
             {/* 难度切换 */}
             <div className="mb-2 flex justify-center gap-1 rounded-full bg-muted p-1">
-                {(game === "ylgy" ? YLGY_MODES : game === "clgz" ? CLGZ_MODES : game === "flgl" ? FLGL_MODES : game === "plgp" ? PLGP_MODES : MODES).map(({ mode, label }) => (
+                {(game === "ylgy" ? YLGY_MODES : game === "clgz" ? CLGZ_MODES : game === "flgl" ? FLGL_MODES : game === "plgp" ? PLGP_MODES : game === "llgs" ? FLGL_MODES : MODES).map(({ mode, label }) => (
                     <button
                         key={mode}
                         onClick={() => setCurMode(mode)}

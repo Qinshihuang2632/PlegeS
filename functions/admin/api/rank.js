@@ -45,12 +45,27 @@ function plgpSort(entries) {
     });
 }
 
+/** 历了个史排序: 得分↓ → 用时↑ → 提交次数↑ → 提示使用↑ */
+function llgsCmpKey(e) {
+    return [-(e.score | 0), e.time | 0, e.attempts | 0, e.tools | 0];
+}
+function llgsSort(entries) {
+    return [...entries].sort((a, b) => {
+        const ka = llgsCmpKey(a), kb = llgsCmpKey(b);
+        for (let i = 0; i < ka.length; i++) {
+            if (ka[i] !== kb[i]) return ka[i] - kb[i];
+        }
+        return 0;
+    });
+}
+
 const GAMES = {
     hlgx: { label: "化了个学", modes: HLGX_MODES, prefix: "", sort: sortRank },
     ylgy:   { label: "英了个语", modes: YLGY_MODES, prefix: "ylgy:", sort: sortRank },
     clgz: { label: "错了个字", modes: CLGZ_MODES, prefix: "clgz:", sort: clgzSort },
     flgl: { label: "分了个类", modes: FLGL_MODES, prefix: "flgl:", sort: clgzSort },
     plgp: { label: "配了个平", modes: PLGP_MODES, prefix: "plgp:", sort: plgpSort },
+    llgs: { label: "历了个史", modes: PLGP_MODES, prefix: "llgs:", sort: llgsSort },
 };
 
 async function loadMode(env, game, mode) {

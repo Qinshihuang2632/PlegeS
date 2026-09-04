@@ -35,6 +35,11 @@ const GAMES = [
         { mode: "normal", label: "标准" },
         { mode: "hard", label: "困难" },
     ] },
+    { key: "llgs", label: "历了个史", modes: [
+        { mode: "easy", label: "简单" },
+        { mode: "normal", label: "标准" },
+        { mode: "hard", label: "困难" },
+    ] },
     { key: "plgp", label: "配了个平", modes: [
         { mode: "easy", label: "简单" },
         { mode: "normal", label: "标准" },

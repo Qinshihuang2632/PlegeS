@@ -12,7 +12,7 @@
 import { fmtDate, json } from "../_lib/ranklib.js";
 import { countIncr, clientIp } from "../_lib/ratelimit.js";
 
-const GAMES = ["hlgx", "ylgy", "flgl", "plgp"];
+const GAMES = ["hlgx", "ylgy", "flgl", "plgp", "llgs"];
 const PLAYLOG_MAX = 1500;
 const KV_KEY = "playlog";
 const SUBMIT_TTL = 60;   // 同一 IP 上报间隔(秒, KV TTL 下限 60)
