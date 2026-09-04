@@ -106,9 +106,11 @@ export async function onRequestPost({ request, env }) {
     // v2.8.0 一次性会话令牌: 存在 + IP 一致 + 难度匹配 + 服务端时长校验
     const token = String(body.token ?? "");
     const sess = await peekGameSession(env, "llgs", token, ip);
-    if (!sess) return json({ ok: false, msg: "成绩凭证无效,请重开本局" }, 400);
-    if (sess.mode !== mode) return json({ ok: false, msg: "成绩凭证与难度不符" }, 400);
-    if (secs > sess.serverSecs + 10) return json({ ok: false, msg: "成绩无效:时长异常" }, 400);
+    if (!sess.ok) return json({ ok: false, msg: sess.msg }, 400);
+    if (sess.rec.mode !== mode) return json({ ok: false, msg: "会话与难度不匹配,请重新开局后再提交" }, 400);
+    // 服务端实际经过时长必须 ≥ 上报用时(容忍 10s 误差)
+    const serverSecs = Math.floor((Date.now() - sess.rec.startedAt) / 1000);
+    if (serverSecs + 10 < secs) return json({ ok: false, msg: "成绩校验失败:上报用时短于实际游戏时长,请稍后重试" }, 400);
 
     const entries = await loadMode(env, mode);
     if (entries.length >= RANK_LIMIT) return json({ ok: false, msg: "榜单已满" }, 400);
