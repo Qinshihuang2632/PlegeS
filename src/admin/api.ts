@@ -31,8 +31,8 @@ export async function apiMe(): Promise<AdminMe | null> {
     return data.ok ? data : null;
 }
 
-export async function apiRanks(game: string, mode: string, q = ""): Promise<RankList | null> {
-    const res = await fetch(`/admin/api/rank?game=${encodeURIComponent(game)}&mode=${encodeURIComponent(mode)}&q=${encodeURIComponent(q)}`);
+export async function apiRanks(game: string, mode: string, q = "", platform = "all"): Promise<RankList | null> {
+    const res = await fetch(`/admin/api/rank?game=${encodeURIComponent(game)}&mode=${encodeURIComponent(mode)}&q=${encodeURIComponent(q)}&platform=${encodeURIComponent(platform)}`);
     return res.ok ? j<RankList>(res) : null;
 }
 

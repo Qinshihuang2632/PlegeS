@@ -8,12 +8,13 @@ import { TILE_COLORS } from "./palette";
 
 /* 化学式字号按长度自适应(与旧版一致) */
 export function tileFontSize(f: string): number {
+    // v2.9.1: 整体上调 1~2px(手游端更易读; 仍受 fitFont 按卡宽收缩保护, 不超出卡面)
     const len = f.length;
-    if (len <= 2) return 19;
-    if (len <= 4) return 15;
-    if (len <= 6) return 13;
-    if (len <= 9) return 11;
-    return 10;
+    if (len <= 2) return 21;
+    if (len <= 4) return 17;
+    if (len <= 6) return 14;
+    if (len <= 9) return 12;
+    return 11;
 }
 
 /* 文字在卡牌宽度内的最大字号(v2.2.2): 按字符数收缩, 防换行/溢出; 留 4px 边距, 下限 6px */
@@ -44,7 +45,7 @@ export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
     const hasFormula = !!f && f !== "—" && [...f].length <= 10;
     const name = tile.sub.n;
     const fSize = hasFormula ? fitFont(f, tileFontSize(f), size) * k : 0;
-    const nSize = fitFont(name, hasFormula ? 9 : 12.5, size) * k;
+    const nSize = fitFont(name, hasFormula ? 10 : 13.5, size) * k;   // v2.9.1: 名称基准 +1px
     const layer = tile.L + 1;   // 顶层(最先接触)为第 1 层
     return (
         <div

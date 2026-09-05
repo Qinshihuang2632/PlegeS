@@ -93,6 +93,22 @@ export function HubPage() {
                     </span>
                 </Link>
 
+                {/* 开发中(v2.9.1: 下一批三款) */}
+                {([
+                    { icon: "语", name: "成了个语", desc: "成语专项三连:挑错字、消释义、尾字接龙,语文向开发中。" },
+                    { icon: "图", name: "认了个图", desc: "省↔省会↔简称三角配对与地理要素归类,地理向开发中。" },
+                    { icon: "数", name: "算了个数", desc: "高考数学心算限时闯关,难度逐关递增,数学向开发中。" },
+                ] as const).map((g) => (
+                    <div key={g.name} className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
+                        <div className="mb-3 text-4xl" aria-hidden>{g.icon}</div>
+                        <h2 className="text-lg font-bold">{g.name}</h2>
+                        <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">{g.desc}</p>
+                        <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+                            开发中
+                        </span>
+                    </div>
+                ))}
+
                 {/* 敬请期待 → 单词数独(v2.4.0 可玩) */}
                 <Link
                     to="/ylgy"

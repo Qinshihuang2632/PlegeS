@@ -102,9 +102,14 @@ export async function onRequestGet({ request, env }) {
     const raw = await loadMode(env, game, mode);
     const sorted = game.sort(raw);
     const rank = sorted.map((e) => ({ ...e, key: raw.indexOf(e) }));
+    // v2.9.1: 手游/端游分离查看(与前台结构一致); 旧条目无 platform 字段视为 desktop
+    const platform = url.searchParams.get("platform") || "all";
+    let filtered = rank;
+    if (platform === "mobile") filtered = rank.filter((e) => e.platform === "mobile");
+    else if (platform === "desktop") filtered = rank.filter((e) => e.platform !== "mobile");
     const q = (url.searchParams.get("q") || "").trim();
-    const filtered = q ? rank.filter((e) => String(e.name).includes(q)) : rank;
-    return json({ game: game.key, mode, total: raw.length, rank: filtered });
+    if (q) filtered = filtered.filter((e) => String(e.name).includes(q));
+    return json({ game: game.key, mode, platform, total: rank.length, rank: filtered });
 }
 
 export async function onRequestDelete({ request, env }) {

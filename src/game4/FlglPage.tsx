@@ -60,7 +60,7 @@ const LOSE_TEXT: Record<"hp" | "overflow", string> = {
 /** 化学式仅在有内容时显示(混合物等无固定化学式不显示) */
 function Formula({ sub }: { sub: Substance }) {
     if (!sub.f || sub.f === "—") return null;
-    return <span className="mt-0.5 text-[9px] leading-none text-muted-foreground">{sub.f}</span>;
+    return <span className="mt-0.5 text-[10px] leading-none text-muted-foreground">{sub.f}</span>;
 }
 
 export function FlglPage() {
@@ -373,7 +373,7 @@ export function FlglPage() {
             {playing && st && (() => {
                 /* 传送带视觉宽度(外层百分比): 容量 5 → 100%, 4 → 79.4%;
                    beltScale 用于把卡牌百分比反向放大, 卡牌像素尺寸/间距不随传送带变窄 */
-                const beltPct = (BELT_CAPACITY_OF[st.mode] - 1) * 20.6 + 17.6;
+                const beltPct = (BELT_CAPACITY_OF[st.mode] - 1) * 20 + 19;
                 const beltScale = beltPct / 100;
                 return (
                 <div className="space-y-3">
@@ -428,8 +428,8 @@ export function FlglPage() {
                                     drag?.id === c.id ? "opacity-40" : "cursor-grab border-border active:cursor-grabbing",
                                 )}
                                 style={{
-                                    left: `${(i * 20.6) / beltScale}%`,
-                                    width: `${17.6 / beltScale}%`,
+                                    left: `${(i * 20) / beltScale}%`,
+                                    width: `${19 / beltScale}%`,
                                     top: "50%",
                                     transform: `translate(${enteredIds.includes(c.id) ? 0 : (beltRef.current?.offsetWidth ?? 420)}px, -50%)`,
                                     /* 滑动时长(v1.1.6 用户指定): 入场(1 卡宽)2.5s 缓缓滑入,
@@ -439,7 +439,7 @@ export function FlglPage() {
                                 }}
                                 aria-label={`物质卡:${c.sub.n}`}
                             >
-                                <span className="w-full break-words text-[11px] font-bold leading-tight">{c.sub.n}</span>
+                                <span className="w-full break-words text-[13px] font-bold leading-tight">{c.sub.n}</span>
                                 <Formula sub={c.sub} />
                             </div>
                         ))}
@@ -468,7 +468,7 @@ export function FlglPage() {
                                     key={cat}
                                     ref={(el) => { catRefs.current[cat] = el; }}
                                     className={cn(
-                                        "flex h-14 items-center justify-center rounded-xl border text-[13px] font-semibold transition sm:h-16 sm:text-sm",
+                                        "flex h-14 items-center justify-center rounded-xl border text-sm font-semibold transition sm:h-16 sm:text-base",
                                         isFlash && (flash!.ok
                                             ? "border-success bg-success/15 text-success"
                                             : "border-destructive bg-destructive/10 text-destructive"),
@@ -522,7 +522,7 @@ export function FlglPage() {
                     style={{ left: drag.x - 40, top: drag.y - 44 }}
                     aria-hidden
                 >
-                    <span className="w-full break-words text-[11px] font-bold leading-tight">{drag.sub.n}</span>
+                    <span className="w-full break-words text-[13px] font-bold leading-tight">{drag.sub.n}</span>
                     <Formula sub={drag.sub} />
                 </div>
             )}

@@ -58,19 +58,21 @@ export function RanksPage() {
     const [curGame, setCurGame] = useState<GameKey>("hlgx");
     const game = GAMES.find((g) => g.key === curGame)!;
     const [curMode, setCurMode] = useState("easy");
+    /* v2.9.1: 手游/端游分离查看(与前台结构一致) */
+    const [curPlatform, setCurPlatform] = useState<"all" | "mobile" | "desktop">("all");
     const [q, setQ] = useState("");
     const [search, setSearch] = useState("");
     const [entries, setEntries] = useState<RankEntry[] | null>(null);
     const [confirm, setConfirm] = useState<ConfirmState>(null);
     const [busy, setBusy] = useState(false);
 
-    const load = useCallback(async (g: string, mode: string, keyword: string) => {
+    const load = useCallback(async (g: string, mode: string, keyword: string, platform: string) => {
         setEntries(null);
-        const data = await apiRanks(g, mode, keyword);
+        const data = await apiRanks(g, mode, keyword, platform);
         setEntries(data?.rank ?? []);
     }, []);
 
-    useEffect(() => { void load(curGame, curMode, search); }, [curGame, curMode, search, load]);
+    useEffect(() => { void load(curGame, curMode, search, curPlatform); }, [curGame, curMode, search, curPlatform, load]);
 
     const switchGame = (g: GameKey) => {
         setCurGame(g);
@@ -84,7 +86,7 @@ export function RanksPage() {
             const r = await fn();
             if (r.ok) {
                 toast.success(okMsg ?? "操作成功");
-                void load(curGame, curMode, search);
+                void load(curGame, curMode, search, curPlatform);
             } else {
                 toast.error(r.msg ?? "操作失败");
             }
@@ -143,6 +145,17 @@ export function RanksPage() {
                         )}
                     >
                         {label}
+                    </button>
+                ))}
+            </div>
+
+            {/* 平台切换(v2.9.1: 与前台一致, 手游/端游分离) */}
+            <div className="flex justify-center gap-1 rounded-full bg-muted p-1 sm:justify-start">
+                {([{ v: "all", l: "全部" }, { v: "mobile", l: "手游" }, { v: "desktop", l: "端游" }] as const).map(({ v, l }) => (
+                    <button key={v} onClick={() => setCurPlatform(v)}
+                        className={cn("rounded-full px-4 py-1.5 text-sm font-semibold transition",
+                            curPlatform === v ? "bg-card text-foreground shadow" : "text-muted-foreground hover:text-foreground")}>
+                        {l}
                     </button>
                 ))}
             </div>

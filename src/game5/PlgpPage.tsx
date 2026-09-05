@@ -421,7 +421,7 @@ export function PlgpPage() {
                                         <button
                                             key={d}
                                             onClick={() => setSt((prev) => (prev ? appendDigit(prev, Math.min(selIdx, n - 1), Number(d)) : prev))}
-                                            className="h-11 rounded-lg border bg-card font-mono text-base font-bold shadow-sm transition hover:bg-muted active:scale-[0.97]"
+                                            className="h-11 rounded-lg border bg-card font-mono text-lg font-bold shadow-sm transition hover:bg-muted active:scale-[0.97]"
                                         >
                                             {d}
                                         </button>
@@ -520,7 +520,7 @@ function CoefCell({ st, i, editable, selIdx, setSelIdx }: {
             onClick={() => editable && setSelIdx(i)}
             aria-label={`第 ${i + 1} 个系数`}
             className={cn(
-                "relative mr-1 inline-flex h-8 w-9 shrink-0 items-center justify-center rounded-lg border font-mono text-base font-bold transition",
+                "relative mr-1 inline-flex h-8 w-9 shrink-0 items-center justify-center rounded-lg border font-mono text-lg font-bold transition",
                 locked
                     ? "border-success/60 bg-success/10 text-success"
                     : editable && selIdx === i

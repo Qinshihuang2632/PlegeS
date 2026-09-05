@@ -536,7 +536,7 @@ export function YlgyPage() {
                                     key={`${r}-${c}`}
                                     onClick={() => onCell(r, c)}
                                     className={cn(
-                                        "flex aspect-square w-full items-center justify-center rounded-lg border text-base font-bold transition sm:text-lg",
+                                        "flex aspect-square w-full items-center justify-center rounded-lg border text-lg font-bold transition sm:text-xl",
                                         isFixed
                                             ? "border-transparent bg-muted text-muted-foreground"
                                             : isDone
