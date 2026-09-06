@@ -55,15 +55,50 @@ function shuffle<T>(a: T[], rng: () => number): T[] {
     return a;
 }
 
-/** 开局: 按难度抽 5 张事件(年份互异, 同年事件不同局共现)并打乱(保证初始不是全对) */
+/** 每张卡「年份正确区段」: 同年事件并列, 区段 = [首个该年位置, 末个该年位置]; 卡位于区段内即算归位。
+    简单/标准无同年(区段=单点), 与旧版唯一位置判定等价; 困难允许同年并列(v1.2.0)。 */
+export function yearRange(cards: LlgsCard[], y: number): [number, number] {
+    const ys = cards.map((c) => c.ev.y).sort((a, b) => a - b);
+    let lo = ys.indexOf(y);
+    let hi = ys.lastIndexOf(y);
+    if (lo < 0) { lo = 0; hi = 0; }
+    return [lo, hi];
+}
+
+/** 当前排列是否全部处于各自年份区段(等价于年份序列非降序; 同年组内任意顺序均正确) */
+export function isYearlyCorrect(cards: LlgsCard[]): boolean {
+    for (let i = 1; i < cards.length; i++) {
+        if (cards[i - 1].ev.y > cards[i].ev.y) return false;
+    }
+    return true;
+}
+
+/** 开局: 按难度抽 5 张事件并打乱(保证初始不是全对)。
+    简单/标准: 年份去重(同年不同局共现); 困难(v1.2.0): 解除去重允许同年并列,
+    且有 75% 概率强制出现一组同年事件(并列辨析是困难核心难度, 天然 ~2% 太低)。 */
 export function newGame(mode: LlgsMode, rng: () => number = Math.random): LlgsState {
     const pool = POOL_OF[mode];
     const picked: LlgsEvent[] = [];
     const seenYear = new Set<number>();
     const rest = shuffle([...pool], rng);
+    // 困难模式: 大概率先挑一组同年事件(整组 2~3 张, 组内全取)
+    if (mode === "hard" && rng() < 0.75) {
+        const byYear = new Map<number, LlgsEvent[]>();
+        for (const ev of pool) {
+            const arr = byYear.get(ev.y) ?? [];
+            arr.push(ev);
+            byYear.set(ev.y, arr);
+        }
+        const groups = [...byYear.entries()].filter(([, arr]) => arr.length >= 2);
+        const [gy, gev] = groups[Math.floor(rng() * groups.length)];
+        const take = gev.slice(0, 3);   // 组内最多取 3 张(1945 四件套也只取 3)
+        picked.push(...take);
+        seenYear.add(gy);
+    }
     for (const ev of rest) {
         if (picked.length >= ROUND_CARDS) break;
-        if (seenYear.has(ev.y)) continue;
+        if (mode !== "hard" && seenYear.has(ev.y)) continue;   // 困难: 同年可重复出现(并列)
+        if (seenYear.has(ev.y)) continue;                      // 已选同年组年份不重复补位
         seenYear.add(ev.y);
         picked.push(ev);
     }
@@ -72,7 +107,7 @@ export function newGame(mode: LlgsMode, rng: () => number = Math.random): LlgsSt
     let order = cards.map((_, i) => i);
     do {
         order = shuffle(order, rng);
-    } while (order.every((v, i) => cards[v].ev.y <= (i > 0 ? cards[order[i - 1]].ev.y : -Infinity)));
+    } while (isYearlyCorrect(order.map((i) => cards[i])));
     const arranged = order.map((i) => cards[i]);
     return {
         mode,
@@ -86,14 +121,6 @@ export function newGame(mode: LlgsMode, rng: () => number = Math.random): LlgsSt
     };
 }
 
-/** 是否已处于正确时间顺序(年份升序) */
-export function isOrdered(cards: LlgsCard[]): boolean {
-    for (let i = 1; i < cards.length; i++) {
-        if (cards[i - 1].ev.y > cards[i].ev.y) return false;
-    }
-    return true;
-}
-
 /** 交换两张卡的位置(拖拽落位) */
 export function swap(st: LlgsState, a: number, b: number): LlgsState {
     if (st.phase !== "playing" || a === b) return st;
@@ -103,29 +130,38 @@ export function swap(st: LlgsState, a: number, b: number): LlgsState {
     return { ...st, cards, lastWrong: null };
 }
 
-/** 提交判定: 归位正确 → 锁定; 错位 → 保持可调并记录(返回新状态; win 时 phase="win") */
+/** 提交判定(v1.2.0 区段模型): 卡位于自己年份区段内 → 归位锁定(同年并列任意顺序均可);
+    区段外 → 错位标红可续调。全绿 → win。 */
 export function judge(st: LlgsState): LlgsState {
     if (st.phase !== "playing") return st;
     const done = [...st.done];
     const wrong: number[] = [];
     for (let i = 0; i < st.cards.length; i++) {
-        // 该位事件是否就是「按年份升序该出现在这里」的事件
-        const sorted = [...st.cards].sort((a, b) => a.ev.y - b.ev.y);
-        if (st.cards[i].ev.n === sorted[i].ev.n) done[i] = true;
+        const [lo, hi] = yearRange(st.cards, st.cards[i].ev.y);
+        if (i >= lo && i <= hi) done[i] = true;
         else if (!done[i]) wrong.push(i);
     }
     const phase = done.every(Boolean) ? "win" as const : "playing" as const;
     return { ...st, done, lastWrong: phase === "playing" ? wrong : null, attempts: st.attempts + 1, phase };
 }
 
-/** 提示道具: 选一张未归位卡按正确时间顺序插回(该位锁定); 用尽/全归位则原样返回 */
+/** 提示道具(v1.2.0): 选一张未归位卡插回其年份区段内的空位并锁定(同年并列时区段内任意空位均可);
+    用尽/全归位则原样返回 */
 export function useHint(st: LlgsState, rng: () => number = Math.random): LlgsState {
     if (st.phase !== "playing" || st.hintsLeft <= 0) return st;
     const undone = st.cards.map((_, i) => i).filter((i) => !st.done[i]);
     if (undone.length === 0) return st;
-    const sorted = [...st.cards].sort((a, b) => a.ev.y - b.ev.y);
     const i = undone[Math.floor(rng() * undone.length)];
-    const target = sorted.findIndex((c) => c.ev.n === st.cards[i].ev.n);
+    const y = st.cards[i].ev.y;
+    const sortedYs = st.cards.map((c) => c.ev.y).sort((a, b) => a - b);
+    const lo = sortedYs.indexOf(y);
+    const hi = sortedYs.lastIndexOf(y);
+    // 区段内未被锁定的位置优先(已锁定卡不可被顶替); 全部锁定则任意区段位
+    let target = -1;
+    for (let p = lo; p <= hi; p++) {
+        if (!st.done[p]) { target = p; break; }
+    }
+    if (target < 0) target = lo;
     const cards = [...st.cards];
     const card = cards[i];
     cards.splice(i, 1);

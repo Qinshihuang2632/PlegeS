@@ -53,7 +53,6 @@ export function LlgsPage() {
     const [phase, setPhase] = useState<"ready" | "playing" | "result">("ready");
     const [st, setSt] = useState<LlgsState | null>(null);
     const [dragIdx, setDragIdx] = useState<number | null>(null);   // 拖拽中的卡位
-    const [overIdx, setOverIdx] = useState<number | null>(null);   // 悬停目标位
     const [result, setResult] = useState<ResultInfo | null>(null);
     const submittedRef = useRef(false);
 
@@ -177,7 +176,6 @@ export function LlgsPage() {
         if (dragIdx === null) return;
         setSt((prev) => (prev ? swap(prev, dragIdx, idx) : prev));
         setDragIdx(null);
-        setOverIdx(null);
     };
 
     const doJudge = () => {
@@ -251,29 +249,63 @@ export function LlgsPage() {
                         </p>
                     )}
 
-                    {/* 事件卡 + 时间轴: 先排卡区(乱序), 拖到时间轴槽位 */}
+                    {/* 事件卡 + 时间轴: 点击卡再点另一张交换(v1.2.0 困难: 同年事件上下并列, 顺序不限) */}
                     <div className="rounded-2xl border bg-card p-3 shadow-sm">
-                        <p className="mb-2 text-xs font-semibold text-muted-foreground">事件卡(乱序,点击卡再点空位交换)</p>
-                        <div className="grid grid-cols-5 gap-1.5">
-                            {st.cards.map((c, i) => (
-                                <button
-                                    key={c.ev.n}
-                                    onPointerDown={(e) => onCardPointerDown(e, i)}
-                                    onPointerUp={() => onCardPointerUp(i)}
-                                    aria-label={`第 ${i + 1} 位:${c.ev.n}`}
-                                    className={cn(
-                                        "flex h-16 touch-none select-none items-center justify-center rounded-lg border px-1 text-center text-[11px] font-bold leading-tight shadow-sm transition",
-                                        st.done[i] ? "cursor-default border-success/60 bg-success/15 text-success"
-                                            : st.lastWrong?.includes(i) ? "cursor-grab border-destructive bg-destructive/10 text-destructive active:cursor-grabbing"
-                                                : dragIdx === i ? "cursor-grabbing border-primary bg-primary/10 text-primary"
-                                                    : "cursor-grab border-border bg-card hover:bg-muted/60 active:cursor-grabbing",
-                                        dragIdx !== null && dragIdx !== i && overIdx === i && "border-primary ring-2 ring-primary/50",
-                                    )}
-                                >
-                                    {c.ev.n}
-                                </button>
-                            ))}
-                        </div>
+                        <p className="mb-2 text-xs font-semibold text-muted-foreground">
+                            {mode === "hard"
+                                ? "事件卡(乱序):同年事件需上下并列摆放,上下顺序不限;点击两张卡交换位置"
+                                : "事件卡(乱序):点击两张卡交换位置"}
+                        </p>
+                        {mode === "hard" ? (
+                            /* 困难: 同年段并为一列(上下堆叠) */
+                            <div className="flex items-stretch gap-1.5">
+                                {(() => {
+                                    const cols: number[][] = [];
+                                    for (let i = 0; i < st.cards.length; i++) {
+                                        if (i > 0 && st.cards[i].ev.y === st.cards[i - 1].ev.y) cols[cols.length - 1].push(i);
+                                        else cols.push([i]);
+                                    }
+                                    return cols.map((col, ci) => (
+                                        <div
+                                            key={ci}
+                                            className={cn(
+                                                "flex flex-1 flex-col justify-center gap-1 rounded-xl p-1",
+                                                col.length > 1 && "border border-dashed border-primary/40 bg-primary/5",
+                                            )}
+                                            style={{ height: col.length > 1 ? `${col.length * 1.75}rem` : undefined, minHeight: "4.5rem" }}
+                                        >
+                                            {col.map((i) => (
+                                                <EventCard
+                                                    key={st.cards[i].ev.n}
+                                                    name={st.cards[i].ev.n}
+                                                    done={st.done[i]}
+                                                    wrong={!!st.lastWrong?.includes(i)}
+                                                    dragging={dragIdx === i}
+                                                    compact={col.length > 2}
+                                                    onDown={(e) => onCardPointerDown(e, i)}
+                                                    onUp={() => onCardPointerUp(i)}
+                                                />
+                                            ))}
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-5 gap-1.5">
+                                {st.cards.map((c, i) => (
+                                    <EventCard
+                                        key={c.ev.n}
+                                        name={c.ev.n}
+                                        done={st.done[i]}
+                                        wrong={!!st.lastWrong?.includes(i)}
+                                        dragging={dragIdx === i}
+                                        compact={false}
+                                        onDown={(e) => onCardPointerDown(e, i)}
+                                        onUp={() => onCardPointerUp(i)}
+                                    />
+                                ))}
+                            </div>
+                        )}
                         {/* 时间轴: 左早右晚 */}
                         <div
                             className="mt-3 flex items-center justify-between gap-1 rounded-xl border border-dashed bg-muted/30 px-2 py-1.5 text-[10px] text-muted-foreground"
@@ -281,7 +313,7 @@ export function LlgsPage() {
                             aria-label="时间轴:左早右晚"
                         >
                             <span>更早 ←</span>
-                            <span>→ 更晚</span>
+                            <span>{mode === "hard" ? "同年并列 ↑↓ · 顺序不限" : "→ 更晚"}</span>
                         </div>
                     </div>
 
@@ -433,5 +465,34 @@ function ReadyScreen(props: {
 
             <footer className="mt-6 text-center text-xs text-muted-foreground">历了个史 · {LLGS_VERSION}(仅供个人娱乐)</footer>
         </div>
+    );
+}
+
+/** 事件卡(统一外观; 拖动/错位/归位三态; compact = 三卡并列时的紧凑高度) */
+function EventCard({ name, done, wrong, dragging, compact, onDown, onUp }: {
+    name: string;
+    done: boolean;
+    wrong: boolean;
+    dragging: boolean;
+    compact: boolean;
+    onDown: (e: React.PointerEvent) => void;
+    onUp: () => void;
+}) {
+    return (
+        <button
+            onPointerDown={onDown}
+            onPointerUp={onUp}
+            aria-label={name}
+            className={cn(
+                "flex touch-none select-none items-center justify-center rounded-lg border px-1 text-center font-bold leading-snug shadow-sm transition break-words",
+                compact ? "h-9 text-[10px]" : "h-10 text-xs",
+                done ? "cursor-default border-success/60 bg-success/15 text-success"
+                    : wrong ? "cursor-grab border-destructive bg-destructive/10 text-destructive active:cursor-grabbing"
+                        : dragging ? "cursor-grabbing border-primary bg-primary/10 text-primary"
+                            : "cursor-grab border-border bg-card hover:bg-muted/60 active:cursor-grabbing",
+            )}
+        >
+            {name}
+        </button>
     );
 }
