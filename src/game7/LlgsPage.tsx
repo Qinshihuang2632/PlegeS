@@ -21,7 +21,8 @@ import { NameEntryDialog, storedIdentity } from "@/game/NameEntryDialog";
 import { reportPlayLog } from "@/game/playlog";
 import { LlgsRules } from "./LlgsRules";
 import { LLGS_VERSION } from "./version";
-import { HINT_LIMIT, ROUND_CARDS, judge, newGame, swap, tick, useHint, type LlgsMode, type LlgsState } from "./core";
+import type { LlgsMode } from "./bank";
+import { HINT_LIMIT, ROUND_CARDS, flatCols, judge, locate, moveSide, newGame, select, swapAdjacent, tick, useHint, type LlgsState } from "./core";
 
 const NAME_KEY = "hlgx_name";   // 平台昵称(全平台共享)
 
@@ -52,7 +53,6 @@ export function LlgsPage() {
     const [mode, setMode] = useState<LlgsMode>("easy");
     const [phase, setPhase] = useState<"ready" | "playing" | "result">("ready");
     const [st, setSt] = useState<LlgsState | null>(null);
-    const [dragIdx, setDragIdx] = useState<number | null>(null);   // 拖拽中的卡位
     const [result, setResult] = useState<ResultInfo | null>(null);
     const submittedRef = useRef(false);
 
@@ -166,17 +166,26 @@ export function LlgsPage() {
         return () => clearInterval(t);
     }, [phase]);
 
-    /* 拖拽: pointer 事件(手机/电脑通用) */
-    const onCardPointerDown = (e: React.PointerEvent, idx: number) => {
-        if (!st || st.phase !== "playing" || st.done[idx]) return;
-        e.preventDefault();
-        setDragIdx(idx);
+    /* v1.3.0: 点选卡(替代拖拽) —— 选中对象跟随卡移动, 点其他卡才切换 */
+    const onCardClick = (name: string) => {
+        if (!st || st.phase !== "playing") return;
+        setSt((prev) => (prev ? select(prev, name) : prev));
     };
-    const onCardPointerUp = (idx: number) => {
-        if (dragIdx === null) return;
-        setSt((prev) => (prev ? swap(prev, dragIdx, idx) : prev));
-        setDragIdx(null);
+    const doMove = (act: "L" | "R" | "LT" | "LB" | "RT" | "RB") => {
+        setSt((prev) => {
+            if (!prev || !prev.sel) return prev;
+            if (act === "L") return swapAdjacent(prev, "L");
+            if (act === "R") return swapAdjacent(prev, "R");
+            if (act === "LT") return moveSide(prev, "L", "top");
+            if (act === "LB") return moveSide(prev, "L", "bot");
+            if (act === "RT") return moveSide(prev, "R", "top");
+            return moveSide(prev, "R", "bot");
+        });
     };
+    /* 按键可用性: 由选中卡当前列位置决定 */
+    const selPos = st && st.sel ? locate(st, st.sel) : null;
+    const hasLeft = !!selPos && selPos[0] > 0;
+    const hasRight = !!selPos && !!st && selPos[0] < st.cols.length - 1;
 
     const doJudge = () => {
         setSt((prev) => (prev ? judge(prev) : prev));
@@ -234,78 +243,52 @@ export function LlgsPage() {
                     {/* 状态栏 */}
                     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-xl bg-muted/50 px-4 py-2 text-sm">
                         <span>⏱ <b className="tabular-nums font-mono">{fmtTime(Math.floor(st.elapsed))}</b></span>
-                        <span>已归位 <b>{st.done.filter(Boolean).length}</b>/{ROUND_CARDS}</span>
+                        <span>已归位 <b>{flatCols(st.cols).filter((c) => c.done).length}</b>/{ROUND_CARDS}</span>
                         <span>提交 <b className="tabular-nums font-mono">{st.attempts}</b> 次</span>
                         <span>提示 <b>{st.hintsLeft}</b> 次</span>
                     </div>
 
                     {/* 提示条 */}
                     <p className="min-h-5 text-center text-xs text-muted-foreground">
-                        按时间先后拖动事件卡排序,排好后点「提交判定」;正确卡变绿锁定,错位卡标红可继续调
+                        {mode === "hard"
+                            ? "点选一张事件卡,用下方方位按键移动:左右交换,左上/左下/右上/右下构成同年并列(上下顺序不限)"
+                            : "点选一张事件卡,用左右按键与相邻卡交换;排好后点「提交判定」"}
                     </p>
                     {st.lastWrong && st.lastWrong.length > 0 && (
                         <p className="text-center text-xs font-semibold text-destructive">
-                            有 {st.lastWrong.length} 张卡位置不对:红色卡可继续拖动(可先排好确定正确的卡)
+                            有 {st.lastWrong.length} 张卡位置不对:红色卡可继续调整(绿色卡已归位锁定)
                         </p>
                     )}
 
-                    {/* 事件卡 + 时间轴: 点击卡再点另一张交换(v1.2.0 困难: 同年事件上下并列, 顺序不限) */}
+                    {/* 事件卡区(v1.3.0 列模型渲染) */}
                     <div className="rounded-2xl border bg-card p-3 shadow-sm">
                         <p className="mb-2 text-xs font-semibold text-muted-foreground">
-                            {mode === "hard"
-                                ? "事件卡(乱序):同年事件需上下并列摆放,上下顺序不限;点击两张卡交换位置"
-                                : "事件卡(乱序):点击两张卡交换位置"}
+                            事件卡(乱序):点选后卡上出现选中框{mode === "hard" ? ",同年事件请并列摆放" : ""}
                         </p>
-                        {mode === "hard" ? (
-                            /* 困难: 同年段并为一列(上下堆叠) */
-                            <div className="flex items-stretch gap-1.5">
-                                {(() => {
-                                    const cols: number[][] = [];
-                                    for (let i = 0; i < st.cards.length; i++) {
-                                        if (i > 0 && st.cards[i].ev.y === st.cards[i - 1].ev.y) cols[cols.length - 1].push(i);
-                                        else cols.push([i]);
-                                    }
-                                    return cols.map((col, ci) => (
-                                        <div
-                                            key={ci}
-                                            className={cn(
-                                                "flex flex-1 flex-col justify-center gap-1 rounded-xl p-1",
-                                                col.length > 1 && "border border-dashed border-primary/40 bg-primary/5",
-                                            )}
-                                            style={{ height: col.length > 1 ? `${col.length * 1.75}rem` : undefined, minHeight: "4.5rem" }}
-                                        >
-                                            {col.map((i) => (
-                                                <EventCard
-                                                    key={st.cards[i].ev.n}
-                                                    name={st.cards[i].ev.n}
-                                                    done={st.done[i]}
-                                                    wrong={!!st.lastWrong?.includes(i)}
-                                                    dragging={dragIdx === i}
-                                                    compact={col.length > 2}
-                                                    onDown={(e) => onCardPointerDown(e, i)}
-                                                    onUp={() => onCardPointerUp(i)}
-                                                />
-                                            ))}
-                                        </div>
-                                    ));
-                                })()}
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-5 gap-1.5">
-                                {st.cards.map((c, i) => (
-                                    <EventCard
-                                        key={c.ev.n}
-                                        name={c.ev.n}
-                                        done={st.done[i]}
-                                        wrong={!!st.lastWrong?.includes(i)}
-                                        dragging={dragIdx === i}
-                                        compact={false}
-                                        onDown={(e) => onCardPointerDown(e, i)}
-                                        onUp={() => onCardPointerUp(i)}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                        <div className="flex items-stretch gap-1.5">
+                            {st.cols.map((col, ci) => (
+                                <div
+                                    key={ci}
+                                    className={cn(
+                                        "flex flex-1 flex-col justify-center gap-1 rounded-xl p-1",
+                                        col.length > 1 && "border border-dashed border-primary/40 bg-primary/5",
+                                    )}
+                                    style={{ minHeight: "4.5rem", height: col.length > 1 ? (col.length * 1.75 + "rem") : undefined }}
+                                >
+                                    {col.map((c) => (
+                                        <EventCard
+                                            key={c.ev.n}
+                                            name={c.ev.n}
+                                            done={!!c.done}
+                                            wrong={!c.done && !!st.lastWrong?.includes(c.ev.n)}
+                                            selected={st.sel === c.ev.n}
+                                            compact={col.length > 2}
+                                            onClick={() => onCardClick(c.ev.n)}
+                                        />
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
                         {/* 时间轴: 左早右晚 */}
                         <div
                             className="mt-3 flex items-center justify-between gap-1 rounded-xl border border-dashed bg-muted/30 px-2 py-1.5 text-[10px] text-muted-foreground"
@@ -315,6 +298,31 @@ export function LlgsPage() {
                             <span>更早 ←</span>
                             <span>{mode === "hard" ? "同年并列 ↑↓ · 顺序不限" : "→ 更晚"}</span>
                         </div>
+                    </div>
+
+                    {/* 方位按键组(v1.3.0): 简单/标准 2 键, 困难 6 键; 未点选卡时禁用 */}
+                    <div
+                        className={cn(
+                            "grid gap-1.5",
+                            mode === "hard" ? "grid-cols-6" : "grid-cols-2",
+                        )}
+                    >
+                        <Button variant="secondary" size="sm" className="h-10 px-1 text-xs"
+                            disabled={!selPos || !hasLeft} onClick={() => doMove("L")}>← 左</Button>
+                        <Button variant="secondary" size="sm" className="h-10 px-1 text-xs"
+                            disabled={!selPos || !hasRight} onClick={() => doMove("R")}>右 →</Button>
+                        {mode === "hard" && (
+                            <>
+                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
+                                    disabled={!selPos || !hasLeft} onClick={() => doMove("LT")}>↖ 左上</Button>
+                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
+                                    disabled={!selPos || !hasRight} onClick={() => doMove("RT")}>↗ 右上</Button>
+                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
+                                    disabled={!selPos || !hasLeft} onClick={() => doMove("LB")}>↙ 左下</Button>
+                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
+                                    disabled={!selPos || !hasRight} onClick={() => doMove("RB")}>↘ 右下</Button>
+                            </>
+                        )}
                     </div>
 
                     {/* 操作 */}
@@ -328,8 +336,8 @@ export function LlgsPage() {
 
                     {/* 归位进度 */}
                     <div className="flex justify-center gap-1">
-                        {st.done.map((d, i) => (
-                            <span key={i} className={cn("h-1.5 w-8 rounded-full", d ? "bg-success" : "bg-muted")} />
+                        {flatCols(st.cols).map((c) => (
+                            <span key={c.ev.n} className={cn("h-1.5 w-8 rounded-full", c.done ? "bg-success" : "bg-muted")} />
                         ))}
                     </div>
                 </div>
@@ -469,27 +477,26 @@ function ReadyScreen(props: {
 }
 
 /** 事件卡(统一外观; 拖动/错位/归位三态; compact = 三卡并列时的紧凑高度) */
-function EventCard({ name, done, wrong, dragging, compact, onDown, onUp }: {
+function EventCard({ name, done, wrong, selected, compact, onClick }: {
     name: string;
     done: boolean;
     wrong: boolean;
-    dragging: boolean;
+    selected: boolean;
     compact: boolean;
-    onDown: (e: React.PointerEvent) => void;
-    onUp: () => void;
+    onClick: () => void;
 }) {
     return (
         <button
-            onPointerDown={onDown}
-            onPointerUp={onUp}
+            onClick={onClick}
             aria-label={name}
+            aria-pressed={selected}
             className={cn(
                 "flex touch-none select-none items-center justify-center rounded-lg border px-1 text-center font-bold leading-snug shadow-sm transition break-words",
                 compact ? "h-9 text-[10px]" : "h-10 text-xs",
                 done ? "cursor-default border-success/60 bg-success/15 text-success"
-                    : wrong ? "cursor-grab border-destructive bg-destructive/10 text-destructive active:cursor-grabbing"
-                        : dragging ? "cursor-grabbing border-primary bg-primary/10 text-primary"
-                            : "cursor-grab border-border bg-card hover:bg-muted/60 active:cursor-grabbing",
+                    : wrong ? "border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20"
+                        : selected ? "border-primary bg-primary/10 text-primary ring-2 ring-primary"
+                            : "border-border bg-card hover:bg-muted/60",
             )}
         >
             {name}

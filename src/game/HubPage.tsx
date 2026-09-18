@@ -17,9 +17,18 @@ import { FlglRules } from "@/game4/FlglRules";
 import { PlgpRules } from "@/game5/PlgpRules";
 import { validateNickname } from "./NameConfirmDialog";
 import { PLATFORM_VERSION } from "@/version";
+import { UPDATE_ID, UPDATE_ITEMS, UPDATE_SEEN_KEY } from "@/game/updateNotice";
 
 export function HubPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
+    /* 更新日志弹窗(v2.9.3): UPDATE_ID(平台+各游戏版本拼接)变化则弹一次, 关闭后 localStorage 记忆不再弹 */
+    const [updateOpen, setUpdateOpen] = useState(() => {
+        try { return localStorage.getItem(UPDATE_SEEN_KEY) !== UPDATE_ID; } catch { return true; }
+    });
+    const closeUpdate = () => {
+        try { localStorage.setItem(UPDATE_SEEN_KEY, UPDATE_ID); } catch { /* 隐私模式忽略 */ }
+        setUpdateOpen(false);
+    };
     const [thanksOpen, setThanksOpen] = useState(false);
     const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl" | "plgp" | "llgs">("hlgx");   // 玩法介绍: 六游戏子页(错了个字维护中仍保留)
     const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -242,66 +251,100 @@ export function HubPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* 特别鸣谢弹窗(✕ 可关闭; 按贡献版本数从多到少, 标注游戏与版本) */}
-            <Dialog open={thanksOpen} onOpenChange={setThanksOpen}>
-                <DialogContent className="sm:max-w-md">
+            {/* 更新日志弹窗(v2.9.3): 每次更新后玩家首次打开平台弹出一次, ✕/知道了均可关闭 */}
+            <Dialog open={updateOpen} onOpenChange={(v) => { if (!v) closeUpdate(); }}>
+                <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>特别鸣谢</DialogTitle>
-                        <DialogDescription>感谢以下成员在各游戏版本中的建议与操作帮助(标注对应游戏与版本)</DialogDescription>
+                        <DialogTitle>更新日志</DialogTitle>
+                        <DialogDescription>本次更新内容,感谢每一位玩家与贡献者!</DialogDescription>
                     </DialogHeader>
                     <ul className="space-y-2">
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        {UPDATE_ITEMS.map((u) => (
+                            <li key={u.tag + u.version} className="rounded-lg bg-muted/40 px-3 py-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">{u.tag}</span>
+                                    <span className="text-xs text-muted-foreground tabular-nums">{u.version}</span>
+                                </div>
+                                <p className="mt-1 text-[13px] leading-relaxed text-foreground/90">{u.text}</p>
+                            </li>
+                        ))}
+                    </ul>
+                    <Button className="w-full" onClick={closeUpdate}>知道了</Button>
+                </DialogContent>
+            </Dialog>
+
+            {/* 特别鸣谢弹窗(✕ 可关闭; 按贡献版本数从多到少, 标注游戏与版本) */}
+            <Dialog open={thanksOpen} onOpenChange={setThanksOpen}>
+                <DialogContent className="max-h-[80dvh] overflow-y-auto sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>特别鸣谢</DialogTitle>
+                        <DialogDescription>感谢以下成员在各游戏版本中的建议与操作帮助(标注对应游戏与版本;列表可上下滑动)</DialogDescription>
+                    </DialogHeader>
+                    <ul className="space-y-1.5">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@在下雨</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.0.0-cloudflare~v2.1.2(云端迁移 / 工程化重构 / 安全处置);英了个语 v1.1.0~v1.4.0(算法重构优化);错了个字 v1.0.1、v1.0.2(识别算法与判定修复);分了个类 v1.1.1、配了个平 v1.0.1(排行榜会话令牌);英了个语 v1.6.0(AI 单词检测)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@鹜秋</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.1.9、v2.2.1(屏蔽词名录扩充)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@鼠鼠鼠了</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.1.9(混合物类别)、v2.2.2(挑战难度布局);英了个语 v1.0.0(单词数独上线)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@Skjusty</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.1.5(多类别消除)、v2.1.8(移动端棋盘放大)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@安比</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.1.6(玩法介绍完善)、v2.1.7(数据安全修复);英了个语 v1.6.0(AI 单词检测)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@壹棵小玖菜</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.1.8(题库修正)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@绝艺如君</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.1.6(玩法介绍完善)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@楠鸢</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 化了个学 v2.3.13(物质库扩容至 296 种);分了个类 v1.1.7(出牌间隔与传送带容量调整)
                             </span>
                         </li>
-                        <li className="rounded-lg bg-muted/40 px-3 py-2">
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
                             <span className="font-semibold">@Ttik</span>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                                 英了个语 v1.6.0(AI 单词检测)
+                            </span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
+                            <span className="font-semibold">@wcx</span>
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+                                历了个史 v1.0.0(时间轴排序上线)
+                            </span>
+                        </li>
+                        <li className="rounded-lg bg-muted/40 px-3 py-1.5">
+                            <span className="font-semibold">@小潘</span>
+                            <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+                                化了个学 v2.3.14(卡面字体可读性优化)
                             </span>
                         </li>
                     </ul>

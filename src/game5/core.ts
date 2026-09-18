@@ -33,6 +33,11 @@ export interface PlgpJudge {
     reason?: "incomplete" | "ratio" | "wrong";
 }
 
+export interface PlgpWrongEntry {
+    id: number;        // 题目 id(去重用)
+    given: number[];   // 玩家最后一次的错误作答
+}
+
 export interface PlgpState {
     phase: PlgpPhase;
     mode: PlgpMode;
@@ -47,6 +52,7 @@ export interface PlgpState {
     toolsUsed: number;
     elapsed: number;             // 秒
     lastJudge?: PlgpJudge;
+    wrongBook: PlgpWrongEntry[]; // 错题本(v1.0.5: 本局配错过的题, 按题去重, 结算展示)
 }
 
 function shuffled<T>(arr: T[], rng: () => number): T[] {
@@ -77,6 +83,7 @@ export function newGame(mode: PlgpMode, rng: () => number = Math.random): PlgpSt
         hp: HP_MAX,
         hintsLeft: HINT_LIMIT,
         toolsUsed: 0,
+        wrongBook: [],
         elapsed: 0,
     };
     return { ...base, ...resetAnswer(base) };
@@ -165,10 +172,16 @@ export function submit(st: PlgpState): PlgpState {
     }
     const hp = st.hp - 1;
     const reason: "ratio" | "wrong" = isScaledVersion(sub, eq.coefs) ? "ratio" : "wrong";
+    // 错题本(v1.0.5): 配错的题按题去重记录(更新为最后一次错误作答), 结算逐一展示正确方程式
+    const wrongBook = [
+        ...st.wrongBook.filter((w) => w.id !== eq.id),
+        { id: eq.id, given: [...sub] },
+    ];
     return {
         ...st,
         hp,
         mistakes: st.mistakes + 1,
+        wrongBook,
         phase: hp <= 0 ? "lose" : "playing",
         lastJudge: { ok: false, reason },
     };

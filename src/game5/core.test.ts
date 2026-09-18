@@ -250,3 +250,34 @@ describe("配了个平 · 游戏逻辑", () => {
         expect(st.elapsed).toBe(t);
     });
 });
+
+describe("配了个平 · v1.0.5 错题本", () => {
+    it("配错时记录错题(按题去重, 更新最后一次作答); 结算可展示", () => {
+        let st = newGame("easy", seedRng(21));
+        // 第一题故意填错(全满但错误): 找一组非正确系数
+        let eq = currentEquation(st);
+        const wrongCoefs = eq.coefs.map((v) => (v === 1 ? 2 : 1));
+        st = { ...st, blanks: wrongCoefs };
+        st = submit(st);
+        expect(st.hp).toBe(2);   // 3 血初始, 错一次剩 2
+        expect(st.wrongBook).toHaveLength(1);
+        expect(st.wrongBook[0].id).toBe(eq.id);
+        expect(st.wrongBook[0].given).toEqual(wrongCoefs);
+        // 同题再错一次 → 仍一条, given 更新
+        const wrong2 = wrongCoefs.map((v) => v + 1);
+        st = { ...st, blanks: wrong2 };
+        st = submit(st);
+        expect(st.wrongBook).toHaveLength(1);
+        expect(st.wrongBook[0].given).toEqual(wrong2);
+        // 改对进入下一题, 再错第二题 → 错题本 2 条
+        eq = currentEquation(st);
+        st = { ...st, blanks: eq.coefs };
+        st = submit(st);
+        expect(st.score).toBe(1);
+        const eq2 = currentEquation(st);
+        st = { ...st, blanks: eq2.coefs.map((v) => (v === 1 ? 3 : 1)) };
+        st = submit(st);
+        expect(st.wrongBook).toHaveLength(2);
+        expect(st.wrongBook[1].id).toBe(eq2.id);
+    });
+});

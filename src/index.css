@@ -124,7 +124,7 @@
 }
 
 .hlgx-tile-f { font-weight: 800; line-height: 1.1; text-align: center; white-space: nowrap; max-width: 100%; overflow: hidden; }
-.hlgx-tile-n { font-size: 9px; opacity: 0.92; letter-spacing: 0.3px; text-align: center; white-space: nowrap; max-width: 100%; overflow: hidden; }
+.hlgx-tile-n { font-size: 10px; opacity: 0.92; letter-spacing: 0.3px; text-align: center; max-width: 100%; overflow: hidden; display: block; }
 /* 层数角标(v2.2.6): 左上角半透明小字, 顶层=1, 往下递增 */
 .hlgx-tile-layer {
   position: absolute;
@@ -172,8 +172,11 @@
 }
 .hlgx-shake { animation: hlgx-shake 0.25s ease; }
 
-/* 分了个类 · 传送带底纹向左匀速滚动(flgl) */
+/* 分了个类 · 传送带底纹向左匀速滚动(flgl)
+   v1.2.1 修复"一闪一闪": 旧版用 background-position 位移 28px, 但 115° 斜纹的
+   水平重复周期 = 28/sin(115°) ≈ 30.9px, 位移与周期不匹配导致每次循环错位 ~3px
+   (观感即"定时吐出一段不对齐的再对齐"); 现改 GPU translateX 并精确对齐水平周期 */
 @keyframes flgl-belt {
-  from { background-position: 0 0; }
-  to { background-position: -28px 0; }
+  from { transform: translateX(0); }
+  to { transform: translateX(-30.9px); }
 }

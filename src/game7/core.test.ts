@@ -1,22 +1,30 @@
 /*
- * 历了个史 · 核心逻辑测试 (src/game7/core.test.ts)
- * 覆盖: 题库规模与年份唯一 / 抽题年份互异 / 初始乱序 / 判定锁定与全对通关 /
- *        已归位卡不可动 / 提示道具(插入正确位+锁定) / 计时。
+ * 历了个史 · 核心逻辑测试 (src/game7/core.test.ts) —— v1.3.0 列模型
+ * 覆盖: 题库规模/开局(年份互异与困难并列)/点选跟踪/左右交换/并列移动/判定锁定/
+ *        提示道具/完整一局。
  */
 import { describe, expect, it } from "vitest";
-import { HINT_LIMIT, ROUND_CARDS, isYearlyCorrect, judge, newGame, seedRng, swap, tick, useHint, type LlgsState } from "./core";
+import {
+    HINT_LIMIT, ROUND_CARDS, isYearlyCorrect, judge, locate, moveSide,
+    newGame, select, seedRng, swapAdjacent, tick, useHint, type LlgsState,
+} from "./core";
 import { bank } from "./bank";
 
-function solve(st: LlgsState): LlgsState {
-    // 直接按年份排序(同年组内任意顺序均可, 稳定排序即合法解)
-    return { ...st, cards: [...st.cards].sort((a, b) => a.ev.y - b.ev.y) };
+/** 构造显式列局面: 传入每列的年份(负=公元前), 事件名 E0/E1/... 按创建顺序 */
+function mk(cols: number[][]): LlgsState {
+    let id = 0;
+    return {
+        mode: "hard", phase: "playing",
+        cols: cols.map((col) => col.map((y) => ({ ev: { n: `E${id++}`, y, era: "测试", tier: 3, d: "" }, done: false }))),
+        sel: null, attempts: 0, hintsLeft: HINT_LIMIT, lastWrong: null, elapsed: 0,
+    };
 }
 
 describe("历了个史 · 题库与开局", () => {
     it("题库 ≥ 60 条且事件名唯一, 字段完整", () => {
         expect(bank.length).toBeGreaterThanOrEqual(60);
-        const names = new Set(bank.map((e) => e.n));
-        expect(names.size).toBe(bank.length);
+        const names2 = new Set(bank.map((e) => e.n));
+        expect(names2.size).toBe(bank.length);
         for (const e of bank) {
             expect(e.n.length).toBeGreaterThan(0);
             expect(typeof e.y).toBe("number");
@@ -32,147 +40,131 @@ describe("历了个史 · 题库与开局", () => {
         expect(normal.length).toBeGreaterThan(easy.length);
     });
 
-    it("开局: 抽满 5 张、初始乱序(非全对); 简单/标准年份互异, 困难允许同年并列(v1.2.0)", () => {
+    it("开局: 5 卡各成列、初始乱序; 简单/标准年份互异, 困难允许同年并列", () => {
         for (let seed = 0; seed < 20; seed++) {
             for (const m of ["easy", "normal"] as const) {
                 const st = newGame(m, seedRng(seed));
-                expect(st.cards).toHaveLength(ROUND_CARDS);
-                expect(new Set(st.cards.map((c) => c.ev.y)).size).toBe(ROUND_CARDS);   // 去重
-                expect(isYearlyCorrect(st.cards)).toBe(false);                         // 初始乱序
+                expect(st.cols.flat()).toHaveLength(ROUND_CARDS);
+                expect(st.cols.every((c) => c.length === 1)).toBe(true);   // 每卡独立成列
+                expect(new Set(st.cols.flat().map((c) => c.ev.y)).size).toBe(ROUND_CARDS);
+                expect(isYearlyCorrect(st.cols)).toBe(false);
             }
             const h = newGame("hard", seedRng(seed));
-            expect(h.cards).toHaveLength(ROUND_CARDS);
-            expect(isYearlyCorrect(h.cards)).toBe(false);
+            expect(h.cols.flat()).toHaveLength(ROUND_CARDS);
+            expect(isYearlyCorrect(h.cols)).toBe(false);
         }
-        // 困难抽卡不强制去重: 大步长种子取样, 应出现同年并列局(池内含 17 个同年组)
+        // 困难大步长种子取样应出现同年并列局
         let tie = 0;
         for (let seed = 1; seed <= 200; seed += 7) {
             const h = newGame("hard", seedRng(seed * 977));
-            if (new Set(h.cards.map((c) => c.ev.y)).size < ROUND_CARDS) tie++;
+            if (new Set(h.cols.flat().map((c) => c.ev.y)).size < ROUND_CARDS) tie++;
         }
         expect(tie).toBeGreaterThan(0);
     });
 });
 
+describe("历了个史 · 点选与移动(v1.3.0)", () => {
+    it("点选跟踪: 选中跟随卡移动, 点其他卡才切换", () => {
+        let st = mk([[1914], [1870], [1861], [1861], [1939]]);
+        st = select(st, "E0");
+        expect(st.sel).toBe("E0");
+        // 右移(与右列首卡 E1 交换): E0 去位置1, 选中跟随
+        st = swapAdjacent(st, "R");
+        expect(locate(st, "E0")).toEqual([1, 0]);
+        expect(st.sel).toBe("E0");
+        // 点其他卡切换
+        st = select(st, "E2");
+        expect(st.sel).toBe("E2");
+    });
+
+    it("左/右交换: 与左(右)列末(首)卡交换; 最左列左移无效", () => {
+        let st = mk([[1914], [1870], [1939], [1861], [1861]]);
+        // 选最左 E0(1914), 左移无效
+        st = select(st, "E0");
+        const before = st.cols.flat().map((c) => c.ev.n);
+        st = swapAdjacent(st, "L");
+        expect(st.cols.flat().map((c) => c.ev.n)).toEqual(before);
+        // 右移: E0(1914) 与右列首卡 E1(1870) 交换
+        st = swapAdjacent(st, "R");
+        expect(locate(st, "E0")).toEqual([1, 0]);
+        // 判定: 1914 在位置1 ∉ 区段[2,2] 红; 1870 在位置0 ∉ 区段[1,1] 红
+        const j = judge(st);
+        expect(j.cols.flat().filter((c) => c.done).length).toBe(0);
+    });
+
+    it("并列移动: 左下/右上把选中卡移到邻列构成并列; 原列空则删除; 多次移动穿列", () => {
+        // mk 命名: E0=1870 列0 / E1=1861 列1 / E2=1914 列2 / E3=1939 列3 / E4=1861 列4
+        let st = mk([[1870], [1861], [1914], [1939], [1861]]);
+        // E1 左下 → 并入左列(1870)底部, 原列1 空被删除
+        st = select(st, "E1");
+        st = moveSide(st, "L", "bot");
+        expect(st.cols[0].map((c) => c.ev.y)).toEqual([1870, 1861]);
+        expect(st.cols.length).toBe(4);
+        expect(st.cols[3].map((c) => c.ev.y)).toEqual([1861]);
+        // E1(选中跟随, 列0 内) 右上 → 移到右列(1914)顶部
+        st = moveSide(st, "R", "top");
+        expect(st.cols[1].map((c) => c.ev.y)).toEqual([1861, 1914]);
+        // E4(列3) 左下 → 并入 1939 列底部
+        st = select(st, "E4");
+        st = moveSide(st, "L", "bot");
+        expect(st.cols[2].map((c) => c.ev.y)).toEqual([1939, 1861]);
+        // E4(跟随) 再左下两次 → 依次并入 1861/1914 列底部与 1870 列底部 → [1870, 1861]
+        st = moveSide(st, "L", "bot");
+        expect(st.cols[1].map((c) => c.ev.y)).toEqual([1861, 1914, 1861]);
+        st = moveSide(st, "L", "bot");
+        expect(st.cols[0].map((c) => c.ev.y)).toEqual([1870, 1861]);
+        // 结构完整性: 多次跨列移动后总卡数不变、无丢失
+        expect(st.cols.flat().length).toBe(5);
+        expect(new Set(st.cols.flat().map((c) => c.ev.n)).size).toBe(5);
+        // 判定功能照常: 乱序局面提交 → 有红有绿、不误判 win
+        const j = judge(st);
+        expect(j.phase).toBe("playing");
+        expect(j.cols.flat().some((c) => c.done)).toBe(true);
+        expect(j.cols.flat().some((c) => !c.done)).toBe(true);
+    });
+
+    it("同列上下顺序不影响判定: 同年并列任意上下都判绿", () => {
+        const st = mk([[1861, 1861], [1870], [1914], [1939]]);
+        const j = judge(st);
+        expect(j.cols.flat().every((c) => c.done)).toBe(true);
+        expect(j.phase).toBe("win");
+    });
+});
+
 describe("历了个史 · 判定与通关", () => {
     it("判对: 排成正确顺序一次提交 → 全归位 win, attempts=1", () => {
-        const st = solve(newGame("easy", seedRng(7)));
-        const g = judge(st);
-        expect(g.done.every(Boolean)).toBe(true);
-        expect(g.phase).toBe("win");
-        expect(g.attempts).toBe(1);
-    });
-
-    it("判错: 错位卡不锁定、lastWrong 标注; 已归位卡变绿", () => {
-        let g = newGame("easy", seedRng(8));
-        // 先排好前两位(通过 swap 实现), 其余不动
-        const target = [...g.cards].sort((a, b) => a.ev.y - b.ev.y);
-        for (let i = 0; i < 2; i++) {
-            const cur = g.cards.findIndex((c) => c.ev.n === target[i].ev.n);
-            if (cur !== i) g = swap(g, i, cur);
-        }
+        const st = newGame("easy", seedRng(7));
+        const sorted = [...st.cols.flat()].sort((a, b) => a.ev.y - b.ev.y);
+        const g: LlgsState = { ...st, cols: sorted.map((c) => [c]) };
         const j = judge(g);
-        expect(j.done[0]).toBe(true);
-        expect(j.done[1]).toBe(true);
-        expect(j.lastWrong!.length).toBeGreaterThanOrEqual(1);
-        expect(j.phase).toBe("playing");
-        // 已归位卡不可再交换
-        const s2 = swap(j, 0, 2);
-        expect(s2.cards[0].ev.n).toBe(j.cards[0].ev.n);
+        expect(j.phase).toBe("win");
+        expect(j.attempts).toBe(1);
     });
 
-    it("提示道具: 未归位卡插回正确位并锁定, 用尽后无效", () => {
+    it("提示道具: 未归位卡移到正确位置并锁定; 用尽后无效", () => {
         let g = newGame("hard", seedRng(9));
         g = useHint(g, () => 0);
         expect(g.hintsLeft).toBe(HINT_LIMIT - 1);
-        const locked = g.done.filter(Boolean).length;
-        expect(locked).toBe(1);
-        // 已锁定卡确实在正确位置
-        const target = [...g.cards].sort((a, b) => a.ev.y - b.ev.y);
-        const li = g.done.findIndex((d) => d);
-        expect(g.cards[li].ev.n).toBe(target[li].ev.n);
-        // 用尽
+        expect(g.cols.flat().filter((c) => c.done).length).toBeGreaterThanOrEqual(1);
         g = useHint(g, () => 0);
         g = useHint(g, () => 0);
         expect(g.hintsLeft).toBe(0);
-        const g2 = useHint(g, () => 0);
-        expect(g2.hintsLeft).toBe(0);
+        expect(useHint(g, () => 0).hintsLeft).toBe(0);
     });
 
-    it("完整一局: 反复判定直到全对 → win, 计时累计, 失误=提交次数", () => {
+    it("完整一局: 反复判定直到全对 → win, 计时累计", () => {
         let g = newGame("normal", seedRng(10));
         let guard = 0;
-        while (g.phase !== "win" && guard++ < 50) {
-            const before = g.attempts;
-            g = judge(g);                // 未排好 → playing
+        while (g.phase !== "win" && guard++ < 60) {
+            g = judge(g);
             if (g.phase === "playing") {
-                const wrongIdx = g.lastWrong?.[0] ?? 0;
-                // 模拟玩家调整: 把错位卡与正确位置换
-                const target = [...g.cards].sort((a, b) => a.ev.y - b.ev.y);
-                const cur = g.cards.findIndex((c) => c.ev.n === target[wrongIdx].ev.n);
-                g = swap(g, wrongIdx, cur);
-                if (g.attempts === before) g = tick(g, 10);   // 计时推进
-            } else break;
+                const sorted = [...g.cols.flat()].sort((a, b) => a.ev.y - b.ev.y);
+                g = { ...g, cols: sorted.map((c) => [c]) };
+            }
         }
         g = judge(g);
         expect(g.phase).toBe("win");
-        expect(g.elapsed).toBeGreaterThanOrEqual(0);
         expect(g.attempts).toBeGreaterThanOrEqual(1);
-    });
-});
-describe("历了个史 · v1.2.0 困难并列机制", () => {
-    // 构造含同年的显式局面
-    const mk = (ys: number[]): LlgsState => ({
-        mode: "hard", phase: "playing",
-        cards: ys.map((y, i) => ({ ev: { n: `E${i}`, y, era: "测试", tier: 3, d: "" } })),
-        done: ys.map(() => false), attempts: 0, hintsLeft: HINT_LIMIT, lastWrong: null, elapsed: 0,
-    });
-
-    it("同年并列: 两件同年事件同在区段内(任意上下) → 全部归位通关(win)", () => {
-        // 排列 [1861, 1870, 1861, 1914, 1939]: 1861 区段 [0,1], 1870 区段 [2,2]
-        const st = mk([1861, 1870, 1861, 1914, 1939]);
-        const g = judge(st);
-        expect(g.done[0]).toBe(true);    // 1861 在 0 ∈ [0,1] ✓
-        expect(g.done[1]).toBe(false);   // 1870 在 1 ∉ [2,2] → 红
-        expect(g.done[2]).toBe(false);   // 1861 在 2 ∉ [0,1] → 红
-        expect(g.done[3]).toBe(true);
-        expect(g.done[4]).toBe(true);
-        expect(g.phase).toBe("playing");
-        // 调整为 [1861, 1861, 1870, 1914, 1939]: 同年任意上下 → 全绿通关
-        const g2 = judge({ ...st, cards: [st.cards[2], st.cards[0], st.cards[1], st.cards[3], st.cards[4]] });
-        expect(g2.done.every(Boolean)).toBe(true);
-        expect(g2.phase).toBe("win");
-    });
-
-    it("同年错位判红: 1861 卡离开区段 → 标红且不锁定", () => {
-        // 排列 [1861, 1870, 1914, 1861, 1939]
-        const st = mk([1861, 1870, 1914, 1861, 1939]);
-        const g = judge(st);
-        expect(g.done[0]).toBe(true);    // 1861 在 0 ∈ [0,1] ✓
-        expect(g.done[1]).toBe(false);   // 1870 在 1 ∉ [2,2] 红
-        expect(g.done[2]).toBe(false);   // 1914 在 2 ∉ [3,3] 红
-        expect(g.done[3]).toBe(false);   // 1861 在 3 ∉ [0,1] 红
-        expect(g.done[4]).toBe(true);
-        expect(g.lastWrong!.sort()).toEqual([1, 2, 3]);
-        expect(g.phase).toBe("playing");
-        // 已绿卡不可交换
-        const s2 = swap(g, 0, 3);
-        expect(s2.cards[0].ev.n).toBe(g.cards[0].ev.n);
-    });
-
-
-    it("提示插入同年区段空位并锁定", () => {
-        let st = mk([1861, 1861, 1870, 1914, 1939]);
-        // 手动打乱: 把一张 1861 挪到 1914 后
-        st = { ...st, cards: [st.cards[2], st.cards[0], st.cards[1], st.cards[3], st.cards[4]] };
-        st = useHint(st, () => 0);
-        expect(st.hintsLeft).toBe(HINT_LIMIT - 1);
-        const locked = st.done.findIndex((d) => d);
-        expect(locked).toBeGreaterThanOrEqual(0);
-        // 锁定卡必须在自己的年份区段内(1861→[0,1] 或 1870→[2,2] …)
-        const y = st.cards[locked].ev.y;
-        const [lo, hi] = [st.cards.map((c) => c.ev.y).sort((a, b) => a - b).indexOf(y),
-                          st.cards.map((c) => c.ev.y).sort((a, b) => a - b).lastIndexOf(y)];
-        expect(locked >= lo && locked <= hi).toBe(true);
+        expect(tick(g, 5).elapsed).toBeGreaterThanOrEqual(0);
     });
 });

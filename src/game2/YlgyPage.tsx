@@ -69,6 +69,8 @@ export function YlgyPage() {
     const [rulesOpen, setRulesOpen] = useState(false);
     const [muted, setMuted] = useState(HLGX_Audio.isMuted());
     const [meaningTip, setMeaningTip] = useState<{ wi: number; meaning: { pos: string; zh: string } } | null>(null);
+    /* 草稿模式(v1.6.2): 开启后输入字母写入格子草稿层(小字显示), 不触发判定; 关闭后正式填写 */
+    const [draftMode, setDraftMode] = useState(false);
     const tipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const badFlashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);   // v1.5.4: 错误格闪红 2s 后重绘
     const rankTokenRef = useRef("");   // v2.8.0: 一次性成绩提交凭证(开局申领, 提交时携带)
@@ -298,6 +300,12 @@ export function YlgyPage() {
         clearMeaningTip();   // 输入行为消除含义提示
         const { r, c } = game.selected;
         if (ch === "⌫") { game.erase(r, c); refresh(); return; }
+        // v1.6.2 草稿模式: 写入草稿层, 不触发判定/扣血/填写计数
+        if (draftMode) {
+            game.setDraft(r, c, ch);
+            refresh();
+            return;
+        }
         // v1.6.0 音效: 完成词数变化判断 答对(填出参考答案词); 扣血改由 AI 检测回调处理
         const doneBefore = game.wordDone.filter(Boolean).length;
         if (game.fill(r, c, ch)) {
@@ -536,7 +544,7 @@ export function YlgyPage() {
                                     key={`${r}-${c}`}
                                     onClick={() => onCell(r, c)}
                                     className={cn(
-                                        "flex aspect-square w-full items-center justify-center rounded-lg border text-lg font-bold transition sm:text-xl",
+                                        "relative flex aspect-square w-full items-center justify-center rounded-lg border text-lg font-bold transition sm:text-xl",
                                         isFixed
                                             ? "border-transparent bg-muted text-muted-foreground"
                                             : isDone
@@ -551,6 +559,11 @@ export function YlgyPage() {
                                     )}
                                 >
                                     {v ?? ""}
+                                    {!v && game.draft[r][c] && (
+                                        <span className="absolute bottom-0.5 right-1 text-[11px] font-semibold leading-none text-primary/70" aria-label={`草稿 ${game.draft[r][c]}`}>
+                                            {game.draft[r][c]}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         }),
@@ -595,7 +608,23 @@ export function YlgyPage() {
             )}
 
             {/* 屏幕键盘(QWERTY 布局, v1.6.1: 三行贴近真实键盘, 末行附退格) */}
-            <div className="mx-auto mt-3 w-full max-w-md space-y-1.5">
+            <div className="mx-auto mt-3 flex w-full max-w-md items-center justify-between gap-2">
+                <button
+                    onClick={() => setDraftMode(!draftMode)}
+                    aria-pressed={draftMode}
+                    className={cn(
+                        "rounded-full px-3 py-1 text-xs font-semibold transition",
+                        draftMode ? "bg-primary/15 text-primary ring-1 ring-primary/50" : "bg-muted text-muted-foreground hover:text-foreground",
+                    )}
+                    title="草稿模式:输入的字母只写在格子角落(小字),不触发判定;关闭后输入为正式填写"
+                >
+                    {draftMode ? "✏ 草稿模式 开" : "✏ 草稿模式 关"}
+                </button>
+                <p className="text-[11px] text-muted-foreground">
+                    {draftMode ? "草稿不会触发判定,可随时改写;关闭后输入为正式作答" : "桌面可直接用键盘输入"}
+                </p>
+            </div>
+            <div className="mx-auto mt-1.5 w-full max-w-md space-y-1.5">
                 {KB_ROWS.map((row, ri) => (
                     <div key={ri} className="flex justify-center gap-1">
                         {ri === 2 && (

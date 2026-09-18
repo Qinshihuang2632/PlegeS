@@ -237,6 +237,7 @@ export class YlgyGame {
     wordDone: boolean[] = [];
     wordBad: boolean[] = [];
     wordBadAt: (number | null)[] = [];   // 该词最近一次判错的时间戳(UI 据此闪红 2 秒后变无色)
+    draft: (string | null)[][] = [];     // 草稿层(v1.6.2): 试错用暂填字母, 不触发判定
     selected: { r: number; c: number } | null = null;
     gameOver = false;
     win = false;
@@ -281,6 +282,7 @@ export class YlgyGame {
         this.occupied = gen.occupied;
         this.puzzle = gen.puzzle;
         this.grid = gen.grid.map(row => [...row]);
+        this.draft = gen.grid.map(row => row.map(() => null));
         this.wordDone = [];
         this.wordBad = [];
         this.wordBadAt = [];
@@ -449,12 +451,30 @@ export class YlgyGame {
         return "";
     }
 
+    /** 草稿(v1.6.2): 向空格写入暂定字母 —— 不触发任何判定/扣血, 可随时改写; 正式填写或擦除时清除 */
+    setDraft(r: number, c: number, ch: string): boolean {
+        if (this.gameOver || this.win) return false;
+        if (!this.occupied[r][c]) return false;
+        if (this.puzzle[r][c] !== null) return false;
+        if (this.cellLocked(r, c)) return false;
+        if (this.grid[r][c] !== null) return false;           // 已正式填写的格不接受草稿
+        if (!/^[a-z]$/.test(ch)) return false;
+        this.draft[r][c] = ch;
+        return true;
+    }
+
+    /** 清除草稿 */
+    clearDraft(r: number, c: number) {
+        if (this.draft[r][c]) this.draft[r][c] = null;
+    }
+
     fill(r: number, c: number, ch: string): boolean {
         if (this.gameOver || this.win) return false;
         if (!this.occupied[r][c]) return false;               // 非占用格不可填
         if (this.puzzle[r][c] !== null) return false;
         if (this.cellLocked(r, c)) return false;              // v1.5.4: 正确词的格子锁定禁止改动
         if (!/^[a-z]$/.test(ch)) return false;
+        this.draft[r][c] = null;                              // 正式填写覆盖并清除草稿
         this.grid[r][c] = ch;
         this.fills++;
         this.checkCellWords(r, c);
@@ -467,6 +487,7 @@ export class YlgyGame {
         if (!this.occupied[r][c] || this.puzzle[r][c] !== null) return false;
         if (this.cellLocked(r, c)) return false;              // v1.5.4: 正确词的格子锁定禁止改动
         this.grid[r][c] = null;
+        this.draft[r][c] = null;                              // 擦除同时清除草稿
         return true;
     }
 

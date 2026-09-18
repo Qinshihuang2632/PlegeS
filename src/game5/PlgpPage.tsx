@@ -21,6 +21,7 @@ import { reportPlayLog } from "@/game/playlog";
 import { PlgpRules } from "./PlgpRules";
 import { HLGX_Audio } from "@/game/audio";
 import { PLGP_VERSION } from "./version";
+import type { PlgpWrongEntry } from "./core";
 import {
     HINT_LIMIT, PLGP_MODES, ROUND_TOTAL,
     appendDigit, backspace, clearBlank, currentEquation, mcOptions, newGame, setBlank, submit, tick, useHint,
@@ -35,6 +36,7 @@ interface ResultInfo {
     time: number;
     mistakes: number;
     toolsUsed: number;
+    wrongBook: PlgpWrongEntry[];   // v1.0.5: 本局配错的题(结算展示正确方程式)
     skipped?: boolean;   // 未填昵称或选择不参与排行, 成绩未上传
     surpassed: number | null;
     failed: boolean;
@@ -145,6 +147,7 @@ export function PlgpPage() {
             time,
             mistakes: st.mistakes,
             toolsUsed: st.toolsUsed,
+            wrongBook: st.wrongBook,
             skipped: true,
             surpassed: null,
             failed: false,
@@ -466,6 +469,40 @@ export function PlgpPage() {
                             <p className="font-semibold text-primary">超越 {result.surpassed} 名玩家</p>
                         ) : null}
                     </div>
+                    {/* 错题展示(v1.0.5): 本局配错的方程式逐一给出完整正确方程式; 全对不展示 */}
+                    {result.wrongBook.length > 0 && (
+                        <div className="mt-4 rounded-xl border bg-muted/30 p-3 text-left">
+                            <p className="mb-2 text-center text-xs font-bold text-foreground">
+                                本局错题(共 {result.wrongBook.length} 题)· 正确方程式如下
+                            </p>
+                            <ul className="space-y-1.5">
+                                {result.wrongBook.map((w) => {
+                                    const eq = st?.deck.find((d) => d.id === w.id);
+                                    if (!eq) return null;
+                                    const side = (fs: string[], off: number) =>
+                                        fs.map((f, i) => (
+                                            <span key={i} className="flex items-center">
+                                                <span className="mr-0.5 font-mono text-[13px] font-bold text-success">{eq.coefs[off + i]}</span>
+                                                <FormulaText f={f} />
+                                                {i < fs.length - 1 && <span className="mx-1 text-muted-foreground">+</span>}
+                                            </span>
+                                        ));
+                                    return (
+                                        <li key={w.id} className="rounded-lg bg-card px-2.5 py-1.5">
+                                            <div className="flex flex-wrap items-center justify-center gap-x-1 text-sm">
+                                                {side(eq.left, 0)}
+                                                <Arrow condition={eq.condition} reversible={eq.reversible} />
+                                                {side(eq.right, eq.left.length)}
+                                            </div>
+                                            <p className="mt-0.5 text-center text-[10px] text-muted-foreground">
+                                                你的错误作答: {w.given.join(" · ")}
+                                            </p>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
                     <div className="mt-5 flex flex-wrap justify-center gap-2">
                         <Button asChild variant="outline"><Link to="/hlgx/rank?game=plgp">查看排行榜</Link></Button>
                         <Button onClick={() => start(mode)}>再来一局</Button>

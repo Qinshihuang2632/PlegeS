@@ -153,16 +153,29 @@ export function HuaPage() {
         else setNameOpen(true);
     };
 
-    /* 棋盘缩放适配小屏: 7×7 底层几乎占满容器宽(去掉内置 20px 边距, 仅留 2px 呼吸空间) */
+    /* 棋盘缩放适配小屏(v2.3.14 重构): 以「净内容宽」(卡牌实际外延, 不含布局余量)为基准缩放,
+       左右各留 2px 对称呼吸空间 —— 修复此前 boardW 含单侧 20px 余量导致缩放后整体偏移、
+       左右外侧卡离屏幕边界距离不相等的问题; 卡片尺寸因此稍稍增大 */
+    const [netBoard, setNetBoard] = useState({ minX: 0, minY: 0, w: 0, h: 0 });
+    useEffect(() => {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const t of game.tiles) {
+            minX = Math.min(minX, t.x);
+            minY = Math.min(minY, t.y);
+            maxX = Math.max(maxX, t.x + t.size);
+            maxY = Math.max(maxY, t.y + t.size);
+        }
+        setNetBoard({ minX, minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) });
+    }, [game]);
     useEffect(() => {
         const el = boardRef.current;
-        if (!el) return;
-        const update = () => setScale(Math.min(1, (el.clientWidth - 2) / Math.max(1, game.boardW - 20)));
+        if (!el || netBoard.w <= 1) return;
+        const update = () => setScale(Math.min(1, (el.clientWidth - 4) / netBoard.w));
         update();
         const ro = new ResizeObserver(update);
         ro.observe(el);
         return () => ro.disconnect();
-    }, [game]);
+    }, [game, netBoard]);
 
     /* 手牌槽单格尺寸: 两行排布(10→5+5, 8→4+4), 按行宽计算, 卡牌更大易点 */
     useEffect(() => {
@@ -478,17 +491,22 @@ export function HuaPage() {
                 <span className="text-muted-foreground">剩余 {game.remaining}</span>
             </div>
 
-            {/* 棋盘(小屏自动缩放) */}
-            <div ref={boardRef} className="relative mx-auto w-full" style={{ height: game.boardH * scale }}>
-                <div
-                    className="absolute left-1/2 top-0"
-                    style={{
-                        width: game.boardW,
-                        height: game.boardH,
-                        transform: `translateX(-50%) scale(${scale})`,
-                        transformOrigin: "top center",
-                    }}
-                >
+            {/* 棋盘(小屏自动缩放; 净宽居中, 卡面左右对称) */}
+            <div ref={boardRef} className="relative mx-auto w-full" style={{ height: netBoard.h * scale + 4 }}>
+                <div className="absolute inset-x-0 top-0 flex justify-center">
+                    <div
+                        className="relative"
+                        style={{ width: netBoard.w * scale, height: netBoard.h * scale }}
+                    >
+                        <div
+                            className="absolute left-0 top-0"
+                            style={{
+                                width: netBoard.w,
+                                height: netBoard.h,
+                                transform: `translate(${-netBoard.minX * scale}px, ${-netBoard.minY * scale}px) scale(${scale})`,
+                                transformOrigin: "top left",
+                            }}
+                        >
                     {game.tiles.map((t) => (
                         <BoardTile
                             key={t.id}
@@ -498,6 +516,8 @@ export function HuaPage() {
                             shake={shakeId === t.id}
                         />
                     ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 

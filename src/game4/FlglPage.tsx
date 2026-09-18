@@ -60,7 +60,7 @@ const LOSE_TEXT: Record<"hp" | "overflow", string> = {
 /** 化学式仅在有内容时显示(混合物等无固定化学式不显示) */
 function Formula({ sub }: { sub: Substance }) {
     if (!sub.f || sub.f === "—") return null;
-    return <span className="mt-0.5 text-[10px] leading-none text-muted-foreground">{sub.f}</span>;
+    return <span className="text-[11.5px] leading-tight text-muted-foreground">{sub.f}</span>;
 }
 
 export function FlglPage() {
@@ -373,7 +373,7 @@ export function FlglPage() {
             {playing && st && (() => {
                 /* 传送带视觉宽度(外层百分比): 容量 5 → 100%, 4 → 79.4%;
                    beltScale 用于把卡牌百分比反向放大, 卡牌像素尺寸/间距不随传送带变窄 */
-                const beltPct = (BELT_CAPACITY_OF[st.mode] - 1) * 20 + 19;
+                const beltPct = BELT_CAPACITY_OF[st.mode] * 20;
                 const beltScale = beltPct / 100;
                 return (
                 <div className="space-y-3">
@@ -400,12 +400,14 @@ export function FlglPage() {
                             st.belt.length >= BELT_CAPACITY_OF[st.mode] ? "border-destructive" : "border-border",
                         )}
                     >
-                        {/* 底纹: 向左匀速滚动 */}
+                        {/* 底纹: 向左匀速滚动(v1.2.1: translateX 位移精确对齐 115° 斜纹水平周期 30.9px, 无缝循环不跳变) */}
                         <div
-                            className="absolute inset-0 rounded-2xl bg-muted/40"
+                            className="absolute inset-y-0 left-0 bg-muted/40"
                             style={{
+                                right: -31,
                                 backgroundImage: "repeating-linear-gradient(115deg, rgba(0,0,0,0.06) 0 14px, transparent 14px 28px)",
                                 animation: "flgl-belt 0.8s linear infinite",
+                                willChange: "transform",
                             }}
                             aria-hidden
                         />
@@ -424,12 +426,12 @@ export function FlglPage() {
                                 key={c.id}
                                 onPointerDown={(e) => onCardPointerDown(e, c)}
                                 className={cn(
-                                    "absolute flex touch-none select-none flex-col items-center justify-center rounded-xl border bg-card px-1 text-center shadow-sm",
+                                    "absolute flex h-[4.5rem] touch-none select-none flex-col items-center justify-center gap-0.5 rounded-xl border bg-card px-1 text-center shadow-sm",
                                     drag?.id === c.id ? "opacity-40" : "cursor-grab border-border active:cursor-grabbing",
                                 )}
                                 style={{
                                     left: `${(i * 20) / beltScale}%`,
-                                    width: `${19 / beltScale}%`,
+                                    width: `${20 / beltScale}%`,
                                     top: "50%",
                                     transform: `translate(${enteredIds.includes(c.id) ? 0 : (beltRef.current?.offsetWidth ?? 420)}px, -50%)`,
                                     /* 滑动时长(v1.1.6 用户指定): 入场(1 卡宽)2.5s 缓缓滑入,
@@ -439,7 +441,7 @@ export function FlglPage() {
                                 }}
                                 aria-label={`物质卡:${c.sub.n}`}
                             >
-                                <span className="w-full break-words text-[13px] font-bold leading-tight">{c.sub.n}</span>
+                                <span className="w-full break-words text-[15px] font-bold leading-tight">{c.sub.n}</span>
                                 <Formula sub={c.sub} />
                             </div>
                         ))}

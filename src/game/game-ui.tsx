@@ -8,13 +8,13 @@ import { TILE_COLORS } from "./palette";
 
 /* 化学式字号按长度自适应(与旧版一致) */
 export function tileFontSize(f: string): number {
-    // v2.9.1: 整体上调 1~2px(手游端更易读; 仍受 fitFont 按卡宽收缩保护, 不超出卡面)
+    // v2.9.1 上调基础上, v2.3.14 再放缓长公式梯度(短式更大、长式尽量少缩)
     const len = f.length;
     if (len <= 2) return 21;
-    if (len <= 4) return 17;
-    if (len <= 6) return 14;
-    if (len <= 9) return 12;
-    return 11;
+    if (len <= 4) return 18;
+    if (len <= 6) return 16;
+    if (len <= 9) return 14;
+    return 12;
 }
 
 /* 文字在卡牌宽度内的最大字号(v2.2.2): 按字符数收缩, 防换行/溢出; 留 4px 边距, 下限 6px */
@@ -44,8 +44,14 @@ export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
     const f = tile.sub.f;
     const hasFormula = !!f && f !== "—" && [...f].length <= 10;
     const name = tile.sub.n;
+    /* v2.3.14: 名称放大 + 含全角括号的名称拆两行(如「酚醛树脂（电木）」→ 主名+副名),
+       拆行后主名字数减半, 字号可显著放大(此前 8 字符整行被宽度压到 ~6px 不可读) */
+    const parenIdx = name.indexOf("（");
+    const mainName = parenIdx > 0 ? name.slice(0, parenIdx) : name;
+    const subName = parenIdx > 0 ? name.slice(parenIdx) : "";
     const fSize = hasFormula ? fitFont(f, tileFontSize(f), size) * k : 0;
-    const nSize = fitFont(name, hasFormula ? 10 : 13.5, size) * k;   // v2.9.1: 名称基准 +1px
+    const nSize = fitFont(mainName, hasFormula ? 13 : 16.5, size) * k;
+    const subSize = subName ? Math.max(7, fitFont(subName, 11, size) * k) : 0;
     const layer = tile.L + 1;   // 顶层(最先接触)为第 1 层
     return (
         <div
@@ -55,7 +61,8 @@ export function TileFace({ tile, size = TILE_W, className, onClick, title }: {
             onClick={onClick}
         >
             {hasFormula && <span className="hlgx-tile-f" style={{ fontSize: fSize }}>{f}</span>}
-            <span className="hlgx-tile-n" style={{ fontSize: nSize }}>{name}</span>
+            <span className="hlgx-tile-n" style={{ fontSize: nSize }}>{mainName}</span>
+            {subName && <span className="hlgx-tile-n" style={{ fontSize: subSize, opacity: 0.85 }}>{subName}</span>}
             <span className="hlgx-tile-layer" style={{ fontSize: Math.max(5.5, 7 * k) }}>{layer}</span>
         </div>
     );

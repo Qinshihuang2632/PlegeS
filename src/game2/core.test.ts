@@ -371,3 +371,67 @@ describe("游戏流程", () => {
         }
     });
 });
+
+describe("历了个英 · v1.6.2 草稿机制", () => {
+    it("草稿写入/改写不触发判定不计 fills; 正式填写覆盖草稿并触发判定; 擦除清草稿", () => {
+        const g = new YlgyGame("easy");
+        const pickBlank = (): [number, number] => {
+            for (let r = 0; r < g.H; r++)
+                for (let c = 0; c < g.W; c++) {
+                    if (!(g.occupied[r][c] && g.grid[r][c] === null && g.puzzle[r][c] === null)) continue;
+                    const cnt = g.words.filter((_, i) =>
+                        g.wordCells(i).some(([rr, cc]) => rr === r && cc === c)).length;
+                    if (cnt === 1) return [r, c];
+                }
+            return [-1, -1];
+        };
+        const [r, c] = pickBlank();
+        expect(r).toBeGreaterThanOrEqual(0);
+        const wi = g.words.findIndex((_, i) => g.wordCells(i).some(([rr, cc]) => rr === r && cc === c));
+        const ans = g.cellAnswer(r, c);
+        const wrongCh = ans === "a" ? "b" : "a";
+        // 草稿: 不写 grid、不计 fills、不触发判定
+        expect(g.setDraft(r, c, wrongCh)).toBe(true);
+        expect(g.draft[r][c]).toBe(wrongCh);
+        expect(g.grid[r][c]).toBeNull();
+        expect(g.fills).toBe(0);
+        expect(g.wordBad[wi]).toBe(false);
+        // 草稿改写为其他字母(仍不触发)
+        g.setDraft(r, c, wrongCh === "b" ? "c" : "b");
+        expect(g.draft[r][c]).not.toBe(wrongCh);
+        // 先填满该词其余格(正式), 最后把目标格由草稿改为正式正确答案 → 词完成
+        for (const [rr, cc] of g.wordCells(wi)) {
+            if (g.puzzle[rr][cc] === null && g.grid[rr][cc] === null && !(rr === r && cc === c)) {
+                g.fill(rr, cc, g.cellAnswer(rr, cc));
+            }
+        }
+        g.fill(r, c, ans);
+        expect(g.grid[r][c]).toBe(ans);
+        expect(g.draft[r][c]).toBeNull();
+        expect(g.wordDone[wi]).toBe(true);
+        // 锁定后草稿与正式填写均拒绝
+        expect(g.setDraft(r, c, "z")).toBe(false);
+        expect(g.fill(r, c, "z")).toBe(false);
+    });
+
+    it("草稿不占用正式格: 同格草稿后可直接正式填写并清除草稿", () => {
+        const g = new YlgyGame("easy");
+        const [r, c] = (() => {
+            for (let r = 0; r < g.H; r++)
+                for (let c = 0; c < g.W; c++) {
+                    if (g.occupied[r][c] && g.grid[r][c] === null && g.puzzle[r][c] === null) return [r, c];
+                }
+            return [-1, -1];
+        })();
+        expect(r).toBeGreaterThanOrEqual(0);
+        const hpBefore = g.hp;
+        const fillsBefore = g.fills;
+        expect(g.setDraft(r, c, "q")).toBe(true);
+        expect(g.fills).toBe(fillsBefore);          // 草稿不计填写数
+        expect(g.fill(r, c, "z")).toBe(true);       // 正式填写(触发上层检测)
+        expect(g.grid[r][c]).toBe("z");
+        expect(g.draft[r][c]).toBeNull();           // 草稿被覆盖清除
+        expect(g.fills).toBe(fillsBefore + 1);
+        void hpBefore;
+    });
+});
