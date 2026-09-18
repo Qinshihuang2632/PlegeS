@@ -300,28 +300,29 @@ export function LlgsPage() {
                         </div>
                     </div>
 
-                    {/* 方位按键组(v1.3.0): 简单/标准 2 键, 困难 6 键; 未点选卡时禁用 */}
-                    <div
-                        className={cn(
-                            "grid gap-1.5",
-                            mode === "hard" ? "grid-cols-6" : "grid-cols-2",
-                        )}
-                    >
-                        <Button variant="secondary" size="sm" className="h-10 px-1 text-xs"
-                            disabled={!selPos || !hasLeft} onClick={() => doMove("L")}>← 左</Button>
-                        <Button variant="secondary" size="sm" className="h-10 px-1 text-xs"
-                            disabled={!selPos || !hasRight} onClick={() => doMove("R")}>右 →</Button>
+                    {/* 方位按键组(v1.3.1): 按真实方位分布(相对中心) —— 困难 6 键两列三行, 简单/标准 2 键; 未点选卡时禁用 */}
+                    <div className="mx-auto w-full max-w-xs space-y-1.5">
+                        <div className="grid grid-cols-2 gap-1.5">
+                            <Button variant="secondary" className="h-11"
+                                disabled={!selPos || !hasLeft} onClick={() => doMove("L")}>← 左</Button>
+                            <Button variant="secondary" className="h-11"
+                                disabled={!selPos || !hasRight} onClick={() => doMove("R")}>右 →</Button>
+                        </div>
                         {mode === "hard" && (
-                            <>
-                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
-                                    disabled={!selPos || !hasLeft} onClick={() => doMove("LT")}>↖ 左上</Button>
-                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
-                                    disabled={!selPos || !hasRight} onClick={() => doMove("RT")}>↗ 右上</Button>
-                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
-                                    disabled={!selPos || !hasLeft} onClick={() => doMove("LB")}>↙ 左下</Button>
-                                <Button variant="secondary" size="sm" className="h-10 px-1 text-[11px]"
-                                    disabled={!selPos || !hasRight} onClick={() => doMove("RB")}>↘ 右下</Button>
-                            </>
+                            <div className="space-y-1.5">
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    <Button variant="secondary" className="h-11"
+                                        disabled={!selPos || !hasLeft} onClick={() => doMove("LT")}>↖ 左上</Button>
+                                    <Button variant="secondary" className="h-11"
+                                        disabled={!selPos || !hasRight} onClick={() => doMove("RT")}>右上 ↗</Button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    <Button variant="secondary" className="h-11"
+                                        disabled={!selPos || !hasLeft} onClick={() => doMove("LB")}>↙ 左下</Button>
+                                    <Button variant="secondary" className="h-11"
+                                        disabled={!selPos || !hasRight} onClick={() => doMove("RB")}>右下 ↘</Button>
+                                </div>
+                            </div>
                         )}
                     </div>
 
@@ -492,7 +493,7 @@ function EventCard({ name, done, wrong, selected, compact, onClick }: {
             aria-pressed={selected}
             className={cn(
                 "flex touch-none select-none items-center justify-center rounded-lg border px-1 text-center font-bold leading-snug shadow-sm transition break-words",
-                compact ? "h-9 text-[10px]" : "h-10 text-xs",
+                compact ? "h-12 text-[11px]" : "h-16 text-xs",
                 done ? "cursor-default border-success/60 bg-success/15 text-success"
                     : wrong ? "border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20"
                         : selected ? "border-primary bg-primary/10 text-primary ring-2 ring-primary"

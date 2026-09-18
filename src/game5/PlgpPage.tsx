@@ -6,7 +6,7 @@
  * 判定: 全满才能提交; 比例解判错提示最简整数比; 错误扣血可改; 提示每局 2 次(tools 计入排行)。
  * 榜单: 独立 API /plgp/api/rank, 排序 答对数↓ → 用时↑ → 提示使用↑。
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -63,7 +63,7 @@ function FormulaText({ f }: { f: string }) {
 function Arrow({ condition, reversible }: { condition: string; reversible?: boolean }) {
     return (
         <span className="mx-1.5 inline-flex flex-col items-center justify-end align-bottom leading-none">
-            <span className="mb-0.5 whitespace-nowrap text-[10px] text-muted-foreground">{condition}</span>
+            <span className="mb-0.5 whitespace-nowrap text-xs text-muted-foreground">{condition}</span>
             <span className="text-lg tracking-tighter">{reversible ? "⇌" : "⟶"}</span>
         </span>
     );
@@ -76,6 +76,11 @@ export function PlgpPage() {
     const [selIdx, setSelIdx] = useState(0);
     const [mcOpts, setMcOpts] = useState<number[][]>([]);
     const [resInfo, setResInfo] = useState<ResultInfo | null>(null);
+    /* v1.0.8: 方程行自适应 —— 测量最长行实际宽, 超出卡面则整体等比缩小(字号统一不单独缩) */
+    const eqCardRef = useRef<HTMLDivElement>(null);
+    const rowLeftRef = useRef<HTMLDivElement>(null);
+    const rowRightRef = useRef<HTMLDivElement>(null);
+    const [fitScale, setFitScale] = useState(1);
     const [platform] = useState<Platform>(() => detectPlatform());
     const [rulesOpen, setRulesOpen] = useState(false);
     const [muted, setMuted] = useState(HLGX_Audio.isMuted());
@@ -131,6 +136,17 @@ export function PlgpPage() {
         const t = setInterval(() => setSt((prev) => (prev && prev.phase === "playing" ? tick(prev, 0.5) : prev)), 500);
         return () => clearInterval(t);
     }, [phase]);
+
+    /* v1.0.8: 方程行宽自适应(useLayout 测量, 题目/难度变化后重测) */
+    useLayoutEffect(() => {
+        const container = eqCardRef.current;
+        const l = rowLeftRef.current;
+        const r = rowRightRef.current;
+        if (!container || !l || !r) return;
+        const cw = container.clientWidth - 4;
+        const widest = Math.max(l.scrollWidth, r.scrollWidth);
+        setFitScale(widest > cw ? Math.max(0.7, cw / widest) : 1);
+    });
 
     /* 结算与提交(win/lose 时触发一次) */
     useEffect(() => {
@@ -368,22 +384,33 @@ export function PlgpPage() {
                             judge && !judge.ok ? "border-destructive/60" : "",
                         )}>
                             <p className="text-center text-xs text-muted-foreground">把系数补成最简整数比(为 1 也须填写)</p>
-                            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-1 gap-y-3">
-                                {eq.left.map((f, i) => (
-                                    <span key={`l${i}`} className="flex items-center">
-                                        <CoefCell st={st} i={i} editable={mode !== "easy"} selIdx={selIdx} setSelIdx={setSelIdx} />
-                                        <span className="text-base font-bold"><FormulaText f={f} /></span>
-                                        {i < eq.left.length - 1 && <span className="mx-1 text-muted-foreground">+</span>}
-                                    </span>
-                                ))}
-                                <Arrow condition={eq.condition} reversible={eq.reversible} />
-                                {eq.right.map((f, i) => (
-                                    <span key={`r${i}`} className="flex items-center">
-                                        <CoefCell st={st} i={eq.left.length + i} editable={mode !== "easy"} selIdx={selIdx} setSelIdx={setSelIdx} />
-                                        <span className="text-base font-bold"><FormulaText f={f} /></span>
-                                        {i < eq.right.length - 1 && <span className="mx-1 text-muted-foreground">+</span>}
-                                    </span>
-                                ))}
+                            {/* v1.0.8: 结构化两行 + 测量式自适应 —— 字号统一(text-base), 最长行超宽时整体等比缩小, 保证不超卡面 */}
+                            <div
+                                ref={eqCardRef}
+                                className="mt-4 space-y-2"
+                                style={{ transform: fitScale < 1 ? `scale(${fitScale})` : undefined, transformOrigin: "top center" }}
+                            >
+                                <div ref={rowLeftRef} className="flex items-center justify-center gap-x-1 whitespace-nowrap">
+                                    {eq.left.map((f, i) => (
+                                        <span key={`l${i}`} className="flex shrink-0 items-center">
+                                            <CoefCell st={st} i={i} editable={mode !== "easy"} selIdx={selIdx} setSelIdx={setSelIdx} />
+                                            <span className="text-base font-bold"><FormulaText f={f} /></span>
+                                            {i < eq.left.length - 1 && <span className="mx-1 text-muted-foreground">+</span>}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex items-center justify-center">
+                                    <Arrow condition={eq.condition} reversible={eq.reversible} />
+                                </div>
+                                <div ref={rowRightRef} className="flex items-center justify-center gap-x-1 whitespace-nowrap">
+                                    {eq.right.map((f, i) => (
+                                        <span key={`r${i}`} className="flex shrink-0 items-center">
+                                            <CoefCell st={st} i={eq.left.length + i} editable={mode !== "easy"} selIdx={selIdx} setSelIdx={setSelIdx} />
+                                            <span className="text-base font-bold"><FormulaText f={f} /></span>
+                                            {i < eq.right.length - 1 && <span className="mx-1 text-muted-foreground">+</span>}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                             {judge && !judge.ok && (
                                 <p className="mt-3 text-center text-xs font-semibold text-destructive">
@@ -394,7 +421,7 @@ export function PlgpPage() {
                                             : "配平错误,扣 1 血;填写已保留,改一改再交"}
                                 </p>
                             )}
-                            {eq.note && <p className="mt-2 text-center text-[11px] text-muted-foreground">{eq.note}</p>}
+                            {eq.note && <p className="mt-2 text-center text-xs text-muted-foreground">{eq.note}</p>}
                         </div>
 
                         {/* 作答区: 简单=选项 / 标准·困难=数字条 */}
@@ -557,7 +584,7 @@ function CoefCell({ st, i, editable, selIdx, setSelIdx }: {
             onClick={() => editable && setSelIdx(i)}
             aria-label={`第 ${i + 1} 个系数`}
             className={cn(
-                "relative mr-1 inline-flex h-8 w-9 shrink-0 items-center justify-center rounded-lg border font-mono text-lg font-bold transition",
+                "relative mr-0.5 inline-flex h-8 w-7 shrink-0 items-center justify-center rounded-lg border font-mono text-lg font-bold transition",
                 locked
                     ? "border-success/60 bg-success/10 text-success"
                     : editable && selIdx === i

@@ -9,13 +9,13 @@
  * score 上限 20(每局物质总数, 见 src/game4/core.ts ROUND_TOTAL)。
  */
 import { fmtDate, clampInt, json } from "../../_lib/ranklib.js";
-import { countIncr, clientIp } from "../../_lib/ratelimit.js";
+import { clientIp, windowRate } from "../../_lib/ratelimit.js";
 import { hasBadWord } from "../../_lib/badwords.js";
 import { peekGameSession, burnGameSession } from "../../_lib/gamesess.js";
 
 export const MODES = ["easy", "normal", "hard"];
 export const SCORE_MAX = 20;       // 每局物质总数(防刷上限)
-const SUBMIT_TTL = 60;             // 同一 IP 提交间隔(秒)
+const SUBMIT_TTL = 30;             // 同一 IP 提交窗口(秒; v2.9.5 由 60s 调整)
 const RANK_LIMIT = 200;            // 单难度榜单条目上限
 const KEY_PREFIX = "flgl:";        // KV 键前缀(与其他游戏榜单分离)
 
@@ -83,7 +83,7 @@ export async function onRequestPost({ request, env }) {
 
     const platform = resolvePlatform(body, request);
     const ip = clientIp(request);
-    const n = await countIncr(env, `flgl:rl:${ip}`, SUBMIT_TTL, 1);
+    const n = await windowRate(env, `flgl:rl:${ip}`, SUBMIT_TTL, 1);
     if (n > 1) return json({ ok: false, msg: "提交过于频繁,请稍后再试" }, 429);
 
     let name = String(body.name ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "");

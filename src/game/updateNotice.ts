@@ -33,7 +33,7 @@ export const UPDATE_ITEMS: UpdateItem[] = [
     { tag: "历了个史", version: LLGS_VERSION, text: "交互重做:点选卡牌后用方位按键移动(更好按);困难模式支持同年事件上下并列;题库扩充至 240 条。" },
     { tag: "化了个学", version: APP_VERSION, text: "手游棋盘显示修复(左右对称居中)、卡片稍大、卡面文字明显放大,长名称分行显示更清楚。" },
     { tag: "英了个语", version: YLGY_VERSION, text: "新增草稿模式:拿不准的字母先打草稿(不触发判定),确定后再正式填写;手机端适配与键盘布局优化。" },
-    { tag: "配了个平", version: PLGP_VERSION, text: "结算画面新增错题展示:本局配错的方程式给出完整正确方程式,方便复习。" },
+    { tag: "配了个平", version: PLGP_VERSION, text: "结算新增错题展示;方程式字体统一放大并自适应不超出卡面;快速通关提交间隔缩短至 30 秒。" },
     { tag: "分了个类", version: FLGL_VERSION, text: "卡牌加宽加高、文字放大更好认;修复传送带滚动闪烁;倒计时现在从卡片真正进入传送带才开始计算。" },
     { tag: "平台", version: PLATFORM_VERSION, text: "新增更新日志弹窗(每次更新只弹一次);特别鸣谢榜支持滑动翻看;主界面游戏卡重新排序并预留 3 个新游戏位置。" },
 ]

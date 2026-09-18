@@ -7,4 +7,4 @@
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
 export const APP_VERSION = "v2.3.15";     // 化了个学(手游棋盘居中+卡片增大+卡面字体放大/括号名称两行)
-export const PLATFORM_VERSION = "v2.9.4";  // 平台 p了个s(v2.9.3: 新增玩家端「更新日志」弹窗, 每次更新只弹一次)
+export const PLATFORM_VERSION = "v2.9.5";  // 平台 p了个s(v2.9.5: 提交限频调整 — ylgy/llgs 10s、flgl/plgp 30s; hlgx/clgz 维持 60s)  // 平台 p了个s(v2.9.3: 新增玩家端「更新日志」弹窗, 每次更新只弹一次)

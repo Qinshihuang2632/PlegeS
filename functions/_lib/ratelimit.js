@@ -16,6 +16,21 @@ export async function countIncr(env, key, ttlSeconds, max) {
     return Math.min(n, max + 1);   // 封顶, 防止计数无限增长
 }
 
+/* 时间窗口限频(v2.9.5): 窗口可小于 60s —— KV 记录 {n, ts}(末次时间戳),
+   窗口内计数超限则拒绝, 窗口过期自动重置; KV TTL 仍用下限 60s(过期兜底清理) */
+export async function windowRate(env, key, windowSec, max) {
+    const key2 = `${key}:w`;
+    const raw = await env.RANKINGS.get(key2);
+    let rec = null;
+    try { rec = raw ? JSON.parse(raw) : null; } catch { rec = null; }
+    const now = Date.now();
+    const inWindow = rec && typeof rec.ts === "number" && now - rec.ts < windowSec * 1000;
+    if (inWindow && rec.n >= max) return max + 1;
+    const n = inWindow ? rec.n + 1 : 1;
+    await env.RANKINGS.put(key2, JSON.stringify({ n, ts: now }), { expirationTtl: Math.max(60, windowSec) });
+    return n;
+}
+
 export async function countGet(env, key) {
     const raw = await env.RANKINGS.get(key);
     const n = Number.parseInt(raw || "0", 10);

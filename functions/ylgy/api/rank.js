@@ -8,12 +8,12 @@
  * 防刷与校验规则与 /hlgx/api/rank 一致(60s/IP、昵称清洗、违禁词、≥10s、同名放开)。
  */
 import { MODES as _MODES, cmpKey, keyLess, sortRank, fmtDate, clampInt, json } from "../../_lib/ranklib.js";
-import { countIncr, clientIp } from "../../_lib/ratelimit.js";
+import { clientIp, windowRate } from "../../_lib/ratelimit.js";
 import { hasBadWord } from "../../_lib/badwords.js";
 import { peekGameSession, burnGameSession } from "../../_lib/gamesess.js";
 
 export const MODES = ["easy", "normal", "hard"];
-const SUBMIT_TTL = 60;      // 同一 IP 提交间隔(秒)
+const SUBMIT_TTL = 10;             // 同一 IP 提交窗口(秒; v2.9.5 由 60s 调整)
 const RANK_LIMIT = 200;     // 单难度榜单条目上限
 const KEY_PREFIX = "ylgy:";   // KV 键前缀(与化了个学榜单分离)
 /* 成绩物理上限(v2.8.0): fills ≤ 总字母数(词数×词长); tools ≤ 填空提示2 + 含义提示1 */
@@ -65,7 +65,7 @@ export async function onRequestPost({ request, env }) {
     const platform = resolvePlatform(body, request);
 
     const ip = clientIp(request);
-    const n = await countIncr(env, `ylgy:rl:${ip}`, SUBMIT_TTL, 1);
+    const n = await windowRate(env, `ylgy:rl:${ip}`, SUBMIT_TTL, 1);
     if (n > 1) return json({ ok: false, msg: "提交过于频繁,请稍后再试" }, 429);
 
     let name = String(body.name ?? "").trim().replace(/[\u0000-\u001f\u007f]/g, "");
