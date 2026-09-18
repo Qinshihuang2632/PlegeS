@@ -22,6 +22,8 @@ export type FlglMode = "easy" | "normal" | "hard";
 export const BELT_CAPACITY_OF: Record<FlglMode, number> = { easy: 5, normal: 5, hard: 4 };
 export const ROUND_TOTAL = 20;    // 每局物质总数
 export const SPAWN_NOW_CD = 0.5;  // 「直接弹出下一张」冷却(秒, 防误触连点; v1.1.4 由 1s 收紧到 0.5s)
+export const CARD_STEP_PCT = 20;  // 每格宽度占传送带百分比(与 UI 渲染一致; v1.2.0)
+export const CARD_ENTRY_S = 2.5;  // 卡牌入场滑行时长(秒, 与 UI transition 一致; v1.2.0)
 
 export const FLGL_MODES: { mode: FlglMode; label: string }[] = [
     { mode: "easy", label: "简单" },
@@ -142,6 +144,7 @@ export interface FlglState {
     nextId: number;
     spawnIn: number;        // 距下一张出现还有几秒(≤0 → 出牌时刻)
     spawnCd: number;        // 「直接弹出下一张」剩余冷却秒数(v1.1.0)
+    spawnDelay: number;     // v1.2.0: 出卡后「新卡尚未滑入传送带」的冻结秒数(冻结期 spawnIn 不递减)
     elapsed: number;        // 已进行秒数
     score: number;          // 正确分类数
     hp: number;             // 剩余血量(初始 3)
@@ -160,6 +163,7 @@ export function newGame(mode: FlglMode, rng: () => number = Math.random): FlglSt
         nextId: 1,
         spawnIn: 0,   // 首张立刻出现(tick 后入带)
         spawnCd: 0,
+        spawnDelay: 0,
         elapsed: 0,
         score: 0,
         hp: 3,
@@ -168,13 +172,27 @@ export function newGame(mode: FlglMode, rng: () => number = Math.random): FlglSt
 }
 
 /** 推进 dt 秒: 计时 + 冷却递减 + 出牌时刻处理(满载判负 / 出牌并重置间隔) */
+/** 新卡加入后位于第 idx 格(0 起), 其左缘需滑行 idx 格宽才进入传送带右边界 ——
+    该段「不可见时间」不计入下一张的出牌间隔(v1.2.0 用户要求) */
+function entryFreezeSeconds(idx: number): number {
+    return (idx * CARD_STEP_PCT) / 100 * CARD_ENTRY_S;
+}
+
+/** 推进 dt 秒: 计时 + 冷却递减 + 冻结期(新卡未滑入传送带时不递减间隔) + 出牌时刻处理 */
 export function tick(st: FlglState, dt: number): FlglState {
     if (st.phase !== "playing") return st;
     let { spawnIn, spawned, belt, nextId, elapsed } = st;
     const spawnCd = Math.max(0, st.spawnCd - dt);
+    let spawnDelay = st.spawnDelay;
     let phase: FlglPhase = st.phase;
     let loseReason = st.loseReason;
     elapsed += dt;
+    // v1.2.0: 冻结期(新卡尚未滑入传送带)不递减出牌间隔, 冻结结束后的剩余 dt 继续递减
+    if (spawnDelay > 0) {
+        const used = Math.min(spawnDelay, dt);
+        spawnDelay = +(spawnDelay - used).toFixed(4);
+        dt -= used;
+    }
     spawnIn -= dt;
     if (spawnIn <= 0 && spawned < st.deck.length) {
         if (belt.length >= BELT_CAPACITY_OF[st.mode]) {
@@ -185,10 +203,12 @@ export function tick(st: FlglState, dt: number): FlglState {
             belt = [...belt, { id: nextId, sub: st.deck[spawned] }];
             nextId += 1;
             spawned += 1;
-            spawnIn = FLGL_INTERVAL[st.mode];
+            const freeze = entryFreezeSeconds(belt.length - 1);   // 新卡加入后位于末格
+            spawnIn = FLGL_INTERVAL[st.mode];   // 冻结(freeze)结束后才开始递减
+            spawnDelay = freeze;
         }
     }
-    return { ...st, phase, loseReason, spawnIn, spawned, belt, nextId, elapsed, spawnCd };
+    return { ...st, phase, loseReason, spawnIn, spawned, belt, nextId, elapsed, spawnCd, spawnDelay };
 }
 
 /**
@@ -202,12 +222,14 @@ export function spawnNow(st: FlglState): FlglState {
     if (st.belt.length >= BELT_CAPACITY_OF[st.mode]) {
         return { ...base, phase: "lose", loseReason: "overflow" as LoseReason };
     }
+    const freeze = entryFreezeSeconds(st.belt.length);   // 新卡加入后位于末格
     return {
         ...base,
         belt: [...st.belt, { id: st.nextId, sub: st.deck[st.spawned] }],
         nextId: st.nextId + 1,
         spawned: st.spawned + 1,
         spawnIn: FLGL_INTERVAL[st.mode],
+        spawnDelay: freeze,
     };
 }
 

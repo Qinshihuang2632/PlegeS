@@ -53,7 +53,7 @@ describe("分了个类 · 核心", () => {
     it("v1.1.7 传送带容量按难度(困难 4 张): 满载时仍不判负(用户规则: 满载 ≠ 判负)", () => {
         let st = newGame("hard", seedRng(7));
         for (let i = 0; i < BELT_CAPACITY_OF.hard; i++) {
-            st = tick(st, FLGL_INTERVAL.hard + 0.01);
+            st = tick(st, FLGL_INTERVAL.hard + 2.01);
         }
         expect(st.belt).toHaveLength(BELT_CAPACITY_OF.hard);
         expect(st.spawned).toBe(BELT_CAPACITY_OF.hard);
@@ -63,13 +63,13 @@ describe("分了个类 · 核心", () => {
     it("满载后撑到「新卡该出现」时刻才判负(overflow)", () => {
         let st = newGame("hard", seedRng(7));
         for (let i = 0; i < BELT_CAPACITY_OF.hard; i++) {
-            st = tick(st, FLGL_INTERVAL.hard + 0.01);
+            st = tick(st, FLGL_INTERVAL.hard + 2.01);
         }
-        // 距下一张还差 0.01s: 仍存活
-        st = tick(st, FLGL_INTERVAL.hard - 0.02);
+        // v1.2.0: 第 4 张出卡附带 1.5s 冻结(未滑入传送带), 冻结期间隔未开始计时 → 不判负
+        st = tick(st, 1.5);
         expect(st.phase).toBe("playing");
-        // 到点: 新卡该出现但满载 → 判负
-        st = tick(st, 0.05);
+        // 冻结结束后间隔 2.5s 走完: 新卡该出现但满载 → 判负
+        st = tick(st, 2.5 + 0.05);
         expect(st.phase).toBe("lose");
         expect(st.loseReason).toBe("overflow");
     });
@@ -171,7 +171,7 @@ describe("分了个类 · 核心", () => {
         let st = newGame("hard", seedRng(9));
         // 前 16 张出现后立即正确分类, 最后 4 张(困难容量)故意留在带上
         while (st.spawned < ROUND_TOTAL) {
-            st = tick(st, FLGL_INTERVAL.hard + 0.01);
+            st = tick(st, FLGL_INTERVAL.hard + 2.01);
             if (st.phase !== "playing") break;
             if (st.spawned <= ROUND_TOTAL - BELT_CAPACITY_OF.hard) for (const c of [...st.belt]) st = judgeRight(st, c.id);
         }
@@ -215,8 +215,10 @@ describe("分了个类 · 核心", () => {
         st = spawnNow(st);
         expect(st.spawned).toBe(before + 1);   // 立即出现下一张
         expect(st.belt).toHaveLength(2);
-        expect(st.spawnIn).toBe(FLGL_INTERVAL.hard);   // 间隔重置
-        expect(st.spawnCd).toBe(SPAWN_NOW_CD);         // 进入 1s 冷却
+        // v1.2.0: 间隔重置为纯间隔; 冻结期(0.5s)单独存放, 冻结结束后才开始递减
+        expect(st.spawnIn).toBe(FLGL_INTERVAL.hard);
+        expect(st.spawnDelay).toBe(0.5);
+        expect(st.spawnCd).toBe(SPAWN_NOW_CD);         // 进入冷却
     });
 
     it("直接弹出下一张: 冷却期间连点无效", () => {
@@ -238,7 +240,7 @@ describe("分了个类 · 核心", () => {
 
     it("直接弹出下一张: 满载时点击 = 新卡到达 → 判负(overflow)", () => {
         let st = newGame("hard", seedRng(23));
-        for (let i = 0; i < BELT_CAPACITY_OF.hard; i++) st = tick(st, FLGL_INTERVAL.hard + 0.01);
+        for (let i = 0; i < BELT_CAPACITY_OF.hard; i++) st = tick(st, FLGL_INTERVAL.hard + 2.01);
         expect(st.belt).toHaveLength(BELT_CAPACITY_OF.hard);
         st = spawnNow(st);
         expect(st.phase).toBe("lose");
@@ -258,5 +260,43 @@ describe("分了个类 · 核心", () => {
         const snapshot = st;
         st = spawnNow(st);
         expect(st).toEqual(snapshot);   // 无新卡可出
+    });
+});
+
+describe("分了个类 · v1.2.0 出卡冻结机制", () => {
+    it("出卡冻结: 第 2 张起附带不可见冻结期, 冻结期 spawnIn 不递减; 第 1 张无冻结", () => {
+        let st = newGame("hard", seedRng(31));
+        st = tick(st, 0.1);   // 第 1 张(位置 0, 无冻结)
+        expect(st.spawnDelay).toBe(0);
+        expect(st.spawnIn).toBe(FLGL_INTERVAL.hard);
+        const before = st.spawned;
+        st = spawnNow(st);    // 第 2 张(位置 1, 冻结 0.5s)
+        expect(st.spawnDelay).toBe(0.5);
+        const spawnInAtSpawn = st.spawnIn;
+        // 冻结期内 tick: spawnIn 不递减
+        const mid = tick(st, 0.3);
+        expect(mid.spawnDelay).toBeCloseTo(0.2, 4);
+        expect(mid.spawnIn).toBe(spawnInAtSpawn);
+        // 冻结结束后 tick: spawnIn 开始递减
+        const after = tick(mid, 0.3);
+        expect(after.spawnDelay).toBe(0);
+        expect(after.spawnIn).toBeCloseTo(spawnInAtSpawn - 0.1, 4);
+        void before;
+    });
+
+    it("冻结期不计入间隔: 总等待 = 冻结 + 间隔(第 5 张冻结 2s)", () => {
+        let st = newGame("hard", seedRng(32));
+        st = tick(st, 0.1);                 // 首张(无冻结)
+        st = spawnNow(st);                  // 第 2 张(freeze 0.5)
+        st = tick(st, 0.6);                 // 冷却结束(冻结同步走完)
+        st = spawnNow(st);                  // 第 3 张(freeze 1.0)
+        st = tick(st, 1.1);
+        st = spawnNow(st);                  // 第 4 张(freeze 1.5)
+        expect(st.spawnDelay).toBeCloseTo(1.5, 4);
+        expect(st.spawnIn).toBe(FLGL_INTERVAL.hard);
+        // 冻结走完 → spawnIn 从满间隔开始递减
+        const mid = tick(st, 1.5);
+        expect(mid.spawnDelay).toBe(0);
+        expect(mid.spawnIn).toBeCloseTo(FLGL_INTERVAL.hard, 4);
     });
 });

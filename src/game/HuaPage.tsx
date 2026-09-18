@@ -153,29 +153,31 @@ export function HuaPage() {
         else setNameOpen(true);
     };
 
-    /* 棋盘缩放适配小屏(v2.3.14 重构): 以「净内容宽」(卡牌实际外延, 不含布局余量)为基准缩放,
-       左右各留 2px 对称呼吸空间 —— 修复此前 boardW 含单侧 20px 余量导致缩放后整体偏移、
-       左右外侧卡离屏幕边界距离不相等的问题; 卡片尺寸因此稍稍增大 */
-    const [netBoard, setNetBoard] = useState({ minX: 0, minY: 0, w: 0, h: 0 });
-    useEffect(() => {
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const t of game.tiles) {
-            minX = Math.min(minX, t.x);
-            minY = Math.min(minY, t.y);
-            maxX = Math.max(maxX, t.x + t.size);
-            maxY = Math.max(maxY, t.y + t.size);
-        }
-        setNetBoard({ minX, minY, w: Math.max(1, maxX - minX), h: Math.max(1, maxY - minY) });
-    }, [game]);
+    /* 棋盘缩放适配小屏(v2.3.15 修复): 以「净内容宽」(卡牌实际外延)为基准缩放, 左右各留 2px 对称。
+       净宽在渲染期从 game.tiles 现算(game 为 ref 可变对象, effect 依赖 [game] 不会因 newGame()
+       触发 —— v2.3.14 曾因此换难度/新局后仍用旧净宽, 导致不居中且困难/挑战溢出屏幕) */
+    let nx0 = Infinity, ny0 = Infinity, nx1 = -Infinity, ny1 = -Infinity;
+    for (const t of game.tiles) {
+        nx0 = Math.min(nx0, t.x);
+        ny0 = Math.min(ny0, t.y);
+        nx1 = Math.max(nx1, t.x + t.size);
+        ny1 = Math.max(ny1, t.y + t.size);
+    }
+    const netBoard = {
+        minX: Number.isFinite(nx0) ? nx0 : 0,
+        minY: Number.isFinite(ny0) ? ny0 : 0,
+        w: Math.max(1, nx1 - nx0),
+        h: Math.max(1, ny1 - ny0),
+    };
     useEffect(() => {
         const el = boardRef.current;
-        if (!el || netBoard.w <= 1) return;
+        if (!el) return;
         const update = () => setScale(Math.min(1, (el.clientWidth - 4) / netBoard.w));
         update();
         const ro = new ResizeObserver(update);
         ro.observe(el);
         return () => ro.disconnect();
-    }, [game, netBoard]);
+    }, [netBoard.w]);
 
     /* 手牌槽单格尺寸: 两行排布(10→5+5, 8→4+4), 按行宽计算, 卡牌更大易点 */
     useEffect(() => {
