@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { CLGZ_SUBJECTS, charsOfSubjects, type ClgzChar } from "./chars";
 import { HandwritingPad } from "./HandwritingPad";
+import { fetchOcrEnabled, judgeWithAiVariants as judgeWithAiApi } from "@/game/clgzAi";
+import type { MatchResult } from "./handwriting";
 import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
@@ -102,6 +104,50 @@ export function ClgzPage() {
         else setWrong((w) => [...w, cur.ch]);
         if (idx + 1 >= queue.length) finish();
         else setIdx((i) => i + 1);
+    };
+
+    /* v1.1.0 AI 手写识别: 提交的手写字图 → 腾讯 OCR 判定是否为目标字。
+       ocrEnabled 由 /clgz/api/ai-config 决定(管理后台配置); true 时像素判定结果仅存缓存,
+       以 AI 结果为准处理 —— AI 不可用时回退像素路径。 */
+    const [ocrEnabled, setOcrEnabled] = useState(false);
+    const [aiChecking, setAiChecking] = useState(false);
+    const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+    const pixelResultRef = useRef<MatchResult | null>(null);
+
+    useEffect(() => {
+        void fetchOcrEnabled().then(setOcrEnabled);
+    }, []);
+
+    const judgeWithAi = (imageBase64: string, target: string) => {
+        setAiChecking(true);
+        setAiFeedback(null);
+        void (async () => {
+            const d = await judgeWithAiApi(imageBase64, target);
+            setAiChecking(false);
+            if (!d.ok) {
+                // OCR 不可用 → 回退像素判定结果(提交时已缓存)
+                const r = pixelResultRef.current;
+                if (r) {
+                    if (r.pass) HLGX_Audio.correct();
+                    else HLGX_Audio.wrong();
+                    if (r.pass) setTimeout(() => next(true), 300);
+                    else setAiFeedback("AI 暂不可用,已按笔画比对判定:未通过。可擦除重写或点「下一题」");
+                } else {
+                    setAiFeedback("AI 暂不可用,请重新书写后再试,或点「下一题」");
+                }
+                return;
+            }
+            if (d.isTarget) {
+                HLGX_Audio.correct();
+                setAiFeedback(`AI 识别为「${d.recognized || target}」——正确!`);
+                setTimeout(() => next(true), 600);
+            } else {
+                HLGX_Audio.wrong();
+                setAiFeedback(d.recognized
+                    ? `AI 识别你写的是「${d.recognized}」——不是目标字「${target}」,可擦除重写`
+                    : "书写难以辨认,请写规范一些(可擦除重写)");
+            }
+        })();
     };
 
     const finish = async () => {
@@ -259,12 +305,26 @@ export function ClgzPage() {
                         <p className="text-xs text-muted-foreground">在下方画框内手写(请写规范,潦草不得分)</p>
                     </div>
                     {/* key=idx 强制重挂载: 切换下一题时自动清空画布(与在下雨共同更新) */}
-                    <HandwritingPad key={idx} target={cur.ch} onResult={(r) => {
-                        // v1.0.8 音效: 识别成功 → 正确音, 失败 → 错误音
+                    <HandwritingPad key={idx} target={cur.ch}
+                        suppressResult={ocrEnabled}
+                        onImage={(b64) => void judgeWithAi(b64, cur.ch)}
+                        onResult={(r) => {
+                        // v1.1.0: 像素结果先缓存(AI 不可用时降级用); AI 启用时以 AI 结果为准
+                        pixelResultRef.current = r;
+                        if (ocrEnabled) return;
+                        // 像素判定路径(旧行为): 识别成功 → 正确音, 失败 → 错误音
                         if (r.pass) HLGX_Audio.correct();
                         else HLGX_Audio.wrong();
                         if (r.pass) setTimeout(() => next(true), 300);
                     }} />
+                    {aiChecking && (
+                        <p className="text-center text-xs font-semibold text-muted-foreground" role="status">AI 识别中…</p>
+                    )}
+                    {aiFeedback && (
+                        <p className={cn("text-center text-xs font-semibold", aiFeedback.includes("正确") ? "text-success" : "text-destructive")}>
+                            {aiFeedback}
+                        </p>
+                    )}
                     <Button variant="outline" className="w-full" onClick={() => { HLGX_Audio.wrong(); next(false); }}>
                         认不出/写不出,下一题
                     </Button>

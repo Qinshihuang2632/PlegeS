@@ -13,6 +13,7 @@ import { YLGY_VERSION } from "@/game2/version";
 import { FLGL_VERSION } from "@/game4/version";
 import { PLGP_VERSION } from "@/game5/version";
 import { LLGS_VERSION } from "@/game7/version";
+import { CLGZ_VERSION } from "@/game3/version";
 
 export interface UpdateItem {
     tag: string;      // 游戏/平台名
@@ -28,6 +29,7 @@ export const UPDATE_ITEMS: UpdateItem[] = [
     { tag: "英了个语", version: YLGY_VERSION, text: "新增草稿模式:拿不准的字母先打草稿(不触发判定),确定后再正式填写;手机端适配与键盘布局优化。" },
     { tag: "配了个平", version: PLGP_VERSION, text: "结算新增错题展示;方程式字体统一放大并自适应不超出卡面;快速通关提交间隔缩短至 30 秒。" },
     { tag: "分了个类", version: FLGL_VERSION, text: "卡牌加宽加高、文字放大更好认;修复传送带滚动闪烁;倒计时现在从卡片真正进入传送带才开始计算。" },
+    { tag: "错了个字", version: CLGZ_VERSION, text: "重新开放!改用 AI 手写识别判定——写对且可辨认即得分,写错会提示你实际写成了哪个字。" },
     { tag: "平台", version: PLATFORM_VERSION, text: "更新日志弹窗上线;特别鸣谢榜支持滑动翻看;放宽英了个语 / 历了个史(10 秒)与分了个类 / 配了个平(30 秒)的上榜提交间隔。" },
 ];
 

@@ -23,6 +23,8 @@ interface HandwritingPadProps {
     /** 网格尺寸(像素), 画框显示为方形 */
     size?: number;
     onResult?: (r: MatchResult) => void;
+    onImage?: (base64: string) => void;   // v1.1.0: 提交时导出卡面 PNG(base64, 供 AI 判定)
+    suppressResult?: boolean;             // v1.1.0: AI 判定模式下不回调 onResult(由父级按 AI 结果处理)
 }
 
 const REASON_TEXT: Record<MatchResult["reason"], string> = {
@@ -33,7 +35,7 @@ const REASON_TEXT: Record<MatchResult["reason"], string> = {
     wrong_char: "写的字与目标不一致",
 };
 
-export function HandwritingPad({ target, size = 280, onResult }: HandwritingPadProps) {
+export function HandwritingPad({ target, size = 280, onResult, onImage, suppressResult }: HandwritingPadProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [writing, setWriting] = useState(false);
@@ -165,7 +167,20 @@ export function HandwritingPad({ target, size = 280, onResult }: HandwritingPadP
             resizeBitmap(inkRaw, size, GRID));
         setLastDebug({ target, size: GRID, ink: inkNorm, tpl: tplNorm, result: r });
         setResult(r);
-        onResult?.(r);
+        // v1.1.1: 导出为「白底 + 放大 2 倍」的卡面 PNG(透明底/田字格会干扰腾讯 OCR,
+        // 原图 280px 也偏小) —— 白底重绘并放大到 560px 再交给 AI 手写识别
+        if (onImage) {
+            const out = document.createElement("canvas");
+            out.width = out.height = size * 2;
+            const octx = out.getContext("2d");
+            if (octx) {
+                octx.fillStyle = "#ffffff";
+                octx.fillRect(0, 0, out.width, out.height);
+                octx.drawImage(cv, 0, 0, out.width, out.height);
+                onImage(out.toDataURL("image/png").split(",")[1] ?? "");
+            }
+        }
+        if (!suppressResult) onResult?.(r);
     };
 
     const clear = () => {

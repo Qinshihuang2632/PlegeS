@@ -1,7 +1,7 @@
 /*
  * 化了个学 · 管理后台 API 客户端
  */
-import type { AiConfig, AiProvider, AuditPage, FeedbackList, PlayLogList, RankList, SessionInfo } from "./types";
+import type { AiConfig, AiProvider, AuditPage, FeedbackList, OcrConfig, PlayLogList, RankList, SessionInfo } from "./types";
 
 interface AiConfigResponse { config: AiConfig; providers: AiProvider[] }
 
@@ -131,5 +131,30 @@ export async function apiPlayLogs(game = "", q = ""): Promise<PlayLogList | null
 
 export async function apiClearPlayLog(): Promise<{ ok: boolean; msg?: string }> {
     const res = await fetch("/admin/api/playlog?clear=1", { method: "DELETE" });
+    return j(res);
+}
+
+/* ---------- 错了个字 · 手写 OCR 配置(v1.1.0) ---------- */
+
+export async function apiGetOcrConfig(): Promise<{ ok: boolean; config: OcrConfig } | null> {
+    const res = await fetch("/admin/api/ocr");
+    return res.ok ? j(res) : null;
+}
+
+export async function apiSaveOcrConfig(payload: { enabled: boolean; region: string; secretId: string; secretKey: string }): Promise<{ ok: boolean; msg?: string }> {
+    const res = await fetch("/admin/api/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    return j(res);
+}
+
+export async function apiTestOcr(): Promise<{ ok: boolean; reachable: boolean; msg?: string; ms?: number }> {
+    const res = await fetch("/admin/api/ocr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "test" }),
+    });
     return j(res);
 }

@@ -118,17 +118,20 @@ export function HubPage() {
                     </span>
                 </Link>
 
-                {/* 错了个字(平台 v2.5.6: 暂时关闭维护 —— 卡片不可进入, 徽标「维护中」;游戏本体代码未改动) */}
-                <div className="relative overflow-hidden rounded-2xl border bg-card p-5 opacity-80 shadow-sm">
+                {/* 错了个字(v1.1.0: AI 手写识别加持, 重新开放) */}
+                <Link
+                    to="/clgz"
+                    className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
                     <div className="mb-3 text-4xl" aria-hidden>字</div>
                     <h2 className="text-lg font-bold">错了个字</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        手写考察高中各科易写错的字(锥形瓶的锥、睾丸的睾……)。像你画我猜一样在画框里手写,不经过键盘。暂停开放,升级维护中。
+                        手写考察高中各科易写错的字(锥形瓶的锥、睾丸的睾……),AI 识别你写的字——写对且可辨认即得分。
                     </p>
-                    <span className="mt-4 inline-block rounded-full bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
-                        维护中
+                    <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+                        ● 可玩
                     </span>
-                </div>
+                </Link>
 
                 {/* 分了个类(v1.0.0 / 平台 v2.6.0 可玩) */}
                 <Link

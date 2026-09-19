@@ -82,6 +82,14 @@ export interface PlayLogList {
     list: PlayLogEntry[];
 }
 
+/* 错了个字 · 手写 OCR 配置(v1.1.0, 腾讯云通用手写体识别) */
+export interface OcrConfig {
+    enabled: boolean;
+    region: string;
+    secretIdMasked: string;
+    hasKey: boolean;
+}
+
 /* AI 检测配置(v2.8.4 管理端可配, Key 永不下发明文) */
 export interface AiConfig {
     enabled: boolean;
@@ -101,6 +109,8 @@ export interface AiProvider {
 
 /* 审计动作 → 中文标签(文案统一, 展示用) */
 export const ACTION_LABELS: Record<string, string> = {
+    ocr_config_update: "OCR 配置更新",
+    ocr_config_test: "OCR 连接测试",
     ai_config_update: "AI 配置更新",
     ai_config_test: "AI 连接测试",
     playlog_clear: "清空游玩记录",
