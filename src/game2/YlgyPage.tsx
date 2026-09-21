@@ -77,7 +77,9 @@ export function YlgyPage() {
 
     /* v1.6.0 AI 单词检测: 填满的词与参考答案不同时, 调 /ylgy/api/ai(DeepSeek)判断是否真实单词。
        aiTip: 合法但非参考答案词的释义提示(不锁定, 可删改); aiChecking: 检测进行中;
-       aiCache: 词 → 检测结果缓存(避免同词重复消耗 AI); aiPending: 进行中的词内容(防过期结果) */
+       aiCache: 词 → 检测结果缓存(避免同词重复消耗 AI); aiPending: 进行中的词内容(防过期结果)
+       v1.6.3: AI 不可用时不再回退「词库判定锁定/扣血」—— 真实但非答案的词库词曾被静默锁定,
+       导致交叉格固定提示拼出非词(mhoot 事故); 改为仅提示建议更换, 不锁定不扣血。 */
     const [aiTip, setAiTip] = useState<string | null>(null);
     const aiTipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [aiChecking, setAiChecking] = useState(false);
@@ -243,7 +245,8 @@ export function YlgyPage() {
     /* v1.6.0: AI 检测结果应用。
        真实单词(非参考答案) → 仅展示释义提示, 不锁定不扣血, 玩家可删掉重填;
        非真实单词 → 非法处理(扣血 + 红 2 秒);
-       AI 不可用(ok=false) → 降级词库判定: 词库词按合法锁定(旧行为), 否则扣血。 */
+       AI 不可用(ok=false) → v1.6.3 起不锁定不扣血, 仅提示「非本局答案,建议更换」
+         (旧回退词库判定会把 dream 这类真实词库词静默锁定成「已完成」, 固定提示随之拼出 mhoot 类非词, 死路)。 */
     const applyAiResult = (wi: number, word: string, result: AiCheckResult | null) => {
         setAiChecking(false);
         const g = gameRef.current;
@@ -255,14 +258,14 @@ export function YlgyPage() {
             showAiTip(`本单词释义为 ${(result.pos ?? "").trim()} ${(result.zh ?? "").trim()}。但「${word}」不符合本局参考答案,可能导致其他交叉单词无法正确填出,请更换答案(该词未被锁定,可删除重填)。`);
             return;
         }
-        const isLegal = !!(result && result.ok) ? result!.isWord === true : g.isDictWord(word);
-        const hpBefore = g.hp;
-        g.confirmWord(wi, isLegal);
-        if (g.hp < hpBefore) {
-            HLGX_Audio.wrong();
-            badFlashTimerRef.current && clearTimeout(badFlashTimerRef.current);
-            badFlashTimerRef.current = setTimeout(() => refresh(), 2000);
+        if (!(result && result.ok)) {
+            showAiTip(`AI 检测暂不可用。「${word}」不是本局参考答案,可能导致其他交叉单词无法正确填出,建议更换答案(未锁定、不扣血;也可删除重填)。`);
+            return;
         }
+        g.confirmWord(wi, false);   // AI 明确判定非真实单词 → 扣血 + 红 2 秒
+        HLGX_Audio.wrong();
+        badFlashTimerRef.current && clearTimeout(badFlashTimerRef.current);
+        badFlashTimerRef.current = setTimeout(() => refresh(), 2000);
         refresh();
     };
 
@@ -279,14 +282,20 @@ export function YlgyPage() {
         setAiChecking(true);
         void (async () => {
             let result: AiCheckResult | null = null;
+            // v1.6.3: 前端 20s 兜底超时(后端最长 15s) —— 此前无超时, 移动端请求挂死时
+            // 「AI 检测中…」永远停留, 不变绿不变红也不弹提示
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 20000);
             try {
                 const resp = await fetch("/ylgy/api/ai", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ word }),
+                    signal: ctrl.signal,
                 });
                 result = await resp.json();
-            } catch { result = null; }
+            } catch { result = null; }   // 网络异常/超时 → 按「AI 不可用」提示, 不锁词不扣血
+            finally { clearTimeout(timer); }
             aiCacheRef.current.set(word, result);
             // 检测期间开局换局 / 玩家修改该词 → 丢弃过期结果
             const cur = gameRef.current;

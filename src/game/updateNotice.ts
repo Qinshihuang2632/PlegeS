@@ -9,6 +9,7 @@
  * 维护方式: 每次更新重写 UPDATE_ITEMS 为「本批」改动(玩家视角, 不写内部术语), 旧条目清除。
  */
 import { PLATFORM_VERSION } from "@/version";
+import { YLGY_VERSION } from "@/game2/version";
 import { CLGZ_VERSION } from "@/game3/version";
 
 export interface UpdateItem {
@@ -21,6 +22,7 @@ export const UPDATE_SEEN_KEY = "hlgx_update_seen";
 
 export const UPDATE_ITEMS: UpdateItem[] = [
     // 维护约定严格执行: 只列「本批」改动, 旧批条目清除 —— 否则弹窗与上一批几乎相同, 玩家会以为日志没更新
+    { tag: "英了个语", version: YLGY_VERSION, text: "AI 检测可靠性修复:检测请求不再可能无限等待(20 秒内必有结果反馈);AI 暂不可用时不再误锁你填出的真实单词,只提示建议更换。" },
     { tag: "错了个字", version: CLGZ_VERSION, text: "AI 手写识别成为唯一判定:识别更准了,并移除旧的字形重合度比对(不再提示「太潦草了」);手机端顶栏布局优化。" },
     { tag: "平台", version: PLATFORM_VERSION, text: "主界面六款游戏的简介全面更新至现版本,新玩法(草稿模式、方位按键、同年并列、错题回看)一眼可见。" },
 ];
