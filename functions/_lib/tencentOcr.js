@@ -7,7 +7,9 @@
  *   这里直接实现 TC3-HMAC-SHA256 签名调用 HTTP API(Web Crypto, 零依赖)。
  * 配置: KV `clgz:ocr:config` {enabled, secretId, secretKey, region}
  *   —— 由管理后台「AI 检测」页配置(与英了个语的 DeepSeek 配置相互独立)。
- * 降级: 未配置/调用失败 → 返回 ok:false, 前端回退像素重合度判定。
+ * 降级: 未配置/调用失败 → 返回 ok:false, 前端提示「AI 识别暂不可用」
+ *   (v1.1.4 起像素重合度判定已删除, 不再回退)。
+ * 识别为空 → ok:true + recognized:"" + empty:true, 前端按「难以辨认」处理。
  * 签名注意(实测): ①X-TC-Version 必须为带连字符日期格式("2018-11-19");
  *   ②X-TC-Timestamp/X-TC-Nonce 公共参数头必须携带;
  *   ③x-tc-action 必须参与 canonicalHeaders 与 SignedHeaders(小写 action)。
@@ -67,7 +69,7 @@ async function sha256Hex(msg) {
 }
 
 /** 通用手写体识别: 图片 base64(纯 base64, 不含 dataURL 前缀) + 目标字
- *  → {ok:true, text, isTarget} | {ok:false, msg, dbg?}(前端降级依据) */
+ *  → {ok:true, recognized, isTarget, empty} | {ok:false, msg, dbg?}(前端降级依据; 字段名 recognized 与前端 clgzAi.ts 契约一致) */
 export async function ocrHandwriting(env, imageBase64, target) {
     const cfg = await loadOcrConfig(env);
     if (!cfg.enabled || !cfg.secretId || !cfg.secretKey) {
@@ -116,34 +118,13 @@ export async function ocrHandwriting(env, imageBase64, target) {
         // 腾讯业务错误也走 HTTP 200: Error 字段必须透出(否则会被误判为「识别失败/难以辨认」)
         const tErr = data?.Response?.Error;
         if (tErr) return { ok: false, msg: "腾讯 OCR 错误: " + (tErr.Code ?? "") + " " + (tErr.Message ?? ""), dbg: "sid=" + sidMask + " key=" + keyMask };
-        const items = data?.Response?.TextItems ?? [];
+        // 关键修复(v1.1.2): GeneralHandwritingOCR 的返回字段是 TextDetections,
+        // 之前错写成 TextItems → 手写结果永远读不到, 于是整条链路实际只在用印刷体 GeneralBasicOCR。
+        const items = data?.Response?.TextDetections ?? [];
         const text = items.map((it) => (it?.DetectedText ?? "")).join("").replace(/\s+/g, "");
-        if (text.length > 0) return { ok: true, text, isTarget: text.includes(target), empty: false };
-        // GeneralHandwritingOCR 检测不到 → 回退 GeneralBasicOCR(印刷体识别对手写也有一定能力)
-        const basicAction = "GeneralBasicOCR";
-        const basicBody = JSON.stringify({ ImageBase64: imageBase64 });
-        const basicCanonical = "content-type:application/json\nhost:" + OCR_HOST + "\nx-tc-action:" + basicAction.toLowerCase() + "\n";
-        const basicCR = ["POST", "/", "", basicCanonical, "content-type;host;x-tc-action", await sha256Hex(basicBody)].join("\n");
-        const basicSTS = "TC3-HMAC-SHA256\n" + timestamp + "\n" + date + "/" + OCR_SERVICE + "/tc3_request\n" + (await sha256Hex(basicCR));
-        const basicSig = toHex(await hmac(kDate, basicSTS));
-        const basicResp = await fetch("https://" + OCR_HOST, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-TC-Action": basicAction,
-                "X-TC-Version": OCR_VERSION,
-                "X-TC-Region": cfg.region,
-                "X-TC-Timestamp": String(timestamp),
-                Authorization: "TC3-HMAC-SHA256 Credential=" + cfg.secretId + "/" + date + "/" + OCR_SERVICE + "/tc3_request, SignedHeaders=content-type;host;x-tc-action, Signature=" + basicSig,
-            },
-            body: basicBody,
-            signal: AbortSignal.timeout(15000),
-        });
-        if (!basicResp.ok) return { ok: true, text: "", isTarget: false, empty: true };
-        const basicData = await basicResp.json();
-        const basicItems = basicData?.Response?.TextDetections ?? [];
-        const basicText = basicItems.map((it) => (it?.DetectedText ?? "")).join("");
-        return { ok: true, text: basicText, isTarget: basicText.includes(target), empty: basicText.length === 0 };
+        // 只做手写体识别: 返回手写识别文本; 为空则前端按「难以辨认」处理(多尺寸变体重试后)。
+        // 字段名必须是 recognized(前端 clgzAi.ts 按 d.recognized 读取; 此前返回 text 导致局内永远「难以辨认」)
+        return { ok: true, recognized: text, isTarget: text.includes(target), empty: text.length === 0 };
     } catch {
         return { ok: false, msg: "OCR 服务暂不可用", dbg: "sid=" + sidMask + " key=" + keyMask };
     }

@@ -2,8 +2,8 @@
  * 错了个字 · 游戏页 (/clgz)
  * ========================
  * 玩法: 局内选择科目(可单选/多选) → 随机抽取该科目范围内的字 →
- *       玩家在画框内手写该字(不经过键盘) → 字形匹配判定对错。
- * 计分: 每字 1 分; 手写正确(与标准字形匹配)得 1 分, 潦草/写错不得分。
+ *       玩家在画框内手写该字(不经过键盘) → AI 手写识别判定对错(v1.1.4 起为唯一判定)。
+ * 计分: 每字 1 分; AI 识别写对且可辨认得 1 分, 写错/难辨认不得分。
  * 榜单: 独立 API /clgz/api/rank, 排序 得分↓ → 用时↑ → 提交早者优先。
  */
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -13,8 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { CLGZ_SUBJECTS, charsOfSubjects, type ClgzChar } from "./chars";
 import { HandwritingPad } from "./HandwritingPad";
-import { fetchOcrEnabled, judgeWithAiVariants as judgeWithAiApi } from "@/game/clgzAi";
-import type { MatchResult } from "./handwriting";
+import { judgeWithAiVariants as judgeWithAiApi } from "@/game/clgzAi";
 import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
 import { NameConfirmDialog, validateNickname } from "@/game/NameConfirmDialog";
@@ -106,17 +105,10 @@ export function ClgzPage() {
         else setIdx((i) => i + 1);
     };
 
-    /* v1.1.0 AI 手写识别: 提交的手写字图 → 腾讯 OCR 判定是否为目标字。
-       ocrEnabled 由 /clgz/api/ai-config 决定(管理后台配置); true 时像素判定结果仅存缓存,
-       以 AI 结果为准处理 —— AI 不可用时回退像素路径。 */
-    const [ocrEnabled, setOcrEnabled] = useState(false);
+    /* v1.1.0 AI 手写识别 / v1.1.4 起为唯一判定: 提交的手写字图 → 腾讯 OCR 判定是否为目标字,
+       不再有像素重合度比对。OCR 未配置/不可用时提示稍后再试, 不自动判分。 */
     const [aiChecking, setAiChecking] = useState(false);
     const [aiFeedback, setAiFeedback] = useState<string | null>(null);
-    const pixelResultRef = useRef<MatchResult | null>(null);
-
-    useEffect(() => {
-        void fetchOcrEnabled().then(setOcrEnabled);
-    }, []);
 
     const judgeWithAi = (imageBase64: string, target: string) => {
         setAiChecking(true);
@@ -125,16 +117,8 @@ export function ClgzPage() {
             const d = await judgeWithAiApi(imageBase64, target);
             setAiChecking(false);
             if (!d.ok) {
-                // OCR 不可用 → 回退像素判定结果(提交时已缓存)
-                const r = pixelResultRef.current;
-                if (r) {
-                    if (r.pass) HLGX_Audio.correct();
-                    else HLGX_Audio.wrong();
-                    if (r.pass) setTimeout(() => next(true), 300);
-                    else setAiFeedback("AI 暂不可用,已按笔画比对判定:未通过。可擦除重写或点「下一题」");
-                } else {
-                    setAiFeedback("AI 暂不可用,请重新书写后再试,或点「下一题」");
-                }
+                // OCR 未配置/不可用 → 不自动判分(像素判定已移除), 提示重试或跳过
+                setAiFeedback("AI 识别暂不可用,请重新书写后再试,或点「下一题」");
                 return;
             }
             if (d.isTarget) {
@@ -226,9 +210,10 @@ export function ClgzPage() {
 
     return (
         <div className="mx-auto min-h-dvh w-full max-w-3xl px-4 pb-8 pt-6 sm:pt-10">
-            <header className="mb-6 flex items-center justify-between gap-2">
-                <Link to="/" className="shrink-0 text-sm text-muted-foreground hover:text-foreground">← 返回大厅</Link>
-                <h1 className="flex-1 text-center text-xl font-bold">错了个字</h1>
+            {/* 顶栏: 返回大厅 / 标题 / 静音(标题独占一行, 昵称/排行移到下方行, 移动端不再挤压成竖排 —— 与化了个学同构) */}
+            <header className="mb-2 flex items-center gap-2">
+                <Link to="/" className="shrink-0 whitespace-nowrap text-sm text-muted-foreground hover:text-foreground">← 返回大厅</Link>
+                <h1 className="flex-1 whitespace-nowrap text-center text-lg font-extrabold">错了个字</h1>
                 <div className="flex shrink-0 items-center gap-1">
                     <Button
                         variant="ghost"
@@ -240,23 +225,28 @@ export function ClgzPage() {
                     >
                         {muted ? "🔇" : "🔊"}
                     </Button>
+                </div>
+            </header>
+            {/* 昵称行: 输入 + 二次确认 + 排行参与开关 + 错误提示(独占一行, 窄屏自动换行) */}
+            <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+                <div className="flex items-center gap-1">
                     <input
                         value={nameDraft}
                         maxLength={10}
                         placeholder="昵称"
                         onChange={(e) => onNameDraftChange(e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") requestNameConfirm(); }}
-                        className="w-24 rounded-lg border bg-card px-2 py-1.5 text-sm outline-none focus:border-primary"
+                        className="w-24 rounded-lg border bg-card px-2 py-1 text-sm outline-none focus:border-primary"
                         aria-label="当前昵称,点击直接修改"
                         title="当前昵称,修改后需二次确认并重开本局"
                     />
                     <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={requestNameConfirm} aria-label="确认修改昵称">✓</Button>
                 </div>
                 <RankPartToggle active={rankActive} onConfirmedChange={confirmRankPart} />
-            </header>
-            {nameTip && (
-                <p className="mb-2 text-center text-xs font-semibold text-destructive">{nameTip}</p>
-            )}
+                {nameTip && (
+                    <span className="text-xs font-semibold text-destructive">{nameTip}</span>
+                )}
+            </div>
 
             {phase === "select" && (
                 <div className="space-y-5">
@@ -302,21 +292,11 @@ export function ClgzPage() {
                     <div className="rounded-2xl border bg-card p-5 text-center shadow-sm">
                         <p className="text-sm text-muted-foreground">请写出「{cur.word}」中的这个字</p>
                         <p className="my-2 text-6xl font-bold tracking-widest text-primary">{cur.ch}</p>
-                        <p className="text-xs text-muted-foreground">在下方画框内手写(请写规范,潦草不得分)</p>
+                        <p className="text-xs text-muted-foreground">在下方画框内手写,AI 会识别你写的字</p>
                     </div>
                     {/* key=idx 强制重挂载: 切换下一题时自动清空画布(与在下雨共同更新) */}
                     <HandwritingPad key={idx} target={cur.ch}
-                        suppressResult={ocrEnabled}
-                        onImage={(b64) => void judgeWithAi(b64, cur.ch)}
-                        onResult={(r) => {
-                        // v1.1.0: 像素结果先缓存(AI 不可用时降级用); AI 启用时以 AI 结果为准
-                        pixelResultRef.current = r;
-                        if (ocrEnabled) return;
-                        // 像素判定路径(旧行为): 识别成功 → 正确音, 失败 → 错误音
-                        if (r.pass) HLGX_Audio.correct();
-                        else HLGX_Audio.wrong();
-                        if (r.pass) setTimeout(() => next(true), 300);
-                    }} />
+                        onImage={(b64) => void judgeWithAi(b64, cur.ch)} />
                     {aiChecking && (
                         <p className="text-center text-xs font-semibold text-muted-foreground" role="status">AI 识别中…</p>
                     )}

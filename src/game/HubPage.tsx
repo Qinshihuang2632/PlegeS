@@ -111,7 +111,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>词</div>
                     <h2 className="text-lg font-bold">英了个语</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        横竖单词交叉成不规则拼图。课标词库三档难度;填出与答案不同的真实单词时,AI 会提示释义并允许换答案,不再死锁。
+                        横竖单词交叉成不规则拼图,课标词库三档难度。拿不准的字母可先打草稿;填出与答案不同的真实单词时,AI 会提示释义并允许换答案,不再死锁。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
@@ -126,7 +126,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>字</div>
                     <h2 className="text-lg font-bold">错了个字</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        手写考察高中各科易写错的字(锥形瓶的锥、睾丸的睾……),AI 识别你写的字——写对且可辨认即得分。
+                        手写考察高中各科易写错的字(锥形瓶的锥、睾丸的睾……),AI 手写识别判定——写对且可辨认即得分,写错还会告诉你实际写成了哪个字。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
@@ -156,7 +156,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>平</div>
                     <h2 className="text-lg font-bold">配了个平</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        111 道课标方程式等你配平:简单点选系数,标准 / 困难手填系数;比例解也算错——最简整数比才是化学的浪漫。
+                        111 道课标方程式等你配平:简单点选系数,标准 / 困难手填系数;比例解也算错——最简整数比才是化学的浪漫。结算还能回看错题。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
@@ -171,7 +171,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>史</div>
                     <h2 className="text-lg font-bold">历了个史</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        把 5 张课标历史事件卡按时间先后排好:对则锁定、错则标红继续调,不扣血,多试几次也能通关。
+                        点选事件卡,方位按键把它插进时间轴;240 条课标历史事件,对则锁定、错则标红再调,不扣血;困难模式还有同年事件上下并列。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩

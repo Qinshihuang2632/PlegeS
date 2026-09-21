@@ -4,10 +4,11 @@
  * v1.1.0: 提交手写卡面图 → /clgz/api/ai(腾讯云通用手写体识别) → 判定结果。
  * v1.1.1: 多尺寸变体重试 —— 单个大字占满整图时通用 OCR 常检测不到文本区域,
  *   自动按 100%/60%/40% 三种占比把字放在白底中央分别识别, 任一识别出文本即用。
- * OCR 全部失败(接口异常)时调用方回退像素重合度判定(旧行为)。
+ * v1.1.4: AI 识别为唯一判定(像素重合度判定已删除)。OCR 不可用(ok:false)时
+ *   调用方提示「AI 识别暂不可用」, 不再回退任何本地判定。
  */
 export interface ClgzAiResult {
-    ok: boolean;          // false = OCR 不可用(调用方回退像素判定)
+    ok: boolean;          // false = OCR 不可用(调用方提示暂不可用)
     isTarget?: boolean;   // true = 识别结果包含目标字(写对)
     recognized?: string;  // AI 识别出的文本(可能为空 = 难以辨认)
     msg?: string;

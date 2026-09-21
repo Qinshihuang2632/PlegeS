@@ -4,7 +4,7 @@
  *   POST {image, target} → {ok, isTarget, recognized?, msg?}
  *   用途: 手写字图片(卡面 PNG base64) → 腾讯云通用手写体识别 →
  *         判定玩家写的是否为目标字(识别文本含目标字即写对)。
- *   降级: OCR 未配置/失败 → ok:false, 前端回退像素重合度判定。
+ *   降级: OCR 未配置/失败 → ok:false, 前端提示「AI 识别暂不可用」(v1.1.4 起像素判定已删除, 不再回退)。
  *   限频: 每 IP 每分钟 20 次(windowRate, 窗口可 <60s)。
  */
 import { json } from "../../_lib/ranklib.js";

@@ -8,11 +8,7 @@
  *   版本一变就重弹, 即使日志内容与上次完全相同)。
  * 维护方式: 每次更新重写 UPDATE_ITEMS 为「本批」改动(玩家视角, 不写内部术语), 旧条目清除。
  */
-import { APP_VERSION, PLATFORM_VERSION } from "@/version";
-import { YLGY_VERSION } from "@/game2/version";
-import { FLGL_VERSION } from "@/game4/version";
-import { PLGP_VERSION } from "@/game5/version";
-import { LLGS_VERSION } from "@/game7/version";
+import { PLATFORM_VERSION } from "@/version";
 import { CLGZ_VERSION } from "@/game3/version";
 
 export interface UpdateItem {
@@ -24,13 +20,9 @@ export interface UpdateItem {
 export const UPDATE_SEEN_KEY = "hlgx_update_seen";
 
 export const UPDATE_ITEMS: UpdateItem[] = [
-    { tag: "历了个史", version: LLGS_VERSION, text: "交互重做:点选卡牌后用方位按键移动(更好按);困难模式支持同年事件上下并列;题库扩充至 240 条。" },
-    { tag: "化了个学", version: APP_VERSION, text: "手游棋盘显示修复(左右对称居中)、卡片稍大、卡面文字明显放大,长名称分行显示更清楚。" },
-    { tag: "英了个语", version: YLGY_VERSION, text: "新增草稿模式:拿不准的字母先打草稿(不触发判定),确定后再正式填写;手机端适配与键盘布局优化。" },
-    { tag: "配了个平", version: PLGP_VERSION, text: "结算新增错题展示;方程式字体统一放大并自适应不超出卡面;快速通关提交间隔缩短至 30 秒。" },
-    { tag: "分了个类", version: FLGL_VERSION, text: "卡牌加宽加高、文字放大更好认;修复传送带滚动闪烁;倒计时现在从卡片真正进入传送带才开始计算。" },
-    { tag: "错了个字", version: CLGZ_VERSION, text: "重新开放!改用 AI 手写识别判定——写对且可辨认即得分,写错会提示你实际写成了哪个字。" },
-    { tag: "平台", version: PLATFORM_VERSION, text: "更新日志弹窗上线;特别鸣谢榜支持滑动翻看;放宽英了个语 / 历了个史(10 秒)与分了个类 / 配了个平(30 秒)的上榜提交间隔。" },
+    // 维护约定严格执行: 只列「本批」改动, 旧批条目清除 —— 否则弹窗与上一批几乎相同, 玩家会以为日志没更新
+    { tag: "错了个字", version: CLGZ_VERSION, text: "AI 手写识别成为唯一判定:识别更准了,并移除旧的字形重合度比对(不再提示「太潦草了」);手机端顶栏布局优化。" },
+    { tag: "平台", version: PLATFORM_VERSION, text: "主界面六款游戏的简介全面更新至现版本,新玩法(草稿模式、方位按键、同年并列、错题回看)一眼可见。" },
 ];
 
 function hashId(str: string): string {
