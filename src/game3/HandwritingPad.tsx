@@ -22,9 +22,13 @@ interface HandwritingPadProps {
     size?: number;
     /** 提交时导出卡面 PNG(base64, 白底 2 倍放大, 供 AI 判定) */
     onImage?: (base64: string) => void;
+    /** 笔迹变化回调(管理后台采集页用: 拿到原始点序列存库; 游戏内不传, 行为不变) */
+    onStrokesChange?: (strokes: Stroke[]) => void;
+    /** 隐藏画框自带的「清除重写/提交判定」按钮(采集页用自己的保存按钮) */
+    hideActions?: boolean;
 }
 
-export function HandwritingPad({ target, size = 280, onImage }: HandwritingPadProps) {
+export function HandwritingPad({ target, size = 280, onImage, onStrokesChange, hideActions }: HandwritingPadProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [writing, setWriting] = useState(false);
@@ -77,6 +81,12 @@ export function HandwritingPad({ target, size = 280, onImage }: HandwritingPadPr
         document.body.style.overflow = "";
     };
     useEffect(() => () => unlockScroll(), []);   // 组件卸载时确保恢复
+
+    // 笔迹导出(采集页): 每次笔画数组变化即回调最新全量笔迹
+    useEffect(() => {
+        onStrokesChange?.(strokes);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [strokes]);
 
     const onDown = (e: React.PointerEvent) => {
         e.preventDefault();
@@ -142,14 +152,16 @@ export function HandwritingPad({ target, size = 280, onImage }: HandwritingPadPr
                 )}
             </div>
 
-            <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={clear} disabled={strokes.length === 0}>
-                    清除重写
-                </Button>
-                <Button size="sm" onClick={submit} disabled={strokes.length === 0}>
-                    提交判定
-                </Button>
-            </div>
+            {!hideActions && (
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={clear} disabled={strokes.length === 0}>
+                        清除重写
+                    </Button>
+                    <Button size="sm" onClick={submit} disabled={strokes.length === 0}>
+                        提交判定
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

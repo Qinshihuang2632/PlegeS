@@ -8,6 +8,7 @@ import { YlgyPage } from "./game2/YlgyPage";
 import { FlglPage } from "./game4/FlglPage";
 import { PlgpPage } from "./game5/PlgpPage";
 import { LlgsPage } from "./game7/LlgsPage";
+import { MlgxPage } from "./game6/MlgxPage";
 import { ClgzPage } from "./game3/ClgzPage";
 import { NotFoundPage } from "./game/NotFoundPage";
 
@@ -28,6 +29,8 @@ export default function App() {
                 {/* v1.0.0 / 平台 v2.7.0: 第五款游戏「配了个平」上线 */}
                 <Route path="/plgp" element={<PlgpPage />} />
                 <Route path="/llgs" element={<LlgsPage />} />
+                {/* v0.9.0 内测: 默了个写(题库审定中, 未上主界面) */}
+                <Route path="/mlgx" element={<MlgxPage />} />
                 <Route path="/admin" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<NotFoundPage />} />
             </Routes>

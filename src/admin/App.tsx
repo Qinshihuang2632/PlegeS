@@ -9,6 +9,7 @@ import { LogsPage } from "./pages/LogsPage";
 import { SessionsPage } from "./pages/SessionsPage";
 import { AiSettingsPage } from "./pages/AiSettingsPage";
 import { PlayLogPage } from "./pages/PlayLogPage";
+import { ClgzDataPage } from "./pages/ClgzDataPage";
 import { AdminLayout } from "./AdminLayout";
 import { RequireAuth } from "./RequireAuth";
 
@@ -27,6 +28,7 @@ export default function AdminApp() {
                         <Route path="/sessions" element={<SessionsPage />} />
                         <Route path="/ai" element={<AiSettingsPage />} />
                         <Route path="/playlog" element={<PlayLogPage />} />
+                        <Route path="/clgzdata" element={<ClgzDataPage />} />
                     </Route>
                 </Route>
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

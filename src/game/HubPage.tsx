@@ -13,6 +13,7 @@ import { GameRules } from "./GameRules";
 import { YlgyRules } from "@/game2/YlgyRules";
 import { LlgsRules } from "@/game7/LlgsRules";
 import { ClgzRules } from "@/game3/ClgzRules";
+import { MlgxRules } from "@/game6/MlgxRules";
 import { FlglRules } from "@/game4/FlglRules";
 import { PlgpRules } from "@/game5/PlgpRules";
 import { validateNickname } from "./NameConfirmDialog";
@@ -30,7 +31,7 @@ export function HubPage() {
         setUpdateOpen(false);
     };
     const [thanksOpen, setThanksOpen] = useState(false);
-    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl" | "plgp" | "llgs">("hlgx");   // 玩法介绍: 六游戏子页(错了个字维护中仍保留)
+    const [rulesTab, setRulesTab] = useState<"hlgx" | "ylgy" | "clgz" | "flgl" | "plgp" | "llgs" | "mlgx">("hlgx");   // 玩法介绍: 六游戏子页(错了个字维护中仍保留)
     const [feedbackOpen, setFeedbackOpen] = useState(false);
     const [fbName, setFbName] = useState(() => localStorage.getItem("hlgx_name")?.trim() || "");
     const [fbContent, setFbContent] = useState("");
@@ -177,8 +178,23 @@ export function HubPage() {
                         ● 可玩
                     </span>
                 </Link>
-                {/* 三个空卡槽(v2.9.2: 下一批三款, 名称未定) */}
-                {([0, 1, 2] as const).map((k) => (
+                {/* 默了个写(v1.0.0 公测上线) */}
+                <Link
+                    to="/mlgx"
+                    className="group relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                    <div className="mb-3 text-4xl" aria-hidden>默</div>
+                    <h2 className="text-lg font-bold">默了个写</h2>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                        古诗文默写记忆:句对选择、字池拼句、篇章复原、点选飞花令——全程点选不经过输入法,考的是真记住了;高考考纲篇目,真题考过的更常出,写法去「错了个字」练。
+                    </p>
+                    <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
+                        ● 可玩
+                    </span>
+                </Link>
+
+                {/* 两个空卡槽(v1.0.0: 默了个写上线后余两槽) */}
+                {([0, 1] as const).map((k) => (
                     <div key={k} className="rounded-2xl border border-dashed bg-muted/30 p-5 opacity-80">
                         <div className="mb-3 text-4xl" aria-hidden>？</div>
                         <h2 className="text-lg font-bold">敬请期待</h2>
@@ -232,6 +248,7 @@ export function HubPage() {
                             { key: "flgl", label: "分了个类" },
                             { key: "plgp", label: "配了个平" },
                             { key: "llgs", label: "历了个史" },
+                            { key: "mlgx", label: "默了个写" },
                         ] as const).map(({ key, label }) => (
                             <button
                                 key={key}
@@ -250,7 +267,8 @@ export function HubPage() {
                             : rulesTab === "flgl" ? <FlglRules />
                                 : rulesTab === "plgp" ? <PlgpRules />
                                     : rulesTab === "llgs" ? <LlgsRules />
-                                        : <ClgzRules />}
+                                        : rulesTab === "mlgx" ? <MlgxRules />
+                                            : <ClgzRules />}
                 </DialogContent>
             </Dialog>
 

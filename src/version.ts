@@ -7,4 +7,4 @@
  * 界面版本号必须跟随发布更新(否则游戏内仍显示旧版本)。
  */
 export const APP_VERSION = "v2.3.15";     // 化了个学(手游棋盘居中+卡片增大+卡面字体放大/括号名称两行)
-export const PLATFORM_VERSION = "v2.9.6";  // 平台 p了个s(v2.9.6: 主界面六款游戏简介更新至现版本)
+export const PLATFORM_VERSION = "v2.9.8";  // 平台 p了个s(v2.9.8: 第七款游戏「默了个写」公测上线, 主界面卡槽启用)

@@ -30,3 +30,7 @@ wrangler.test.toml
 
 # 排行榜数据(数据不入库: 线上存 Cloudflare KV, 本地文件仅作迁移源)
 rankings.json
+
+# 错了个字笔迹训练数据(不入库 —— clgz_ml_plan.md 隐私红线, 管理后台导出后放这里)
+clgz-character-data/samples/
+clgz-character-data/images/
