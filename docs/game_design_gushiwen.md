@@ -105,4 +105,4 @@ interface PoemLine {
 
 - **公测上线**:主界面卡槽启用(三槽余二)、玩法介绍子页、玩家更新日志弹窗;版本 v0.9.0→v1.0.0。
 - 题库 100 篇 361 句(审定稿 docs/mlgx_bank_review.md 批注持续修订);真题篇目 ×2、初中 ×0.5 加权;错题总结上线。
-- **待办 v1.1.0**:排行榜 API(functions/mlgx + KV mlgx: 前缀)+ RankPage + 局内成绩提交;clgz「古诗文」科目字单;题库审定意见落实。
+- **v1.1.0 已完成(2026-10-03)**:排行榜 API + 前台 mlgx 标签 + 局内成绩提交/重试(见 docs/mlgx_summary_report.md);clgz「古诗文」科目字单与题库审定意见落实仍待用户批注。

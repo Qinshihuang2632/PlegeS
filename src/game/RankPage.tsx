@@ -16,6 +16,7 @@ import { CLGZ_VERSION } from "@/game3/version";
 import { FLGL_VERSION } from "@/game4/version";
 import { PLGP_VERSION } from "@/game5/version";
 import { LLGS_VERSION } from "@/game7/version";
+import { MLGX_VERSION } from "@/game6/version";
 
 interface RankEntry {
     name: string;
@@ -49,6 +50,7 @@ const GAMES = [
     { key: "flgl", label: "分了个类" },
     { key: "plgp", label: "配了个平" },
     { key: "llgs", label: "历了个史" },
+    { key: "mlgx", label: "默了个写" },
 ] as const;
 type GameKey = (typeof GAMES)[number]["key"];
 
@@ -72,7 +74,7 @@ export function RankPage() {
     // v1.4.9: 缩写 ws→ylgy 改名, 旧参数 ?game=ws 兼容映射到 ylgy
     const [game, setGame] = useState<GameKey>(() => {
         const g = searchParams.get("game");
-        return g === "ylgy" || g === "ws" ? "ylgy" : g === "clgz" ? "clgz" : g === "flgl" ? "flgl" : g === "plgp" ? "plgp" : g === "llgs" ? "llgs" : "hlgx";
+        return g === "ylgy" || g === "ws" ? "ylgy" : g === "clgz" ? "clgz" : g === "flgl" ? "flgl" : g === "plgp" ? "plgp" : g === "llgs" ? "llgs" : g === "mlgx" ? "mlgx" : "hlgx";
     });
     const [curMode, setCurMode] = useState<string>("normal");
     const [curPlatform, setCurPlatform] = useState<Platform>(() => detectPlatform());
@@ -84,7 +86,7 @@ export function RankPage() {
         let cancelled = false;
         setEntries(null);
         setError(false);
-        const api = game === "ylgy" ? "/ylgy/api/rank" : game === "clgz" ? "/clgz/api/rank" : game === "flgl" ? "/flgl/api/rank" : game === "plgp" ? "/plgp/api/rank" : game === "llgs" ? "/llgs/api/rank" : "/hlgx/api/rank";
+        const api = game === "ylgy" ? "/ylgy/api/rank" : game === "clgz" ? "/clgz/api/rank" : game === "flgl" ? "/flgl/api/rank" : game === "plgp" ? "/plgp/api/rank" : game === "llgs" ? "/llgs/api/rank" : game === "mlgx" ? "/mlgx/api/rank" : "/hlgx/api/rank";
         fetch(`${api}?mode=${curMode}&platform=${curPlatform}`)
             .then((res) => res.json())
             .then((data: { rank?: RankEntry[] }) => {
@@ -109,6 +111,8 @@ export function RankPage() {
                     ? "答对题数多 → 用时短 → 提示使用少(失败记录也会上榜);榜单按平台分开,成绩只与本平台比较;「版本」列为配了个平独立版本"
                 : game === "llgs"
                     ? "归位张数多 → 用时短 → 提交次数少 → 提示使用少(每局必通关,提交次数即失误);榜单按平台分开,成绩只与本平台比较;「版本」列为历了个史独立版本"
+                : game === "mlgx"
+                    ? "得分多 → 用时短 → 提示使用少;榜单按平台分开,成绩只与本平台比较;「版本」列为默了个写独立版本"
                 : "剩余血量多 → 成功消除组数多 → 用时短 → 技能使用次数少(失败记录也会上榜,0 心玩家中消除组数多者排前);榜单按平台分开,成绩只与本平台比较;「版本」列对应当局游戏版本,不同版本难度有别,便于横向比较";
 
     return (
@@ -139,7 +143,7 @@ export function RankPage() {
 
             {/* 难度切换 */}
             <div className="mb-2 flex justify-center gap-1 rounded-full bg-muted p-1">
-                {(game === "ylgy" ? YLGY_MODES : game === "clgz" ? CLGZ_MODES : game === "flgl" ? FLGL_MODES : game === "plgp" ? PLGP_MODES : game === "llgs" ? FLGL_MODES : MODES).map(({ mode, label }) => (
+                {(game === "ylgy" ? YLGY_MODES : game === "clgz" ? CLGZ_MODES : game === "flgl" ? FLGL_MODES : game === "plgp" ? PLGP_MODES : game === "llgs" || game === "mlgx" ? FLGL_MODES : MODES).map(({ mode, label }) => (
                     <button
                         key={mode}
                         onClick={() => setCurMode(mode)}
@@ -203,7 +207,7 @@ export function RankPage() {
                                 <tr className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
                                     <th className="px-4 py-2.5 font-semibold">#</th>
                                     <th className="px-4 py-2.5 font-semibold">昵称</th>
-                                    {(game === "clgz" || game === "flgl") ? (
+                                    {(game === "clgz" || game === "flgl" || game === "plgp" || game === "llgs" || game === "mlgx") ? (
                                         <th className="px-4 py-2.5 font-semibold">得分</th>
                                     ) : (
                                         <th className="px-4 py-2.5 font-semibold">{game === "ylgy" ? "血量(填写)" : "血量(消除组数)"}</th>
@@ -220,7 +224,7 @@ export function RankPage() {
                                         <td className="px-4 py-2.5">{MEDALS[i] ?? i + 1}</td>
                                         <td className="px-4 py-2.5 font-semibold">{e.name}</td>
                                         <td className="px-4 py-2.5">
-                                            {(game === "clgz" || game === "flgl" || game === "plgp")
+                                            {(game === "clgz" || game === "flgl" || game === "plgp" || game === "llgs" || game === "mlgx")
                                                 ? `${e.score ?? 0} 分`
                                                 : `❤ ${e.hp}(${game === "ylgy" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")})`}
                                         </td>
@@ -244,7 +248,7 @@ export function RankPage() {
                                     <p className="text-xs text-muted-foreground">{e.date}</p>
                                 </div>
                                 <div className="text-right text-xs leading-relaxed">
-                                    {(game === "clgz" || game === "flgl" || game === "plgp") ? (
+                                    {(game === "clgz" || game === "flgl" || game === "plgp" || game === "llgs" || game === "mlgx") ? (
                                         <p className="font-semibold">{e.score ?? 0} 分 · ⏱ {fmtTime(e.time)}</p>
                                     ) : (
                                         <p>❤ {e.hp}({game === "ylgy" ? (e.clears ?? 0) + "字母" : (e.clears !== undefined ? e.clears + "组" : "—")}) · ⏱ {fmtTime(e.time)}</p>
@@ -260,7 +264,7 @@ export function RankPage() {
             )}
 
             <footer className="mt-8 text-center text-xs text-muted-foreground">
-                {game === "ylgy" ? `英了个语 · ${YLGY_VERSION}(仅供个人娱乐)` : game === "clgz" ? `错了个字 · ${CLGZ_VERSION}(仅供个人娱乐)` : game === "flgl" ? `分了个类 · ${FLGL_VERSION}(仅供个人娱乐)` : game === "plgp" ? `配了个平 · ${PLGP_VERSION}(仅供个人娱乐)` : game === "llgs" ? `历了个史 · ${LLGS_VERSION}(仅供个人娱乐)` : `化了个学 · ${APP_VERSION}(仅供个人娱乐)`}
+                {game === "ylgy" ? `英了个语 · ${YLGY_VERSION}(仅供个人娱乐)` : game === "clgz" ? `错了个字 · ${CLGZ_VERSION}(仅供个人娱乐)` : game === "flgl" ? `分了个类 · ${FLGL_VERSION}(仅供个人娱乐)` : game === "plgp" ? `配了个平 · ${PLGP_VERSION}(仅供个人娱乐)` : game === "llgs" ? `历了个史 · ${LLGS_VERSION}(仅供个人娱乐)` : game === "mlgx" ? `默了个写 · ${MLGX_VERSION}(仅供个人娱乐)` : `化了个学 · ${APP_VERSION}(仅供个人娱乐)`}
             </footer>
         </div>
     );

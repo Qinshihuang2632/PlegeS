@@ -8,7 +8,7 @@
 import { detectPlatform } from "./platform";
 
 export interface PlayLogPayload {
-    game: "hlgx" | "ylgy" | "flgl" | "plgp" | "llgs";
+    game: "hlgx" | "ylgy" | "flgl" | "plgp" | "llgs" | "mlgx";
     mode: string;
     name?: string;
     win: boolean;
