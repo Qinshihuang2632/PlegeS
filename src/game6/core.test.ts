@@ -238,6 +238,17 @@ describe("mlgx 对局逻辑(v2)", () => {
         const q = gotoKind(g, "flower")!;
         if (q && q.kind === "flower") {
             expect(q.sentences.length).toBe(9);
+            expect(q.fulls.length).toBe(9);
+            // 掩码不变量: 每句恰好挖空(□); 命中句挖的是令字(显示不再含令字), 非命中句原文本就不含令字
+            for (let i = 0; i < 9; i++) {
+                expect(q.sentences[i].includes("□"), `第 ${i} 句未挖空: ${q.sentences[i]}`).toBe(true);
+                if (q.hits[i]) {
+                    expect(q.fulls[i].includes(q.char)).toBe(true);
+                    expect(q.sentences[i].includes(q.char)).toBe(false);
+                } else {
+                    expect(q.fulls[i].includes(q.char)).toBe(false);
+                }
+            }
             const hitN = q.hits.filter(Boolean).length;
             expect(hitN).toBeGreaterThanOrEqual(3);
             expect(hitN).toBeLessThanOrEqual(5);

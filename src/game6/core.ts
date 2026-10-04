@@ -69,10 +69,11 @@ export interface FlowerQ {
     kind: "flower";
     src: string; author: string;   // 跨多篇, 固定「飞花令/多篇」
     examCount: number;             // 恒为 0
-    char: string;
-    sentences: string[];
-    hits: boolean[];
-    disabled: number[];
+    char: string;          // 令字
+    sentences: string[];   // 9 个候选句(每句挖去一个字显示为 □ —— 凭记忆判断, 不是找字眼力题)
+    fulls: string[];       // 与 sentences 对齐的原句(反馈/错题回顾展示)
+    hits: boolean[];       // 各句被挖去的字是否恰为令字
+    disabled: number[];    // 提示排除的(缺字非令字)句子下标
 }
 export type MlgxQuestion = CoupletQ | TilesQ | OrderQ | FlowerQ;
 
@@ -276,7 +277,8 @@ export class MlgxGame {
         qs.push({ kind: "order", src: win.src, author: win.author, examCount: win.examCount, shown, correct: win.lines, revealedFirst: false });
     }
 
-    /* ---- 点选飞花令 ---- */
+    /* ---- 缺字飞花令(原点选飞花令改版): 每句挖去一个字, 判断缺的字是否恰为令字 ----
+       旧形式「点选含令字的句子」退化为考验眼力的扫描题; 改为挖空后凭记忆判断。 */
     private pushFlower(qs: MlgxQuestion[]) {
         const chars = [...FLOWER_COMMON_POOL, ...FLOWER_HARD_POOL]
             .filter((c) => { const n = countLinesWith(c); return n >= 3 && n <= 10; });
@@ -284,15 +286,22 @@ export class MlgxGame {
         const hitLines = MLGX_LINES.filter((l) => l.norm.includes(char));
         const missLines = MLGX_LINES.filter((l) => !l.norm.includes(char));
         const hitCount = Math.min(hitLines.length, 3 + Math.floor(this.rng() * 3));
-        const picked = [
-            ...sample(hitLines, hitCount, this.rng),
-            ...sample(missLines, 9 - hitCount, this.rng),
+        const picked: { text: string; full: string; hit: boolean }[] = [
+            ...sample(hitLines, hitCount, this.rng).map((l) => ({
+                text: l.text.split(char).join("□"), full: l.text, hit: true,
+            })),
+            ...sample(missLines, 9 - hitCount, this.rng).map((l) => {
+                // 非命中句: 挖去句中某个非令字(该句本就不含令字), 挖去该字的全部出现
+                const c = l.norm[Math.floor(this.rng() * l.norm.length)];
+                return { text: l.text.split(c).join("□"), full: l.text, hit: false };
+            }),
         ];
-        const sentences = shuffled(picked, this.rng).map((l) => l.text);
+        const ordered = shuffled(picked, this.rng);
         qs.push({
             kind: "flower", src: "飞花令", author: "多篇", examCount: 0, char,
-            sentences,
-            hits: sentences.map((t) => normalizeLine(t).includes(char)),
+            sentences: ordered.map((x) => x.text),
+            fulls: ordered.map((x) => x.full),
+            hits: ordered.map((x) => x.hit),
             disabled: [],
         });
     }

@@ -331,12 +331,14 @@ function QuestionCard({ q, lockedRef, onSubmit, onTick }: {
     onSubmit: (payload: number[] | string[], answerText: string) => void;
     onTick: () => void;
 }) {
-    const [assembled, setAssembled] = useState<number[]>([]);   // tiles 已拼字块 id
+    const [byGap, setByGap] = useState<Record<number, number[]>>({});   // tiles 各段已填字块 id(标点分段)
+    const [activeGap, setActiveGap] = useState(0);                      // tiles 当前填写段
     const [picked, setPicked] = useState<string[]>([]);         // order 已选句子
     const [selected, setSelected] = useState<Set<number>>(new Set());   // flower 勾选
 
     useEffect(() => {
-        setAssembled([]);
+        setByGap({});
+        setActiveGap(0);
         setPicked([]);
         setSelected(new Set());
     }, [q]);
@@ -371,11 +373,35 @@ function QuestionCard({ q, lockedRef, onSubmit, onTick }: {
     }
 
     if (q.kind === "tiles") {
-        const usedIds = new Set(assembled);
-        const full = assembled.length === q.slots;
+        // v1.1.1 自由拼句: 不显示字数槽位; 目标句的标点直接印在答题行上, 玩家点选汉字填入各段
+        const segs: string[] = [];      // 目标句按标点切出的汉字段
+        const puncts: string[] = [];    // 段间标点(按顺序)
+        let cur = "";
+        for (const ch of q.answerText) {
+            if (/[一-龥]/.test(ch)) { cur += ch; continue; }
+            if (/[，。！？；：、]/.test(ch)) { segs.push(cur); cur = ""; puncts.push(ch); }
+        }
+        segs.push(cur);
+        // 末段为空(句以标点结尾)则不渲染末段空位 —— 句号本身即表句终, 不泄露额外信息
+        const gaps = segs[segs.length - 1] === "" ? segs.length - 1 : segs.length;
+        const placedCount = Object.values(byGap).reduce((s, arr) => s + arr.length, 0);
+        const usedIds = new Set(Object.values(byGap).flat());
+        const chOf = (id: number) => q.pool.find((t) => t.id === id)?.ch ?? "";
+        const flatPlaced: number[] = [];
+        for (let gi = 0; gi < gaps; gi++) flatPlaced.push(...(byGap[gi] ?? []));
         const submitTiles = () => {
-            if (!full || lockedRef.current) return;
-            onSubmit(assembled, q.answerText);
+            if (placedCount === 0 || lockedRef.current) return;
+            onSubmit(flatPlaced, q.answerText);
+        };
+        const tapTile = (id: number) => {
+            const ag = Math.min(activeGap, gaps - 1);
+            setByGap({ ...byGap, [ag]: [...(byGap[ag] ?? []), id] });
+            onTick();
+        };
+        const removeAt = (gi: number, pos: number) => {
+            const arr = byGap[gi] ?? [];
+            setByGap({ ...byGap, [gi]: arr.filter((_, k) => k !== pos) });
+            onTick();
         };
         return (
             <div className="rounded-2xl border bg-card p-5 text-center shadow-sm">
@@ -384,21 +410,31 @@ function QuestionCard({ q, lockedRef, onSubmit, onTick }: {
                     {q.examCount > 0 && <span className="ml-1.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-600">近年高考考查</span>}
                 </p>
                 <p className="mb-1 mt-2 text-sm font-semibold leading-relaxed">{q.prompt}</p>
-                <p className="mb-3 text-xs text-muted-foreground">从下方字块中按顺序点选, 拼出答案({q.slots} 字)</p>
-                {/* 拼写槽 */}
-                <div className="mb-4 flex flex-wrap justify-center gap-1.5">
-                    {[...Array(q.slots)].map((_, i) => {
-                        const id = assembled[i];
-                        const ch = id !== undefined ? q.pool.find((t) => t.id === id)?.ch ?? "" : "";
+                <p className="mb-3 text-xs text-muted-foreground">点选字块组成句子(不提示字数;标点已给出,点击标点把填写位置移到其后)</p>
+                {/* 答题行: 标点固定, 各段自由填字 */}
+                <div className="mb-4 flex flex-wrap items-end justify-center gap-x-0.5 gap-y-2">
+                    {segs.slice(0, gaps).map((_, gi) => {
+                        const chars = byGap[gi] ?? [];
+                        const active = activeGap === gi;
                         return (
-                            <button key={i} aria-label={`第 ${i + 1} 字${ch ? `:${ch}` : "(空)"}`}
-                                onClick={() => {
-                                    if (ch && !lockedRef.current) { setAssembled(assembled.filter((x) => x !== id)); onTick(); }
-                                }}
-                                className={cn("flex h-11 w-11 items-center justify-center rounded-lg border-2 text-xl font-bold",
-                                    ch ? "border-primary bg-primary/10 text-primary" : "border-dashed border-muted-foreground/40 bg-muted/20 text-transparent")}>
-                                {ch || "？"}
-                            </button>
+                            <span key={`seg${gi}`} className="contents">
+                                {gi > 0 && (
+                                    <button aria-label={`标点 ${puncts[gi - 1]}, 点击把填写位置移到其后`}
+                                        onClick={() => { setActiveGap(gi); onTick(); }}
+                                        className="px-0.5 text-2xl font-bold text-foreground/80">{puncts[gi - 1]}</button>
+                                )}
+                                <span className={cn("inline-flex min-w-10 flex-wrap items-center justify-end gap-0.5 border-b-2 px-0.5 pb-0.5",
+                                    active ? "border-primary" : "border-muted-foreground/40")}
+                                    aria-label={`第 ${gi + 1} 段${chars.length ? ",已填 " + chars.length + " 字" : "(空)"}`}>
+                                    {chars.map((id, k) => (
+                                        <button key={id} aria-label={`已填 ${chOf(id)}, 点击删除`}
+                                            disabled={lockedRef.current}
+                                            onClick={() => removeAt(gi, k)}
+                                            className="text-xl font-bold text-primary">{chOf(id)}</button>
+                                    ))}
+                                    {active && <span className="h-6 w-0.5 animate-pulse bg-primary" aria-hidden />}
+                                </span>
+                            </span>
                         );
                     })}
                 </div>
@@ -410,13 +446,7 @@ function QuestionCard({ q, lockedRef, onSubmit, onTick }: {
                         return (
                             <button key={t.id} aria-label={`字块:${t.ch}`}
                                 disabled={removed || used || lockedRef.current}
-                                onClick={() => {
-                                    if (assembled.length >= q.slots) return;
-                                    const next = [...assembled, t.id];
-                                    setAssembled(next);
-                                    onTick();
-                                    if (next.length === q.slots) setTimeout(() => submitTiles(), 150);
-                                }}
+                                onClick={() => tapTile(t.id)}
                                 className={cn(
                                     "flex h-11 w-11 items-center justify-center rounded-lg border text-xl font-bold transition",
                                     removed ? "border-border/40 bg-muted/20 text-transparent" :
@@ -429,11 +459,11 @@ function QuestionCard({ q, lockedRef, onSubmit, onTick }: {
                     })}
                 </div>
                 <div className="mt-4 flex justify-center gap-2">
-                    <Button size="sm" variant="outline" disabled={assembled.length === 0 || lockedRef.current}
-                        onClick={() => { setAssembled([]); onTick(); }}>
+                    <Button size="sm" variant="outline" disabled={placedCount === 0 || lockedRef.current}
+                        onClick={() => { setByGap({}); setActiveGap(0); onTick(); }}>
                         重拼
                     </Button>
-                    <Button size="sm" disabled={!full || lockedRef.current} onClick={submitTiles}>提交判定</Button>
+                    <Button size="sm" disabled={placedCount === 0 || lockedRef.current} onClick={submitTiles}>提交判定</Button>
                 </div>
             </div>
         );
@@ -493,9 +523,9 @@ function QuestionCard({ q, lockedRef, onSubmit, onTick }: {
     return (
         <div className="rounded-2xl border bg-card p-5 text-center shadow-sm">
             <p className="text-sm font-semibold">
-                点选出<strong className="mx-1 text-xl text-primary">「{q.char}」</strong>所在的句子(可多选)
+                每句都缺了一个字——点选出缺的字恰为<strong className="mx-1 text-xl text-primary">「{q.char}」</strong>的句子(可多选)
             </p>
-            <p className="mb-3 text-xs text-muted-foreground">没有令字的句子不要选</p>
+            <p className="mb-3 text-xs text-muted-foreground">凭记忆判断:缺的字不一定是令字,想不起原句就别勾</p>
             <div className="grid gap-2">
                 {q.sentences.map((t, i) => {
                     const off = q.disabled.includes(i);
@@ -518,7 +548,7 @@ function QuestionCard({ q, lockedRef, onSubmit, onTick }: {
             </div>
             <Button size="sm" className="mt-4" disabled={selected.size === 0 || lockedRef.current}
                 onClick={() => {
-                    const answerText = q.hits.map((h, i) => (h ? q.sentences[i] : "")).filter(Boolean).join(" / ");
+                    const answerText = q.hits.map((h, i) => (h ? q.fulls[i] : "")).filter(Boolean).join(" / ");
                     onSubmit([...selected], answerText);
                 }}>
                 提交判定({selected.size})
