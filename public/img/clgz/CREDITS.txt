@@ -1,0 +1,21 @@
+错了个字 · 图形题素材来源
+========================
+以下图片来自 Wikimedia Commons(自由许可), 经 Special:FilePath 以 560px 宽渲染为 PNG:
+  conical-flask.png  <- Erlenmeyer Flask (Filled) (NIH BioArt)
+  evaporating-dish.png <- Glass evaporating dish.svg
+  filtration.png <- Equipment - Büchner funnel (Smart-Servier)
+  distillation.png <- Simple distillation apparatus (bn).svg
+  benzene-ring.png <- Benzene (结构式)
+  cocoon.png <- Silkworm Cocoon (PSF)
+  paramecium.png <- Paramecium sp (Ngerngrsakul?)
+  trapezoid.png <- Trapezoid midsegment illustration.png
+  cone.png <- Cone (geometry).svg
+  ellipse.png <- Ellipse parameters 3.svg
+  chord.png <- Perpendicular bisector of a circle chord.svg
+  diameter.png <- Circle diameter el.svg
+  rectangle.png <- Prostokat-rectangle.svg
+  magnet.png <- VFPt cylindrical magnet (field lines)
+  pulley.png <- Power pulley 2.svg
+其余条目(坩埚/镊子/蛹/菱形/棱柱/抛物线/弧长/圆心/砝码/杠杆/弹簧/透镜焦点)使用项目内手绘 SVG
+(src/game3/artifacts.tsx, 教科书线稿风格, 无外部来源)。
+检索词与下载管道: scripts/fetch_clgz_images.py。
