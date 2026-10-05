@@ -294,9 +294,11 @@ export function ClgzPage() {
                         {CLGZ_ARTIFACTS[cur.word] ? (
                             <>
                                 <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl border bg-background text-foreground">
-                                    {CLGZ_ARTIFACTS[cur.word]}
+                                    {CLGZ_ARTIFACTS[cur.word].node}
                                 </div>
-                                <p className="mt-2 text-sm font-semibold">看图,写出图中名称的第 {cur.word.indexOf(cur.ch) + 1} 个字</p>
+                                <p className="mt-2 text-sm font-semibold">
+                                    看图,写出图中{CLGZ_ARTIFACTS[cur.word].tip}的第 {cur.word.indexOf(cur.ch) + 1} 个字
+                                </p>
                                 <p className="text-xs text-muted-foreground">不展示名称,凭记忆书写;写对且可辨认即得分</p>
                             </>
                         ) : (
