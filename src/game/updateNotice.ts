@@ -20,7 +20,7 @@ export const UPDATE_SEEN_KEY = "hlgx_update_seen";
 
 export const UPDATE_ITEMS: UpdateItem[] = [
     // 维护约定严格执行: 只列「本批」改动, 旧批条目清除
-    { tag: "默了个写", version: MLGX_VERSION, text: "两处玩法优化:飞花令改为「缺字判断」(每句藏一字,凭记忆勾选,不再考验眼力);情景拼句不再提示字数,标点直接给出,考真正的句读记忆。" },
+    { tag: "默了个写", version: MLGX_VERSION, text: "错了个字玩法升级:新增图形题——锥形瓶、菱形、滑轮这些直接看图写名称中的字,不再照着题干抄写,考真正的会写。" },
 ];
 function hashId(str: string): string {
     let h = 5381;

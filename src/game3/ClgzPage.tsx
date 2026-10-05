@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { CLGZ_SUBJECTS, charsOfSubjects, type ClgzChar } from "./chars";
 import { HandwritingPad } from "./HandwritingPad";
+import { CLGZ_ARTIFACTS } from "./artifacts";
 import { judgeWithAiVariants as judgeWithAiApi } from "@/game/clgzAi";
 import { ClgzRules } from "./ClgzRules";
 import { detectPlatform } from "@/game/platform";
@@ -290,12 +291,25 @@ export function ClgzPage() {
                         <span>⏱ {elapsed}s</span>
                     </div>
                     <div className="rounded-2xl border bg-card p-5 text-center shadow-sm">
-                        <p className="text-sm text-muted-foreground">请写出「{cur.word}」中的这个字</p>
-                        <p className="my-2 text-6xl font-bold tracking-widest text-primary">{cur.ch}</p>
-                        <p className="text-xs text-muted-foreground">在下方画框内手写,AI 会识别你写的字</p>
+                        {CLGZ_ARTIFACTS[cur.word] ? (
+                            <>
+                                <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl border bg-background text-foreground">
+                                    {CLGZ_ARTIFACTS[cur.word]}
+                                </div>
+                                <p className="mt-2 text-sm font-semibold">看图,写出图中名称的第 {cur.word.indexOf(cur.ch) + 1} 个字</p>
+                                <p className="text-xs text-muted-foreground">不展示名称,凭记忆书写;写对且可辨认即得分</p>
+                            </>
+                        ) : (
+                            <>
+                                <p className="text-sm text-muted-foreground">请写出「{cur.word}」中的这个字</p>
+                                <p className="my-2 text-6xl font-bold tracking-widest text-primary">{cur.ch}</p>
+                                <p className="text-xs text-muted-foreground">在下方画框内手写,AI 会识别你写的字</p>
+                            </>
+                        )}
                     </div>
                     {/* key=idx 强制重挂载: 切换下一题时自动清空画布(与在下雨共同更新) */}
                     <HandwritingPad key={idx} target={cur.ch}
+                        hintText={CLGZ_ARTIFACTS[cur.word] ? "看图,凭记忆书写对应的字" : undefined}
                         onImage={(b64) => void judgeWithAi(b64, cur.ch)} />
                     {aiChecking && (
                         <p className="text-center text-xs font-semibold text-muted-foreground" role="status">AI 识别中…</p>

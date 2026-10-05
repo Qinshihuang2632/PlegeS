@@ -24,11 +24,13 @@ interface HandwritingPadProps {
     onImage?: (base64: string) => void;
     /** 笔迹变化回调(管理后台采集页用: 拿到原始点序列存库; 游戏内不传, 行为不变) */
     onStrokesChange?: (strokes: Stroke[]) => void;
+    /** 空画布提示语覆盖(图形题不展示目标字, 避免抄写) */
+    hintText?: string;
     /** 隐藏画框自带的「清除重写/提交判定」按钮(采集页用自己的保存按钮) */
     hideActions?: boolean;
 }
 
-export function HandwritingPad({ target, size = 280, onImage, onStrokesChange, hideActions }: HandwritingPadProps) {
+export function HandwritingPad({ target, size = 280, onImage, onStrokesChange, hideActions, hintText }: HandwritingPadProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [strokes, setStrokes] = useState<Stroke[]>([]);
     const [writing, setWriting] = useState(false);
@@ -147,7 +149,7 @@ export function HandwritingPad({ target, size = 280, onImage, onStrokesChange, h
                 />
                 {strokes.length === 0 && (
                     <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-muted-foreground/60">
-                        在这里书写「{target}」
+                        {hintText ?? `在这里书写「${target}」`}
                     </span>
                 )}
             </div>
