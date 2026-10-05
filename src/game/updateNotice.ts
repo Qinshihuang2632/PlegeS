@@ -20,7 +20,7 @@ export const UPDATE_SEEN_KEY = "hlgx_update_seen";
 
 export const UPDATE_ITEMS: UpdateItem[] = [
     // 维护约定严格执行: 只列「本批」改动, 旧批条目清除
-    { tag: "错了个字", version: CLGZ_VERSION, text: "新增「古诗文」科目:课标名句挖空手写——易错字与主旨句关键字共 300+ 条,看原文缺的字凭记忆书写,AI 识别判定。" },
+    { tag: "错了个字", version: CLGZ_VERSION, text: "语文字科大扩充(+313):新增古诗文名句挖空手写——易错字与主旨句关键字,看原文缺的字凭记忆书写,AI 识别判定。" },
 ];
 function hashId(str: string): string {
     let h = 5381;

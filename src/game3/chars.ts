@@ -193,7 +193,7 @@ export const CLGZ_SUBJECTS: ClgzSubject[] = [
     {
         key: "chinese",
         label: "语文",
-        desc: "高频易错字(形近/生僻)",
+        desc: "易错字词 + 古诗文名句挖空手写(易错字与主旨句关键字)",
         chars: [
             { ch: "羸", word: "羸弱" }, { ch: "窠", word: "不落窠臼" }, { ch: "臼", word: "不落窠臼" },
             { ch: "睥", word: "睥睨" }, { ch: "睨", word: "睥睨" }, { ch: "龃", word: "龃龉" },
@@ -209,6 +209,7 @@ export const CLGZ_SUBJECTS: ClgzSubject[] = [
             { ch: "缱", word: "缱绻" }, { ch: "绻", word: "缱绻" }, { ch: "斓", word: "斑斓" },
             { ch: "璨", word: "璀璨" }, { ch: "漪", word: "涟漪" }, { ch: "潋", word: "潋滟" },
             { ch: "滟", word: "潋滟" },
+            ...buildPoemChars(),
         ],
     },
     {
@@ -236,12 +237,6 @@ export const CLGZ_SUBJECTS: ClgzSubject[] = [
             { ch: "焦", word: "焦点" }, { ch: "仑", word: "库仑" }, { ch: "伽", word: "伽利略" },
             { ch: "瑟", word: "卢瑟福" }, { ch: "谔", word: "薛定谔" }, { ch: "兹", word: "洛伦兹" },
         ],
-    },
-    {
-        key: "poem",
-        label: "古诗文",
-        desc: "课标名句挖空手写(易错字与主旨句关键字, 看原文缺字凭记忆书写)",
-        chars: buildPoemChars(),
     },
     {
         key: "histgeo",

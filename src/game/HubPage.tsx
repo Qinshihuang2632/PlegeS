@@ -127,7 +127,7 @@ export function HubPage() {
                     <div className="mb-3 text-4xl" aria-hidden>字</div>
                     <h2 className="text-lg font-bold">错了个字</h2>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-                        手写考察高中各科易写错的字(锥形瓶的锥、睾丸的睾……),AI 手写识别判定——写对且可辨认即得分,写错还会告诉你实际写成了哪个字。
+                        手写考察高中各科易写错的字与古诗文名句(看图写仪器名、原文挖空填字、图形题……),AI 识别判定——写对且可辨认即得分,写错会告诉你实际写成了哪个字。
                     </p>
                     <span className="mt-4 inline-block rounded-full bg-success/15 px-2.5 py-0.5 text-xs font-semibold text-success">
                         ● 可玩
