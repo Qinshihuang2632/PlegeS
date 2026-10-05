@@ -8,7 +8,7 @@
  *   版本一变就重弹, 即使日志内容与上次完全相同)。
  * 维护方式: 每次更新重写 UPDATE_ITEMS 为「本批」改动(玩家视角, 不写内部术语), 旧条目清除。
  */
-import { MLGX_VERSION } from "@/game6/version";
+import { CLGZ_VERSION } from "@/game3/version";
 
 export interface UpdateItem {
     tag: string;      // 游戏/平台名
@@ -20,7 +20,7 @@ export const UPDATE_SEEN_KEY = "hlgx_update_seen";
 
 export const UPDATE_ITEMS: UpdateItem[] = [
     // 维护约定严格执行: 只列「本批」改动, 旧批条目清除
-    { tag: "默了个写", version: MLGX_VERSION, text: "错了个字玩法升级:新增图形题——锥形瓶、菱形、滑轮这些直接看图写名称中的字,不再照着题干抄写,考真正的会写。" },
+    { tag: "错了个字", version: CLGZ_VERSION, text: "新增「古诗文」科目:课标名句挖空手写——易错字与主旨句关键字共 300+ 条,看原文缺的字凭记忆书写,AI 识别判定。" },
 ];
 function hashId(str: string): string {
     let h = 5381;

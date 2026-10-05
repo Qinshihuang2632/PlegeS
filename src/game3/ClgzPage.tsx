@@ -291,7 +291,15 @@ export function ClgzPage() {
                         <span>⏱ {elapsed}s</span>
                     </div>
                     <div className="rounded-2xl border bg-card p-5 text-center shadow-sm">
-                        {CLGZ_ARTIFACTS[cur.word] ? (
+                        {cur.from ? (
+                            <>
+                                <p className="text-xs text-muted-foreground">{cur.from} · 名句默写</p>
+                                <p className="my-2 text-2xl font-semibold leading-relaxed tracking-wide">
+                                    {cur.word.split(cur.ch).join("□")}
+                                </p>
+                                <p className="text-xs text-muted-foreground">在下方画框手写原文中缺失的字(写对且可辨认即得分)</p>
+                            </>
+                        ) : CLGZ_ARTIFACTS[cur.word] ? (
                             <>
                                 <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl border bg-background text-foreground">
                                     {CLGZ_ARTIFACTS[cur.word].node}
@@ -311,7 +319,7 @@ export function ClgzPage() {
                     </div>
                     {/* key=idx 强制重挂载: 切换下一题时自动清空画布(与在下雨共同更新) */}
                     <HandwritingPad key={idx} target={cur.ch}
-                        hintText={CLGZ_ARTIFACTS[cur.word] ? "看图,凭记忆书写对应的字" : undefined}
+                        hintText={cur.from ? "手写原文中缺失的字" : CLGZ_ARTIFACTS[cur.word] ? "看图,凭记忆书写对应的字" : undefined}
                         onImage={(b64) => void judgeWithAi(b64, cur.ch)} />
                     {aiChecking && (
                         <p className="text-center text-xs font-semibold text-muted-foreground" role="status">AI 识别中…</p>
